@@ -2266,3 +2266,11 @@ body.ad-busy,
 body.ad-busy * {
   pointer-events: none !important;
 }
+
+/* Tanıtım sürümü: reklam düğmeleri gösterilmez */
+html[data-build="showcase"] #earnBtn,
+html[data-build="showcase"] #storeEarnBtn,
+html[data-build="showcase"] #doubleBtn,
+html[data-build="showcase"] #confirmAd {
+  display: none !important;
+}

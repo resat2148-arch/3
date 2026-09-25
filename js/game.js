@@ -231,6 +231,12 @@
   // Kayıt: ayarlar ve ilerleme (altın, açılan temalar, envanter). CrazyGames'te SDK veri modülü,
   // başka her yerde localStorage; ikisi de erişilemezse oyun varsayılanlarla çalışır.
   // ---------------------------------------------------------------------------
+  // Sürüm: '' (kendi site), 'crazygames' ya da 'showcase' (tanıtım videosu: her şey açık, reklam
+  // yok, kalite düşürülmez, kayıtlar gerçek oyundan ayrı tutulur). Derleme betikleri işaretler.
+  const BUILD = document.documentElement.dataset.build || '';
+  const isShowcase = BUILD === 'showcase';
+  const KEY_PREFIX = isShowcase ? 'aquash_' : 'neonah_';
+
   const saveBackend = cloudData || (() => {
     try { return window.localStorage; } catch (e) { return null; }
   })();
@@ -238,14 +244,14 @@
   const store = {
     get(k, d) {
       try {
-        const v = saveBackend && saveBackend.getItem('neonah_' + k);
+        const v = saveBackend && saveBackend.getItem(KEY_PREFIX + k);
         return v === null || v === undefined ? d : JSON.parse(v);
       } catch (e) {
         return d;
       }
     },
     set(k, v) {
-      try { if (saveBackend) saveBackend.setItem('neonah_' + k, JSON.stringify(v)); } catch (e) { /* yok say */ }
+      try { if (saveBackend) saveBackend.setItem(KEY_PREFIX + k, JSON.stringify(v)); } catch (e) { /* yok say */ }
     },
   };
 
@@ -283,8 +289,12 @@
 
   function isUnlocked(t) {
     const info = THEME_INFO[t];
+    if (isShowcase) return !!info; // tanıtım sürümünde tüm temalar açık
     return !!info && (info.price === 0 || wallet.unlocked.includes(t));
   }
+
+  // Tanıtım sürümü: her açılışta bol altınla başlar
+  if (isShowcase) wallet.coins = 9999;
 
   const savedLang = store.get('lang', null);
   LANG = savedLang === 'tr' || savedLang === 'en' ? savedLang
@@ -1090,6 +1100,7 @@
   };
 
   function trackFrame(ms) {
+    if (isShowcase) return; // tanıtım kaydında görüntü kalitesi düşürülmez
     if (!(game.state === 'play' || game.state === 'countdown' || game.state === 'goal')) {
       quality.acc = quality.n = 0;
       return;
@@ -5900,6 +5911,7 @@
 
   // Satın alınmış haklar: cihazda saklanır; iki oyunculu modda iki oyuncu da buradan kullanır.
   const inventory = loadInventory();
+  if (isShowcase) inventory.grow = inventory.shrink = 99; // tanıtım: bol yetenek hakkı
 
   function loadInventory() {
     const v = store.get('inventory', null) || {};
@@ -7543,7 +7555,7 @@
   //   Placement API, mobil uygulama için AdMob vb.); gerçek sistemde ödül, sağlayıcının sunucu
   //   tarafı doğrulamasından (SSV) sonra sunucuda eklenmelidir.
   // Ödül yalnızca reklam sonuna kadar izlenince verilir (söz true ile çözülür).
-  const isCrazyBuild = document.documentElement.dataset.build === 'crazygames';
+  const isCrazyBuild = BUILD === 'crazygames';
   const Ads = {
     testDuration: 5, // sn
     playing: false,  // reklam oynarken oyun donar, girişler engellenir
@@ -8283,8 +8295,8 @@
   startDemo();
   requestAnimationFrame(frame);
 
-  // Çevrimdışı önbellek (PWA); CrazyGames sürümünde gerekmez
-  if (!cloudData && !window.CrazyGames && 'serviceWorker' in navigator && location.protocol === 'https:') {
+  // Çevrimdışı önbellek (PWA); CrazyGames ve tanıtım sürümlerinde gerekmez
+  if (!BUILD && !cloudData && !window.CrazyGames && 'serviceWorker' in navigator && location.protocol === 'https:') {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     });

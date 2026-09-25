@@ -147,6 +147,17 @@ CrazyGames'in **ses kapatma ayarı** (SDK `game.settings.muteAudio`) desteklenir
 
 SDK yüklenemezse, başlatılamazsa ya da 6 saniye içinde yanıt vermezse oyun yine açılır ve yerel kayıtla (localStorage) çalışır. Kendi sitende yayınlanan normal sürüm SDK'yı yüklemez ve localStorage kullanır.
 
+## Tanıtım (showcase) sürümü
+
+Tanıtım videosu çekmek için:
+
+```bash
+./tools/build-showcase.sh
+# çıktı: dist/aqua-hockey-showcase.zip
+```
+
+Bu sürümde tüm temalar açıktır, oyun 9.999 altın ve 99'ar Dev Kale / Kale Kilidi hakkıyla başlar (her açılışta yenilenir), reklam düğmeleri gizlidir ve görüntü kalitesi performansa göre otomatik düşürülmez. Kayıtları gerçek oyundan ayrı tutulur (`aquash_` önekiyle), yani aynı tarayıcıdaki gerçek ilerlemeye dokunmaz. Yayına ya da CrazyGames'e yüklenmek için değildir.
+
 ## Dosya yapısı
 
 ```
@@ -155,6 +166,6 @@ css/style.css         Arayüz, menüler ve arka plan
 js/game.js            Fizik, yapay zekâ, çizim, ses ve kontroller
 manifest.webmanifest  PWA tanımı
 sw.js                 Çevrimdışı önbellek
-tools/                CrazyGames sürümünü üreten betik
+tools/                CrazyGames ve tanıtım sürümlerini üreten betikler
 icons/                Uygulama ikonları
 ```
