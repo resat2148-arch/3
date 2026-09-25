@@ -35,6 +35,18 @@ Satın alınan haklar cihazda saklanır ve sonraki maçlarda da kullanılır; ik
 
 > **Şu an TEST MODU:** ödeme alınmaz, ürün onaydan sonra doğrudan envantere eklenir. Gerçek ödeme için `Payments.purchase()` bir ödeme altyapısına bağlanmalıdır — örneğin Android uygulaması için Google Play Faturalandırma, iOS için App Store, web için Stripe. Ayrıca satın almaları doğrulayan ve envanteri tutan bir sunucu gerekir; tarayıcıda (localStorage) tutulan envanter kullanıcı tarafından değiştirilebilir.
 
+## Temalar
+
+Menüdeki **Tema** seçiminden değiştirilir; seçim cihazda saklanır.
+
+- **Neon**: parlayan çizgiler, neon raketler ve ışık izleri.
+- **Su Stadyumu**: masanın yerinde gerçek zamanlı simüle edilen bir havuz.
+  - **Fizik**: su yüzeyi dalga denklemiyle hesaplanır; dalgalar yayılır, havuz duvarlarından yansır, viskozite ve sürtünmeyle söner.
+  - **Etkileşim**: raketler ve paklar suyu hacimleriyle iter; önlerinde kabarma, arkalarında V biçimli iz ve dalga halkaları oluşur. Hızlı hareket köpük bırakır; çarpışmalar ve goller sıçrama ve halka dalgaları üretir.
+  - **Görüntü (WebGL)**: tabana boyanmış saha çizgileri ve mozaik fayanslar dalgaların altında kırılarak görünür; yüzey eğriliğinden kostik ışık desenleri, Fresnel yansıması, projektör pırıltıları, nesnelerin tabana düşen gölgeleri ve köpük.
+  - **Ses**: çarpışmalarda su sıçraması ve kabarcık sesleri, arka planda hafif havuz ambiyansı.
+  - WebGL olmayan cihazlarda havuz durağan gösterilir. Zayıf cihazlarda su, uyarlanabilir kaliteyle daha düşük çözünürlükte çizilir.
+
 ## Özellikler
 
 - **Tek oyuncu**: üç zorluk seviyesinde yapay zekâya karşı (Kolay / Orta / Zor). Yapay zekâ pakın yolunu tahmin eder, bant vuruşu yapar ve karşı atağa geçer.

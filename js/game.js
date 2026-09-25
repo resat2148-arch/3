@@ -971,8 +971,10 @@
     const N = NX * NY;
     const STEP = 1 / 150;              // simülasyon adımı (sn)
     const SPEED = 0.62;                // dalga hızı katsayısı (< 2 kararlı)
-    const DAMP = 0.9975;               // adım başına sönümleme
+    const DAMP = 0.9985;               // adım başına sönümleme (dalgalar birkaç saniye yaşar)
+    const VISC = 0.05;                 // viskozite: kısa dalgaları yumuşatır, sırtlar yuvarlaklaşır
     const h = new Float32Array(N), v = new Float32Array(N), foam = new Float32Array(N);
+    const avgBuf = new Float32Array(N);
     const pix = new Uint8ClampedArray(N * 4);
     const pixU8 = new Uint8Array(pix.buffer);
     const bodies = new Map();
@@ -1003,7 +1005,7 @@
       uniform vec4 uObj[4];
 
       const float DEPTH = 60.0;                  // su derinliği (oyun birimi)
-      const float SLOPE = 2.4;                   // simülasyon eğimi → yüzey normali
+      const float SLOPE = 3.0;                   // simülasyon eğimi → yüzey normali
       const vec3 DEEP = vec3(0.0, 0.30, 0.46);   // derin su rengi (soğurma)
 
       float hash(vec2 p) {
@@ -1058,10 +1060,10 @@
           texture2D(uFloor, fuv - disp).b);
 
         // Kostikler: dışbükey yüzey ışığı tabanda toplar (simülasyondan) + ince dalgacık deseni
-        float focus = (texture2D(uSim, fuv).b - 0.5) * 2.2;
+        float focus = (texture2D(uSim, fuv).b - 0.5) * 3.2;
         float c = cells(fp / 34.0 + grad * 3.0, uTime * 0.8) * 0.6;
         if (uLite < 0.5) c += cells(fp / 21.0 - grad * 4.0 + 5.1, uTime * 1.15) * 0.4;
-        floorCol *= 0.74 + clamp(focus, -0.5, 1.4) * 0.6 + c * 0.42;
+        floorCol *= 0.8 + clamp(focus, -0.55, 1.6) * 0.7 + c * 0.24;
 
         // Yüzen nesnelerin tabana düşen yumuşak gölgeleri
         float sh = 1.0;
@@ -1302,11 +1304,12 @@
           const l = x > 0 ? h[i - 1] : h[i];
           const r = x < NX - 1 ? h[i + 1] : h[i];
           const avg = (l + r + h[up + x] + h[dn + x]) * 0.25;
+          avgBuf[i] = avg;
           v[i] = (v[i] + (avg - h[i]) * SPEED) * DAMP;
         }
       }
       for (let i = 0; i < N; i++) {
-        h[i] = (h[i] + v[i]) * 0.99995;
+        h[i] = (h[i] + v[i] + (avgBuf[i] - h[i]) * VISC) * 0.99995;
         foam[i] *= 0.991;
       }
     }
@@ -2482,10 +2485,10 @@
 
   // Suda yüzen nesneler: raketler daha derin oturur (daha çok su iter), paklar daha sığ
   const floatBodies = [
-    { id: 'm0', x: 0, y: 0, r: MALLET_R, depth: 0.5 },
-    { id: 'm1', x: 0, y: 0, r: MALLET_R, depth: 0.5 },
-    { id: 'p0', x: 0, y: 0, r: PUCK_R, depth: 0.38 },
-    { id: 'p1', x: 0, y: 0, r: PUCK_R, depth: 0.38 },
+    { id: 'm0', x: 0, y: 0, r: MALLET_R, depth: 0.62 },
+    { id: 'm1', x: 0, y: 0, r: MALLET_R, depth: 0.62 },
+    { id: 'p0', x: 0, y: 0, r: PUCK_R, depth: 0.45 },
+    { id: 'p1', x: 0, y: 0, r: PUCK_R, depth: 0.45 },
   ];
   const floatList = [];
 
