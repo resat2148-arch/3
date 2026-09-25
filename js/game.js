@@ -1,4 +1,4 @@
-/* Neon Air Hockey — bağımlılıksız, tek dosyalık oyun motoru. */
+/* Aqua Hockey — bağımlılıksız, tek dosyalık oyun motoru. */
 
 // Açılış. Sayfada CrazyGames SDK'sı varsa (CrazyGames sürümü) önce SDK başlatılır ve ilerleme
 // SDK'nın veri modülüne kaydedilir: CrazyGames'in iframe'inde localStorage'a güvenilemez, veri
@@ -56,7 +56,7 @@
   // ---------------------------------------------------------------------------
   const STR = {
     // Genel
-    'meta.desc': ['Neon Air Hockey — tarayıcıda ve telefonda oynanabilen air hockey oyunu.', 'Neon Air Hockey — an air hockey game you can play in the browser and on your phone.'],
+    'meta.desc': ['Aqua Hockey — tarayıcıda ve telefonda oynanabilen, su stadyumunda geçen bir air hockey oyunu.', 'Aqua Hockey — an air hockey game set in a water stadium, playable in the browser and on your phone.'],
     'board.aria': ['Air hockey masası', 'Air hockey table'],
     'rotate': ['Daha iyi deneyim için telefonunu dik tut', 'Hold your phone upright for the best experience'],
     'pct': ['%{n}', '{n}%'],
@@ -122,11 +122,11 @@
     'sh.hintSave': ['Görseli kaydedip istediğin yerde paylaşabilirsin.', 'Save the image and share it anywhere you like.'],
     'sh.hintHold': ['Kaydetmek için görsele basılı tut veya sağ tıkla.', 'Press and hold (or right-click) the image to save it.'],
     'sh.shareImg': ['GÖRSELİ PAYLAŞ', 'SHARE IMAGE'], 'sh.saveImg': ['Görseli kaydet', 'Save image'], 'sh.back': ['Geri', 'Back'],
-    'sh.pvpDraw': ["Neon Air Hockey'de {s} berabere kaldık!", 'We drew {s} in Neon Air Hockey!'],
-    'sh.pvpWin': ["Neon Air Hockey'de {w}, {l} rakibini {hi}-{lo} yendi!", '{w} beat {l} {hi}-{lo} in Neon Air Hockey!'],
-    'sh.aiDraw': ["Neon Air Hockey'de {d} seviyedeki yapay zekâyla {s} berabere kaldım!", 'I drew {s} against the {d} AI in Neon Air Hockey!'],
-    'sh.aiWin': ["Neon Air Hockey'de {d} seviyedeki yapay zekâyı {s} yendim! 🏆", 'I beat the {d} AI {s} in Neon Air Hockey! 🏆'],
-    'sh.aiLose': ["Neon Air Hockey'de {d} seviyedeki yapay zekâya {s} yenildim, rövanş lazım!", 'I lost {s} to the {d} AI in Neon Air Hockey. I need a rematch!'],
+    'sh.pvpDraw': ["Aqua Hockey'de {s} berabere kaldık!", 'We drew {s} in Aqua Hockey!'],
+    'sh.pvpWin': ["Aqua Hockey'de {w}, {l} rakibini {hi}-{lo} yendi!", '{w} beat {l} {hi}-{lo} in Aqua Hockey!'],
+    'sh.aiDraw': ["Aqua Hockey'de {d} seviyedeki yapay zekâyla {s} berabere kaldım!", 'I drew {s} against the {d} AI in Aqua Hockey!'],
+    'sh.aiWin': ["Aqua Hockey'de {d} seviyedeki yapay zekâyı {s} yendim! 🏆", 'I beat the {d} AI {s} in Aqua Hockey! 🏆'],
+    'sh.aiLose': ["Aqua Hockey'de {d} seviyedeki yapay zekâya {s} yenildim, rövanş lazım!", 'I lost {s} to the {d} AI in Aqua Hockey. I need a rematch!'],
     'sh.tail': ['Sen de dene!', 'Give it a try!'],
     'sh.copied': ['Paylaşım metni panoya kopyalandı.', 'Share text copied to the clipboard.'],
     'sh.menuFail': ['Paylaşım menüsü açılamadı; metin panoya kopyalandı.', "Couldn't open the share menu; the text was copied to the clipboard."],
@@ -233,6 +233,7 @@
   const saveBackend = cloudData || (() => {
     try { return window.localStorage; } catch (e) { return null; }
   })();
+  // Anahtar öneki 'neonah_' oyunun eski adından kalır; mevcut oyuncuların kayıtları kaybolmasın diye değişmez.
   const store = {
     get(k, d) {
       try {
@@ -6654,7 +6655,7 @@
       const d = tl('diffl.' + r.difficulty);
       line = r.draw ? tl('sh.aiDraw', { d, s }) : r.win ? tl('sh.aiWin', { d, s }) : tl('sh.aiLose', { d, s });
     }
-    return `🏒 ${line} ${tl('sh.tail')} #NeonAirHockey`;
+    return `🏒 ${line} ${tl('sh.tail')} #AquaHockey`;
   }
 
   function fullText() {
@@ -6700,7 +6701,7 @@
   }
 
   function cardFile() {
-    return new File([share.blob || new Blob()], 'neon-air-hockey-skor.jpg', { type: 'image/jpeg' });
+    return new File([share.blob || new Blob()], 'aqua-hockey-skor.jpg', { type: 'image/jpeg' });
   }
 
   function toast(msg) {
@@ -6732,7 +6733,7 @@
   }
 
   function nativeShare(withImage) {
-    const data = { title: 'Neon Air Hockey', text: shareText() };
+    const data = { title: 'Aqua Hockey', text: shareText() };
     if (share.url) data.url = share.url;
     if (withImage && share.blob) {
       const file = cardFile();
@@ -6756,7 +6757,7 @@
   function saveCard() {
     if (!share.blob) return;
     if (downloadsApi) {
-      downloadsApi.save({ filename: 'neon-air-hockey-skor.jpg', data: share.blob })
+      downloadsApi.save({ filename: 'aqua-hockey-skor.jpg', data: share.blob })
         .then(() => toast(tl('sh.saved')))
         .catch((e) => {
           const code = e && e.code;
@@ -6768,7 +6769,7 @@
     }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(share.blob);
-    a.download = 'neon-air-hockey-skor.jpg';
+    a.download = 'aqua-hockey-skor.jpg';
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -6792,10 +6793,14 @@
     const g = c.getContext('2d');
     const spacing = (v) => { if ('letterSpacing' in g) g.letterSpacing = v; };
 
-    // Zemin
-    g.fillStyle = '#05060f';
+    // Zemin: derin su
+    const sea = g.createLinearGradient(0, 0, 0, CH);
+    sea.addColorStop(0, '#06345a');
+    sea.addColorStop(0.55, '#031c36');
+    sea.addColorStop(1, '#020c1c');
+    g.fillStyle = sea;
     g.fillRect(0, 0, CW, CH);
-    [[180, 160, `rgba(${COLORS[1].rgb},0.38)`], [900, 1200, `rgba(${COLORS[0].rgb},0.32)`], [540, 700, 'rgba(90,60,200,0.25)']].forEach(([x, y, col]) => {
+    [[180, 160, `rgba(${COLORS[1].rgb},0.28)`], [900, 1200, `rgba(${COLORS[0].rgb},0.32)`], [540, 60, 'rgba(120,230,255,0.3)']].forEach(([x, y, col]) => {
       const gr = g.createRadialGradient(x, y, 0, x, y, 700);
       gr.addColorStop(0, col);
       gr.addColorStop(1, 'rgba(0,0,0,0)');
@@ -6807,7 +6812,7 @@
     g.save();
     rr(g, 48, 48, CW - 96, CH - 96, 56);
     g.clip();
-    g.strokeStyle = 'rgba(155,107,255,0.22)';
+    g.strokeStyle = 'rgba(90,200,255,0.22)';
     g.lineWidth = 2;
     const hy = 980, vx = CW / 2;
     for (let i = -12; i <= 12; i++) {
@@ -6826,12 +6831,12 @@
     }
     g.restore();
 
-    // Neon çerçeve
+    // Parlak çerçeve
     const edge = g.createLinearGradient(0, 0, 0, CH);
-    edge.addColorStop(0, COLORS[1].main);
-    edge.addColorStop(0.5, '#9b6bff');
+    edge.addColorStop(0, '#7fe9ff');
+    edge.addColorStop(0.5, '#1a8cff');
     edge.addColorStop(1, COLORS[0].main);
-    g.shadowColor = 'rgba(155,107,255,0.9)';
+    g.shadowColor = 'rgba(40,170,255,0.9)';
     g.shadowBlur = 30;
     g.strokeStyle = edge;
     g.lineWidth = 7;
@@ -6859,23 +6864,25 @@
     g.textAlign = 'center';
     g.textBaseline = 'middle';
 
-    // Logo
-    spacing('26px');
-    g.font = `italic 900 40px ${FONT}`;
-    g.shadowColor = COLORS[0].main;
-    g.shadowBlur = 24;
-    g.fillStyle = '#c9fbff';
-    g.fillText('NEON', CW / 2 + 13, 170);
+    // Logo: AQUA (su renginde) + HOCKEY
     spacing('0px');
-    g.font = `italic 900 108px ${FONT}`;
-    const lg = g.createLinearGradient(170, 0, 910, 0);
-    lg.addColorStop(0, COLORS[0].main);
-    lg.addColorStop(0.5, '#9b6bff');
-    lg.addColorStop(1, COLORS[1].main);
-    g.shadowColor = 'rgba(155,107,255,0.8)';
-    g.shadowBlur = 30;
+    g.font = `italic 900 150px ${FONT}`;
+    const lg = g.createLinearGradient(0, 95, 0, 235);
+    lg.addColorStop(0, '#effdff');
+    lg.addColorStop(0.4, '#7fe9ff');
+    lg.addColorStop(0.7, '#19b8ff');
+    lg.addColorStop(1, '#0a5fd6');
+    g.shadowColor = 'rgba(40,190,255,0.85)';
+    g.shadowBlur = 34;
     g.fillStyle = lg;
-    g.fillText('AIR HOCKEY', CW / 2, 262);
+    g.fillText('AQUA', CW / 2, 168);
+    spacing('24px');
+    g.font = `italic 900 44px ${FONT}`;
+    g.shadowColor = 'rgba(80,210,255,0.9)';
+    g.shadowBlur = 22;
+    g.fillStyle = '#d9f8ff';
+    g.fillText('HOCKEY', CW / 2 + 12, 272);
+    spacing('0px');
 
     // Sonuç başlığı
     const titleRgb = r.draw ? '155,107,255' : r.pvp ? COLORS[r.w].rgb : r.win ? COLORS[0].rgb : COLORS[1].rgb;

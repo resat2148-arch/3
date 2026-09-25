@@ -1,6 +1,6 @@
-# Neon Air Hockey
+# Aqua Hockey
 
-Tarayıcıda ve telefonda çalışan, neon temalı bir air hockey oyunu. Kurulum veya derleme gerektirmez: saf HTML, CSS ve JavaScript (Canvas 2D + Web Audio).
+Tarayıcıda ve telefonda çalışan, su stadyumunda geçen bir air hockey oyunu (eski adı: Neon Air Hockey). Kurulum veya derleme gerektirmez: saf HTML, CSS ve JavaScript (Canvas 2D, WebGL ve Web Audio). Oyuncular Su Stadyumu ile başlar; diğer temalar oyun içi altınla açılır.
 
 ## Kurallar
 
@@ -134,7 +134,7 @@ Telefondan oynamak için siteyi **GitHub Pages** üzerinde yayınlayabilirsiniz:
 
 ```bash
 ./tools/build-crazygames.sh
-# çıktı: dist/neon-air-hockey-crazygames.zip (CrazyGames geliştirici portalına yüklenecek dosya)
+# çıktı: dist/aqua-hockey-crazygames.zip (CrazyGames geliştirici portalına yüklenecek dosya)
 ```
 
 Bu sürümde `index.html`'e CrazyGames HTML5 SDK'sı (v3) eklenir, PWA dosyaları (manifest, `sw.js`) çıkarılır. Oyun açılırken SDK başlatılır ve **ilerleme SDK'nın veri modülüne kaydedilir** (altın, açılan temalar, envanter, ayarlar). CrazyGames'in iframe'inde localStorage'a güvenilemediği için bu gereklidir; veri modülü, oyuncu CrazyGames hesabıyla girdiyse ilerlemeyi cihazlar arasında eşitler. Portaldaki gönderim formunda ilerleme kaydı için **"CrazyGames SDK veri modülü"** seçeneği işaretlenmelidir.

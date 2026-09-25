@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # CrazyGames sürümü: index.html'e CrazyGames SDK betiği eklenir (ilerleme SDK veri modülüne
-# kaydedilir), PWA dosyaları (manifest, sw.js) çıkarılır. Çıktı: dist/neon-air-hockey-crazygames.zip
+# kaydedilir), PWA dosyaları (manifest, sw.js) çıkarılır. Çıktı: dist/aqua-hockey-crazygames.zip
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 out=dist/crazygames
-zipfile=dist/neon-air-hockey-crazygames.zip
+zipfile=dist/aqua-hockey-crazygames.zip
 rm -rf "$out" "$zipfile"
 mkdir -p "$out"
 cp -R css js icons "$out"/
@@ -19,5 +19,5 @@ awk '
 ' index.html > "$out/index.html"
 
 grep -q 'crazygames-sdk-v3.js' "$out/index.html" || { echo "SDK betiği eklenemedi" >&2; exit 1; }
-(cd "$out" && zip -rq ../neon-air-hockey-crazygames.zip .)
+(cd "$out" && zip -rq ../aqua-hockey-crazygames.zip .)
 echo "Hazır: $zipfile"
