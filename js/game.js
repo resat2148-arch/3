@@ -8175,6 +8175,7 @@
       render();
     }
     if (game.state !== 'demo') updateSkillUI();
+    syncGameplay();
     requestAnimationFrame(frame);
   }
 
@@ -8207,6 +8208,24 @@
       crazySdk.game.addSettingsChangeListener(applyPlatformMute);
     } catch (e) { /* SDK bu özelliği sunmuyorsa yok say */ }
   }
+
+  // CrazyGames: oyuncu fiilen oynarken (maç, geri sayım, gol kutlaması) gameplayStart, oyun
+  // durunca (duraklatma, maç içi mağaza, maç sonu, ana menü, sekme gizlenince) gameplayStop
+  // bildirilir. Durum her karede oyunun durumundan türetilir; SDK'ya yalnızca değişimde çağrı yapılır.
+  const gameplay = { active: false };
+  function syncGameplay() {
+    if (!crazySdk || !crazySdk.game) return;
+    const st = game.state;
+    const active = (st === 'play' || st === 'countdown' || st === 'goal') && !document.hidden;
+    if (active === gameplay.active) return;
+    gameplay.active = active;
+    try {
+      if (active) crazySdk.game.gameplayStart();
+      else crazySdk.game.gameplayStop();
+    } catch (e) { /* yok say */ }
+  }
+  // Gizli sekmede kare döngüsü durur: durdurma bildirimi hemen gitsin
+  document.addEventListener('visibilitychange', syncGameplay);
 
   applyLang();
   applyTheme();

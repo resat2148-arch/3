@@ -139,6 +139,8 @@ Telefondan oynamak için siteyi **GitHub Pages** üzerinde yayınlayabilirsiniz:
 
 Bu sürümde `index.html`'e CrazyGames HTML5 SDK'sı (v3) eklenir, PWA dosyaları (manifest, `sw.js`) çıkarılır ve maç sonundaki **sosyal paylaşım düğmeleri gizlenir** (CrazyGames, oyunun başka bir oynanabilir web sürümüne götüren bağlantılara izin vermez; skor kartı görseli kalır). Kendi sitendeki sürümde paylaşım düğmeleri durur. Oyun açılırken SDK başlatılır ve **ilerleme SDK'nın veri modülüne kaydedilir** (altın, açılan temalar, envanter, ayarlar). CrazyGames'in iframe'inde localStorage'a güvenilemediği için bu gereklidir; veri modülü, oyuncu CrazyGames hesabıyla girdiyse ilerlemeyi cihazlar arasında eşitler. Portaldaki gönderim formunda ilerleme kaydı için **"CrazyGames SDK veri modülü"** seçeneği işaretlenmelidir.
 
+Oyuncu fiilen oynarken (maç, geri sayım, gol kutlaması) SDK'ya `gameplayStart`, oyun durduğunda (duraklatma, maç içi mağaza, maç sonu, ana menü, sekme gizlenince) `gameplayStop` bildirilir; bildirim yalnızca durum değiştiğinde gönderilir.
+
 CrazyGames'in **ses kapatma ayarı** (SDK `game.settings.muteAudio`) desteklenir: açılışta okunur ve değişiklikleri dinlenir; platform sesi kapattığında oyun sessizdir ve oyun içi ses düğmesi, kaydırıcı ya da kısayollar sesi geri açamaz.
 
 SDK yüklenemezse, başlatılamazsa ya da 6 saniye içinde yanıt vermezse oyun yine açılır ve yerel kayıtla (localStorage) çalışır. Kendi sitende yayınlanan normal sürüm SDK'yı yüklemez ve localStorage kullanır.
