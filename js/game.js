@@ -56,6 +56,7 @@
     mode: store.get('mode', 'ai'),
     difficulty: store.get('difficulty', 'medium'),
     sound: store.get('sound', true),
+    volume: clamp(Number(store.get('volume', 1)) || 0, 0, 1),
   };
 
   const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -94,7 +95,11 @@
       this.bus.connect(comp);
       comp.connect(makeup);
       makeup.connect(limiter);
-      limiter.connect(c.destination);
+      // Oyuncunun ses seviyesi: sınırlayıcıdan sonra, en sonda uygulanır
+      this.master = c.createGain();
+      this.master.gain.value = this.level();
+      limiter.connect(this.master);
+      this.master.connect(c.destination);
 
       // Yankı (oda hissi): üretilmiş dürtü yanıtıyla evrişim
       const len = Math.floor(c.sampleRate * 1.3);
@@ -116,8 +121,28 @@
       for (let i = 0; i < nlen; i++) d[i] = Math.random() * 2 - 1;
       this.noiseBuf = buf;
     },
+    // Kaydırıcı değeri kulağa doğrusal gelsin diye karesi alınır (%50 ≈ yarı yükseklik hissi)
+    level() {
+      return settings.sound ? settings.volume * settings.volume : 0;
+    },
+    applyVolume() {
+      if (!this.master) return;
+      const t = this.ctx.currentTime;
+      this.master.gain.cancelScheduledValues(t);
+      this.master.gain.setTargetAtTime(this.level(), t, 0.03);
+    },
+    // Kaydırırken seviyeyi duyurmak için kısa örnek vuruş
+    preview() {
+      if (!this.ctx || !settings.sound || settings.volume <= 0) return;
+      const t = this.ctx.currentTime;
+      if (this.lastPreview !== undefined && t - this.lastPreview < 0.12) return;
+      this.lastPreview = t;
+      this.tone({ f0: 300, f1: 70, dur: 0.14, vol: 1 });
+      this.tone({ f0: 1000, f1: 400, dur: 0.08, type: 'triangle', vol: 0.55 });
+      this.noise({ dur: 0.035, vol: 0.8, type: 'highpass', freq: 2800, q: 0.7 });
+    },
     ok(name, gap) {
-      if (!this.ctx || !settings.sound || game.state === 'demo') return false;
+      if (!this.ctx || !settings.sound || settings.volume <= 0 || game.state === 'demo') return false;
       const t = this.ctx.currentTime;
       if (this.last[name] !== undefined && t - this.last[name] < gap) return false;
       this.last[name] = t;
@@ -292,7 +317,7 @@
       this.tone({ f0: 77.78, dur: 1.1, vol: 0.5, attack: 0.02 });
     },
     finale(win) {
-      if (!this.ctx || !settings.sound) return;
+      if (!this.ctx || !settings.sound || settings.volume <= 0) return;
       const seq = win
         ? [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5, 1318.5]
         : [392, 369.99, 349.23, 329.63, 261.63];
@@ -1343,7 +1368,7 @@
 
   // iOS: kaydırma / yakınlaştırma hareketlerini engelle
   document.addEventListener('touchmove', (e) => {
-    if (!e.target.closest || !e.target.closest('.overlay')) e.preventDefault();
+    if (!e.target.closest || !e.target.closest('.overlay, .vol-pop')) e.preventDefault();
   }, { passive: false });
   document.addEventListener('gesturestart', (e) => e.preventDefault());
   document.addEventListener('dblclick', (e) => e.preventDefault());
@@ -1351,12 +1376,25 @@
   const KEY_MOVE = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD'];
 
   window.addEventListener('keydown', (e) => {
+    if (e.code === 'Escape' && !volPop.classList.contains('hidden')) {
+      closeVolume();
+      return;
+    }
     if (e.code === 'Escape' || e.code === 'KeyP') {
       togglePause();
       return;
     }
+    if (e.code === 'Minus' || e.code === 'NumpadSubtract' || e.code === 'Equal' || e.code === 'NumpadAdd') {
+      if (e.target && e.target.id === 'volRange') return; // kaydırıcı kendi tuşlarını işler
+      const up = e.code === 'Equal' || e.code === 'NumpadAdd';
+      const base = settings.sound ? settings.volume : 0;
+      setVolume(Math.round((base + (up ? 0.1 : -0.1)) * 10) / 10, true);
+      toast(settings.sound && settings.volume > 0 ? `Ses: %${Math.round(settings.volume * 100)}` : 'Ses kapalı');
+      return;
+    }
     if (e.code === 'KeyM') {
       toggleSound();
+      toast(settings.sound ? `Ses açık (%${Math.round(settings.volume * 100)})` : 'Ses kapalı');
       return;
     }
     if ((e.code === 'Enter' || e.code === 'Space') && menuEl.classList.contains('show')) {
@@ -2007,12 +2045,74 @@
     last = performance.now();
   }
 
+  // ---------------------------------------------------------------------------
+  // Ses seviyesi
+  // ---------------------------------------------------------------------------
+  const volPop = $('volPop'), volRange = $('volRange'), volPct = $('volPct'), muteBtn = $('muteBtn');
+
+  function syncVolumeUI() {
+    const pct = Math.round(settings.volume * 100);
+    const on = settings.sound && pct > 0;
+    volRange.value = String(pct);
+    volRange.style.setProperty('--v', pct + '%');
+    volRange.setAttribute('aria-valuetext', on ? `%${pct}` : 'Kapalı');
+    volPct.textContent = on ? `%${pct}` : 'Kapalı';
+    volPop.classList.toggle('off', !on);
+    soundBtn.classList.toggle('muted', !on);
+    soundBtn.classList.toggle('low', on && pct < 45);
+    muteBtn.classList.toggle('muted', !on);
+    muteBtn.setAttribute('aria-label', on ? 'Sesi kapat' : 'Sesi aç');
+    muteBtn.title = on ? 'Sesi kapat (M)' : 'Sesi aç (M)';
+  }
+
+  function setVolume(v, preview) {
+    settings.volume = clamp(v, 0, 1);
+    // Kaydırıcıyı sıfırdan yukarı çekmek sesi yeniden açar
+    if (settings.volume > 0 && !settings.sound) {
+      settings.sound = true;
+      store.set('sound', true);
+    }
+    store.set('volume', settings.volume);
+    Sound.init();
+    Sound.applyVolume();
+    syncVolumeUI();
+    if (preview) Sound.preview();
+  }
+
   function toggleSound() {
     settings.sound = !settings.sound;
+    if (settings.sound && settings.volume <= 0) {
+      settings.volume = 0.5;
+      store.set('volume', settings.volume);
+    }
     store.set('sound', settings.sound);
-    soundBtn.classList.toggle('muted', !settings.sound);
     if (settings.sound) Sound.init();
+    Sound.applyVolume();
+    syncVolumeUI();
   }
+
+  function openVolume() {
+    volPop.classList.remove('hidden');
+    soundBtn.setAttribute('aria-expanded', 'true');
+    syncVolumeUI();
+  }
+
+  function closeVolume() {
+    volPop.classList.add('hidden');
+    soundBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  volRange.addEventListener('input', () => setVolume(Number(volRange.value) / 100, true));
+  muteBtn.addEventListener('click', () => {
+    toggleSound();
+    if (settings.sound) Sound.preview();
+  });
+  // Panel dışına dokununca kapat (oyun girdisini engellemeden)
+  document.addEventListener('pointerdown', (e) => {
+    if (volPop.classList.contains('hidden')) return;
+    if (e.target.closest && (e.target.closest('#volPop') || e.target.closest('#soundBtn'))) return;
+    closeVolume();
+  }, true);
 
   // Menü seçimleri
   function syncMenu() {
@@ -2030,7 +2130,7 @@
         : '<b class="c">Mavi</b>: fare veya ok tuşları · <b class="p">Pembe</b>: W A S D<br>Dokunmatik ekranda iki parmakla da oynanır.')
       : (touch
         ? 'Raketi parmağınla sürükle, pakı rakibin kalesine gönder!'
-        : 'Raketi <b>fare</b> (veya ok tuşları) ile yönet. <b>Esc</b> duraklatır, <b>M</b> sesi kapatır.');
+        : 'Raketi <b>fare</b> (veya ok tuşları) ile yönet. <b>Esc</b> duraklatır, <b>M</b> sesi kapatır, <b>−</b>/<b>+</b> ses seviyesini değiştirir.');
   }
 
   document.querySelectorAll('.seg').forEach((seg) => {
@@ -2051,8 +2151,12 @@
   $('againBtn').addEventListener('click', startMatch);
   $('menuBtn').addEventListener('click', startDemo);
   pauseBtn.addEventListener('click', togglePause);
-  soundBtn.addEventListener('click', toggleSound);
-  soundBtn.classList.toggle('muted', !settings.sound);
+  soundBtn.addEventListener('click', () => {
+    Sound.init();
+    if (volPop.classList.contains('hidden')) openVolume();
+    else closeVolume();
+  });
+  syncVolumeUI();
 
   const fsSupported = document.fullscreenEnabled || document.webkitFullscreenEnabled;
   if (fsSupported) {

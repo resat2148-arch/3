@@ -14,7 +14,7 @@ Tarayıcıda ve telefonda çalışan, neon temalı bir air hockey oyunu. Kurulum
 - **İki oyuncu**: aynı cihazda. Telefon/tablette iki kişi aynı anda dokunmatikle oynar (çoklu dokunma), bilgisayarda biri fare/ok tuşları, diğeri W A S D ile.
 - **Görseller**: neon masa, hava delikleri, parıldayan raketler, hıza göre renk değiştiren pak izi, vuruş kıvılcımları, duvar dalgaları, gol patlaması, ekran sarsıntısı, konfeti ve menünün arkasında kendi kendine oynayan bir tanıtım maçı.
 - **Skor paylaşımı**: maç sonunda sonuç X, WhatsApp, Telegram ve Facebook'ta paylaşılabilir ya da metin olarak kopyalanabilir. Oyun ayrıca 1080×1350 boyutunda neon bir skor kartı görseli üretir. Telefonda "Paylaş" düğmesi bu görseli sistemin paylaşım menüsüyle (Instagram, WhatsApp vb.) gönderir, bilgisayarda görsel indirilebilir.
-- **Ses**: tüm efektler Web Audio ile anlık üretilir, ses dosyası yoktur. Dokunmatik cihazlarda titreşim geri bildirimi verir.
+- **Ses**: tüm efektler Web Audio ile anlık üretilir, ses dosyası yoktur. Sağ üstteki hoparlör düğmesi ses seviyesi panelini açar (kaydırıcı + sessize alma); ayar tarayıcıda saklanır. Dokunmatik cihazlarda titreşim geri bildirimi verir.
 - **Mobil uyumlu**: her ekrana ölçeklenir, Retina ekranlarda net görünür, çentikli ekranlara uyum sağlar, ana ekrana eklenebilir (PWA) ve çevrimdışı çalışır.
 
 ## Kontroller
@@ -24,7 +24,8 @@ Tarayıcıda ve telefonda çalışan, neon temalı bir air hockey oyunu. Kurulum
 | Mavi (alt) | Fare veya ok tuşları | Alt yarıda parmakla sürükle |
 | Pembe (üst, 2 oyunculu) | W A S D | Üst yarıda parmakla sürükle |
 | Duraklat | `Esc` / `P` | ⏸ düğmesi |
-| Ses aç/kapa | `M` | 🔊 düğmesi |
+| Ses aç/kapa | `M` | 🔊 düğmesi → sessiz |
+| Ses seviyesi | `−` / `+` veya 🔊 düğmesi | 🔊 düğmesi → kaydırıcı |
 
 ## Çalıştırma
 

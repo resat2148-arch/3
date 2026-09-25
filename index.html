@@ -41,8 +41,9 @@
       <button id="fsBtn" class="hud-btn hidden" aria-label="Tam ekran" title="Tam ekran">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
       </button>
-      <button id="soundBtn" class="hud-btn" aria-label="Ses" title="Ses (M)">
+      <button id="soundBtn" class="hud-btn" aria-label="Ses ayarı" title="Ses ayarı" aria-haspopup="dialog" aria-expanded="false" aria-controls="volPop">
         <svg class="on" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke-width="2" stroke-linecap="round"/></svg>
+        <svg class="low" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7" fill="none" stroke-width="2" stroke-linecap="round"/></svg>
         <svg class="off" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16.5 9.5l5 5M21.5 9.5l-5 5" fill="none" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
     </div>
@@ -159,6 +160,22 @@
   </section>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- Ses seviyesi paneli -->
+  <div id="volPop" class="vol-pop hidden" role="dialog" aria-label="Ses ayarı">
+    <div class="vol-head">
+      <span>Ses</span>
+      <b id="volPct">100%</b>
+    </div>
+    <div class="vol-row">
+      <button id="muteBtn" class="vol-mute" type="button" aria-label="Sesi kapat">
+        <svg class="on" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke-width="2" stroke-linecap="round"/></svg>
+        <svg class="off" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16.5 9.5l5 5M21.5 9.5l-5 5" fill="none" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <input id="volRange" class="vol-range" type="range" min="0" max="100" step="1" value="100" aria-label="Ses seviyesi">
+    </div>
+    <div class="vol-hint">Klavye: <b>−</b> / <b>+</b> seviye, <b>M</b> sessiz</div>
+  </div>
 
   <div id="rotateHint">Daha iyi deneyim için telefonunu dik tut</div>
 
