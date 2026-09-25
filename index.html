@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#05060f">
+  <meta name="description" content="Neon Air Hockey — tarayıcıda ve telefonda oynanabilen neon temalı air hockey oyunu.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Air Hockey">
+  <title>Neon Air Hockey</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,500;0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="bg" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="bg-grid"></div>
+  </div>
+
+  <main id="stage">
+    <canvas id="game" aria-label="Air hockey masası"></canvas>
+  </main>
+
+  <div class="hud">
+    <button id="pauseBtn" class="hud-btn hidden" aria-label="Duraklat" title="Duraklat (Esc)">
+      <svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg>
+    </button>
+    <div class="hud-right">
+      <button id="fsBtn" class="hud-btn hidden" aria-label="Tam ekran" title="Tam ekran">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      </button>
+      <button id="soundBtn" class="hud-btn" aria-label="Ses" title="Ses (M)">
+        <svg class="on" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke-width="2" stroke-linecap="round"/></svg>
+        <svg class="off" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16.5 9.5l5 5M21.5 9.5l-5 5" fill="none" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Ana menü -->
+  <section id="menu" class="overlay show">
+    <div class="panel">
+      <div class="logo">
+        <span class="l1">NEON</span>
+        <span class="l2">AIR HOCKEY</span>
+        <div class="logo-rail"><i></i></div>
+      </div>
+
+      <div class="field">
+        <div class="label">Mod</div>
+        <div class="seg" data-group="mode">
+          <button data-value="ai">Tek Oyuncu</button>
+          <button data-value="pvp">İki Oyuncu</button>
+        </div>
+      </div>
+
+      <div class="field" id="diffField">
+        <div class="label">Zorluk</div>
+        <div class="seg" data-group="difficulty">
+          <button data-value="easy">Kolay</button>
+          <button data-value="medium">Orta</button>
+          <button data-value="hard">Zor</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="label">Kaç golde biter?</div>
+        <div class="seg" data-group="target">
+          <button data-value="5">5</button>
+          <button data-value="7">7</button>
+          <button data-value="10">10</button>
+        </div>
+      </div>
+
+      <button id="startBtn" class="btn">OYNA</button>
+
+      <p class="hint" id="hint"></p>
+    </div>
+  </section>
+
+  <!-- Duraklatma -->
+  <section id="pauseMenu" class="overlay">
+    <div class="panel small">
+      <h2 class="title">DURAKLATILDI</h2>
+      <button id="resumeBtn" class="btn">DEVAM</button>
+      <button id="restartBtn" class="btn ghost">Yeniden Başla</button>
+      <button id="quitBtn" class="btn ghost">Ana Menü</button>
+    </div>
+  </section>
+
+  <!-- Maç sonu -->
+  <section id="overMenu" class="overlay">
+    <div class="panel small">
+      <div id="resultIcon" class="result-icon"></div>
+      <h2 id="resultTitle" class="title">KAZANDIN!</h2>
+      <div class="final">
+        <span class="s0" id="finalP1">0</span>
+        <span class="dash">–</span>
+        <span class="s1" id="finalP2">0</span>
+      </div>
+      <p id="resultSub" class="sub"></p>
+      <button id="againBtn" class="btn">TEKRAR OYNA</button>
+      <button id="menuBtn" class="btn ghost">Ana Menü</button>
+    </div>
+  </section>
+
+  <div id="rotateHint">Daha iyi deneyim için telefonunu dik tut</div>
+
+  <script src="js/game.js"></script>
+</body>
+</html>
