@@ -103,6 +103,7 @@ Menüdeki **Tema** seçiminden ya da Mağaza'nın Temalar sekmesinden değiştir
 - **Görseller**: neon masa, hava delikleri, parıldayan raketler, hıza göre renk değiştiren pak izi, vuruş kıvılcımları, duvar dalgaları, gol patlaması, ekran sarsıntısı, konfeti ve menünün arkasında kendi kendine oynayan bir tanıtım maçı.
 - **Skor paylaşımı**: maç sonunda sonuç X, WhatsApp, Telegram ve Facebook'ta paylaşılabilir ya da metin olarak kopyalanabilir. Oyun ayrıca 1080×1350 boyutunda neon bir skor kartı görseli üretir. Telefonda "Paylaş" düğmesi bu görseli sistemin paylaşım menüsüyle (Instagram, WhatsApp vb.) gönderir, bilgisayarda görsel indirilebilir.
 - **Ses**: tüm efektler Web Audio ile anlık üretilir, ses dosyası yoktur. Sağ üstteki hoparlör düğmesi ses seviyesi panelini açar (kaydırıcı + sessize alma); ayar tarayıcıda saklanır. Dokunmatik cihazlarda titreşim geri bildirimi verir.
+- **Dil**: Türkçe ve İngilizce (English). Menüdeki **Dil · Language** seçiminden değiştirilir ve cihazda saklanır; ilk açılışta tarayıcının diline göre seçilir (Türkçe tarayıcıda Türkçe, diğerlerinde İngilizce). Menüler, oyun içi yazılar, mağaza, paylaşım metinleri ve skor kartı görseli seçili dilde gösterilir. Metinler `js/game.js` içindeki `STR` sözlüğünde, HTML'deki sabit metinler `data-i18n` öznitelikleriyle tanımlıdır.
 - **Mobil uyumlu**: her ekrana ölçeklenir, Retina ekranlarda net görünür, çentikli ekranlara uyum sağlar, ana ekrana eklenebilir (PWA) ve çevrimdışı çalışır.
 
 ## Kontroller

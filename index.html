@@ -28,42 +28,42 @@
   <main id="stage">
     <div class="board">
       <canvas id="water" aria-hidden="true"></canvas>
-      <canvas id="game" aria-label="Air hockey masası"></canvas>
+      <canvas id="game" aria-label="Air hockey masası" data-i18n-aria="board.aria"></canvas>
     </div>
   </main>
 
   <!-- Skill düğmeleri (alt: Mavi, üst: Pembe — iki oyunculu modda) -->
-  <div id="skillBar0" class="skillbar hidden" data-player="0" role="group" aria-label="Mavi oyuncunun skilleri">
-    <button class="skill-btn" data-skill="grow" type="button" aria-label="Dev Kale: rakibin kalesi 5 saniye büyür">
+  <div id="skillBar0" class="skillbar hidden" data-player="0" role="group" aria-label="Mavi oyuncunun skilleri" data-i18n-aria="sk.bar0">
+    <button class="skill-btn" data-skill="grow" type="button" aria-label="Dev Kale: rakibin kalesi 5 saniye büyür" data-i18n-aria="sk.growAria">
       <span class="skill-ico"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6v12M15 6v12M2 12h4M4 10l-2 2 2 2M22 12h-4M20 10l2 2-2 2"/></svg></span></span>
       <span class="skill-count" aria-hidden="true"></span>
-      <span class="skill-text"><b>Dev Kale</b><small data-role="sub">Rakip kale büyür</small></span>
+      <span class="skill-text"><b data-i18n="sk.growL">Dev Kale</b><small data-role="sub">Rakip kale büyür</small></span>
       <kbd>1</kbd>
     </button>
-    <button class="skill-btn" data-skill="shrink" type="button" aria-label="Kale Kilidi: kendi kalen 5 saniye küçülür">
+    <button class="skill-btn" data-skill="shrink" type="button" aria-label="Kale Kilidi: kendi kalen 5 saniye küçülür" data-i18n-aria="sk.shrinkAria">
       <span class="skill-ico"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12h6"/></svg></span></span>
       <span class="skill-count" aria-hidden="true"></span>
-      <span class="skill-text"><b>Kale Kilidi</b><small data-role="sub">Kalen küçülür</small></span>
+      <span class="skill-text"><b data-i18n="sk.shrinkL">Kale Kilidi</b><small data-role="sub">Kalen küçülür</small></span>
       <kbd>2</kbd>
     </button>
   </div>
-  <div id="skillBar1" class="skillbar top hidden" data-player="1" role="group" aria-label="Pembe oyuncunun skilleri">
-    <button class="skill-btn" data-skill="grow" type="button" aria-label="Dev Kale: rakibin kalesi 5 saniye büyür">
+  <div id="skillBar1" class="skillbar top hidden" data-player="1" role="group" aria-label="Pembe oyuncunun skilleri" data-i18n-aria="sk.bar1">
+    <button class="skill-btn" data-skill="grow" type="button" aria-label="Dev Kale: rakibin kalesi 5 saniye büyür" data-i18n-aria="sk.growAria">
       <span class="skill-ico"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6v12M15 6v12M2 12h4M4 10l-2 2 2 2M22 12h-4M20 10l2 2-2 2"/></svg></span></span>
       <span class="skill-count" aria-hidden="true"></span>
-      <span class="skill-text"><b>Dev Kale</b><small data-role="sub">Rakip kale büyür</small></span>
+      <span class="skill-text"><b data-i18n="sk.growL">Dev Kale</b><small data-role="sub">Rakip kale büyür</small></span>
       <kbd>Q</kbd>
     </button>
-    <button class="skill-btn" data-skill="shrink" type="button" aria-label="Kale Kilidi: kendi kalen 5 saniye küçülür">
+    <button class="skill-btn" data-skill="shrink" type="button" aria-label="Kale Kilidi: kendi kalen 5 saniye küçülür" data-i18n-aria="sk.shrinkAria">
       <span class="skill-ico"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12h6"/></svg></span></span>
       <span class="skill-count" aria-hidden="true"></span>
-      <span class="skill-text"><b>Kale Kilidi</b><small data-role="sub">Kalen küçülür</small></span>
+      <span class="skill-text"><b data-i18n="sk.shrinkL">Kale Kilidi</b><small data-role="sub">Kalen küçülür</small></span>
       <kbd>E</kbd>
     </button>
   </div>
 
   <div class="hud">
-    <button id="pauseBtn" class="hud-btn hidden" aria-label="Duraklat" title="Duraklat (Esc)">
+    <button id="pauseBtn" class="hud-btn hidden" aria-label="Duraklat" title="Duraklat (Esc)" data-i18n-aria="hud.pause" data-i18n-title="hud.pauseT">
       <svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg>
     </button>
     <div id="clock" class="clock hidden" aria-live="off">
@@ -71,10 +71,10 @@
       <span id="clockTag" class="clock-tag"></span>
     </div>
     <div class="hud-right">
-      <button id="fsBtn" class="hud-btn hidden" aria-label="Tam ekran" title="Tam ekran">
+      <button id="fsBtn" class="hud-btn hidden" aria-label="Tam ekran" title="Tam ekran" data-i18n-aria="hud.fs" data-i18n-title="hud.fs">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
       </button>
-      <button id="soundBtn" class="hud-btn" aria-label="Ses ayarı" title="Ses ayarı" aria-haspopup="dialog" aria-expanded="false" aria-controls="volPop">
+      <button id="soundBtn" class="hud-btn" aria-label="Ses ayarı" title="Ses ayarı" data-i18n-aria="hud.sound" data-i18n-title="hud.sound" aria-haspopup="dialog" aria-expanded="false" aria-controls="volPop">
         <svg class="on" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke-width="2" stroke-linecap="round"/></svg>
         <svg class="low" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7" fill="none" stroke-width="2" stroke-linecap="round"/></svg>
         <svg class="off" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16.5 9.5l5 5M21.5 9.5l-5 5" fill="none" stroke-width="2" stroke-linecap="round"/></svg>
@@ -92,20 +92,20 @@
       </div>
 
       <div class="wallet-row">
-        <div class="wallet" title="Altın bakiyen"><i class="coin" aria-hidden="true"></i><b id="coinMenu" class="coin-val">0</b></div>
-        <button id="earnBtn" class="earn-btn" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span>Reklam izle</span><b>+50</b></button>
+        <div class="wallet" title="Altın bakiyen" data-i18n-title="m.wallet"><i class="coin" aria-hidden="true"></i><b id="coinMenu" class="coin-val">0</b></div>
+        <button id="earnBtn" class="earn-btn" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span data-i18n="ad.watch">Reklam izle</span><b>+50</b></button>
       </div>
 
       <div class="field">
-        <div class="label">Mod</div>
+        <div class="label" data-i18n="m.mode">Mod</div>
         <div class="seg" data-group="mode">
-          <button data-value="ai">Tek Oyuncu</button>
-          <button data-value="pvp">İki Oyuncu</button>
+          <button data-value="ai" data-i18n="m.ai">Tek Oyuncu</button>
+          <button data-value="pvp" data-i18n="m.pvp">İki Oyuncu</button>
         </div>
       </div>
 
       <div class="field">
-        <div class="label">Tema</div>
+        <div class="label" data-i18n="m.theme">Tema</div>
         <div class="seg" data-group="theme">
           <button data-value="neon">Neon</button>
           <button data-value="water">Su Stadyumu</button>
@@ -119,24 +119,26 @@
       </div>
 
       <div class="field" id="diffField">
-        <div class="label">Zorluk</div>
+        <div class="label" data-i18n="m.diff">Zorluk</div>
         <div class="seg" data-group="difficulty">
-          <button data-value="easy">Kolay</button>
-          <button data-value="medium">Orta</button>
-          <button data-value="hard">Zor</button>
+          <button data-value="easy" data-i18n="diff.easy">Kolay</button>
+          <button data-value="medium" data-i18n="diff.medium">Orta</button>
+          <button data-value="hard" data-i18n="diff.hard">Zor</button>
         </div>
       </div>
 
-      <div class="skills-info">
-        <div class="si grow"><b>Dev Kale</b><span>Rakibin kalesi 5 sn büyür</span></div>
-        <div class="si shrink"><b>Kale Kilidi</b><span>Kendi kalen 5 sn küçülür</span></div>
+      <div class="field">
+        <div class="label" data-i18n="m.lang">Dil · Language</div>
+        <div class="seg" data-group="lang">
+          <button data-value="tr" lang="tr">Türkçe</button>
+          <button data-value="en" lang="en">English</button>
+        </div>
       </div>
-      <p class="si-note">Her maçta her skillden <b>1 ücretsiz</b> hak · fazlası mağazada altınla</p>
 
-      <button id="startBtn" class="btn">OYNA</button>
+      <button id="startBtn" class="btn" data-i18n="m.play">OYNA</button>
       <button id="menuStoreBtn" class="btn ghost store-btn" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11h10.2L20 8H6.2"/><circle cx="9.5" cy="19.5" r="1.4"/><circle cx="16.5" cy="19.5" r="1.4"/></svg>
-        Mağaza
+        <span data-i18n="m.store">Mağaza</span>
         <small id="menuInv"></small>
       </button>
 
@@ -147,10 +149,10 @@
   <!-- Duraklatma -->
   <section id="pauseMenu" class="overlay">
     <div class="panel small">
-      <h2 class="title">DURAKLATILDI</h2>
-      <button id="resumeBtn" class="btn">DEVAM</button>
-      <button id="restartBtn" class="btn ghost">Yeniden Başla</button>
-      <button id="quitBtn" class="btn ghost">Ana Menü</button>
+      <h2 class="title" data-i18n="p.title">DURAKLATILDI</h2>
+      <button id="resumeBtn" class="btn" data-i18n="p.resume">DEVAM</button>
+      <button id="restartBtn" class="btn ghost" data-i18n="p.restart">Yeniden Başla</button>
+      <button id="quitBtn" class="btn ghost" data-i18n="p.menu">Ana Menü</button>
     </div>
   </section>
 
@@ -170,125 +172,125 @@
         <div class="reward-main"><i class="coin" aria-hidden="true"></i><b id="rewardAmt">+0</b></div>
         <div id="rewardWhy" class="reward-why"></div>
         <button id="doubleBtn" class="earn-btn wide" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span>Reklam izle, ödülü 2 katına çıkar</span></button>
-        <div class="reward-bal">Bakiye <i class="coin" aria-hidden="true"></i><b id="coinOver" class="coin-val">0</b></div>
+        <div class="reward-bal"><span data-i18n="r.balance">Bakiye</span> <i class="coin" aria-hidden="true"></i><b id="coinOver" class="coin-val">0</b></div>
       </div>
 
       <div class="share">
-        <div class="share-label">Skorunu paylaş</div>
+        <div class="share-label" data-i18n="sh.label">Skorunu paylaş</div>
         <div class="share-row" id="shareRow">
-          <button id="shareNative" aria-label="Paylaş" title="Paylaş" class="share-btn native hidden" type="button">
+          <button id="shareNative" aria-label="Paylaş" title="Paylaş" data-i18n-aria="sh.native" data-i18n-title="sh.native" class="share-btn native hidden" type="button">
             <i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></i>
           </button>
-          <a id="shareX" aria-label="X'te paylaş" title="X'te paylaş" class="share-btn x" target="_blank" rel="noopener noreferrer" href="#">
+          <a id="shareX" aria-label="X'te paylaş" title="X'te paylaş" data-i18n-aria="sh.x" data-i18n-title="sh.x" class="share-btn x" target="_blank" rel="noopener noreferrer" href="#">
             <i><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 1.2h3.7l-8 9.2L24 22.8h-7.4l-5.8-7.6-6.6 7.6H.5l8.6-9.8L0 1.2h7.6l5.2 6.9zm-1.3 19.4h2L6.5 3.2H4.3z"/></svg></i>
           </a>
-          <a id="shareWa" aria-label="WhatsApp'ta paylaş" title="WhatsApp'ta paylaş" class="share-btn wa" target="_blank" rel="noopener noreferrer" href="#">
+          <a id="shareWa" aria-label="WhatsApp'ta paylaş" title="WhatsApp'ta paylaş" data-i18n-aria="sh.wa" data-i18n-title="sh.wa" class="share-btn wa" target="_blank" rel="noopener noreferrer" href="#">
             <i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3a9 9 0 0 0-7.7 13.6L3 21l4.5-1.2A9 9 0 1 0 12 3z"/><path d="M9 8.5c0 3.6 2.9 6.5 6.5 6.5l1-1.6-2-1-1 1a4.6 4.6 0 0 1-2.4-2.4l1-1-1-2z" fill="currentColor" stroke-width="1"/></svg></i>
           </a>
-          <a id="shareTg" aria-label="Telegram'da paylaş" title="Telegram'da paylaş" class="share-btn tg" target="_blank" rel="noopener noreferrer" href="#">
+          <a id="shareTg" aria-label="Telegram'da paylaş" title="Telegram'da paylaş" data-i18n-aria="sh.tg" data-i18n-title="sh.tg" class="share-btn tg" target="_blank" rel="noopener noreferrer" href="#">
             <i><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.4 3.6 2.9 10.8c-1.1.4-1.1 1.2 0 1.5l4.6 1.5 1.8 5.4c.2.7.6.8 1.1.4l2.6-2.2 5 3.7c.8.5 1.4.2 1.6-.8l3.1-14.6c.3-1.3-.5-1.9-1.3-1.5zM9.6 14.3l8.2-7.5-6.4 8.5-.3 3.2z"/></svg></i>
           </a>
-          <a id="shareFb" aria-label="Facebook'ta paylaş" title="Facebook'ta paylaş" class="share-btn fb" target="_blank" rel="noopener noreferrer" href="#">
+          <a id="shareFb" aria-label="Facebook'ta paylaş" title="Facebook'ta paylaş" data-i18n-aria="sh.fb" data-i18n-title="sh.fb" class="share-btn fb" target="_blank" rel="noopener noreferrer" href="#">
             <i><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.8c0-.9.3-1.5 1.6-1.5h1.7V4.4c-.3 0-1.3-.1-2.5-.1-2.5 0-4.1 1.5-4.1 4.2v2.3H7.4V14h2.8v8z"/></svg></i>
           </a>
-          <button id="shareCopy" aria-label="Metni kopyala" title="Metni kopyala" class="share-btn copy" type="button">
+          <button id="shareCopy" aria-label="Metni kopyala" title="Metni kopyala" data-i18n-aria="sh.copy" data-i18n-title="sh.copy" class="share-btn copy" type="button">
             <i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg></i>
           </button>
         </div>
         <button id="cardBtn" class="card-link" type="button">
           <img id="cardThumb" alt="">
-          <span><b>Skor kartı</b><small>Görseli gör, kaydet veya paylaş</small></span>
+          <span><b data-i18n="sh.card">Skor kartı</b><small data-i18n="sh.cardSub">Görseli gör, kaydet veya paylaş</small></span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
         </button>
       </div>
 
-      <button id="againBtn" class="btn">TEKRAR OYNA</button>
-      <button id="overStoreBtn" class="btn ghost" type="button">Mağaza</button>
-      <button id="menuBtn" class="btn ghost">Ana Menü</button>
+      <button id="againBtn" class="btn" data-i18n="r.again">TEKRAR OYNA</button>
+      <button id="overStoreBtn" class="btn ghost" type="button" data-i18n="m.store">Mağaza</button>
+      <button id="menuBtn" class="btn ghost" data-i18n="p.menu">Ana Menü</button>
     </div>
   </section>
 
   <!-- Skor kartı -->
   <section id="cardMenu" class="overlay">
     <div class="panel small card-panel">
-      <img id="cardImg" class="card-img" alt="Maç sonu skor kartı">
+      <img id="cardImg" class="card-img" alt="Maç sonu skor kartı" data-i18n-alt="sh.cardAlt">
       <p id="cardHint" class="sub">Kaydetmek için görsele basılı tut.</p>
-      <button id="cardShare" class="btn hidden" type="button">GÖRSELİ PAYLAŞ</button>
-      <button id="cardSave" class="btn ghost hidden" type="button">Görseli kaydet</button>
-      <button id="cardClose" class="btn ghost" type="button">Geri</button>
+      <button id="cardShare" class="btn hidden" type="button" data-i18n="sh.shareImg">GÖRSELİ PAYLAŞ</button>
+      <button id="cardSave" class="btn ghost hidden" type="button" data-i18n="sh.saveImg">Görseli kaydet</button>
+      <button id="cardClose" class="btn ghost" type="button" data-i18n="sh.back">Geri</button>
     </div>
   </section>
 
   <!-- Mağaza: altınla alınan her şey (temalar ve yetenekler) -->
-  <section id="storeMenu" class="overlay" aria-label="Mağaza">
+  <section id="storeMenu" class="overlay" aria-label="Mağaza" data-i18n-aria="m.store">
     <div class="panel small store-panel">
       <div class="store-head">
-        <h2 class="title">MAĞAZA</h2>
+        <h2 class="title" data-i18n="s.title">MAĞAZA</h2>
       </div>
       <div class="store-coins">
-        <div class="wallet" title="Altın bakiyen"><i class="coin" aria-hidden="true"></i><b id="coinStore" class="coin-val">0</b></div>
-        <button id="storeEarnBtn" class="earn-btn" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span>Reklam izle</span><b>+50</b></button>
+        <div class="wallet" title="Altın bakiyen" data-i18n-title="m.wallet"><i class="coin" aria-hidden="true"></i><b id="coinStore" class="coin-val">0</b></div>
+        <button id="storeEarnBtn" class="earn-btn" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span data-i18n="ad.watch">Reklam izle</span><b>+50</b></button>
       </div>
-      <p class="coin-note">Altın her maçtan sonra ve reklam izleyerek kazanılır.</p>
+      <p class="coin-note" data-i18n="s.note">Altın her maçtan sonra ve reklam izleyerek kazanılır.</p>
       <div class="store-tabs" role="tablist">
-        <button id="tabBtnThemes" data-tab="themes" role="tab" type="button">Temalar</button>
-        <button id="tabBtnSkills" data-tab="skills" role="tab" type="button">Yetenekler</button>
+        <button id="tabBtnThemes" data-tab="themes" role="tab" type="button" data-i18n="s.themes">Temalar</button>
+        <button id="tabBtnSkills" data-tab="skills" role="tab" type="button" data-i18n="s.skills">Yetenekler</button>
       </div>
       <div id="tabThemes" class="store-tab" role="tabpanel">
         <div id="themeList" class="store-list"></div>
       </div>
       <div id="tabSkills" class="store-tab" role="tabpanel">
         <p id="storeMsg" class="sub"></p>
-        <div class="inv" aria-label="Envanterin">
-          <div class="inv-item grow"><b id="invGrow">0</b><span>Dev Kale</span></div>
-          <div class="inv-item shrink"><b id="invShrink">0</b><span>Kale Kilidi</span></div>
+        <div class="inv" aria-label="Envanterin" data-i18n-aria="s.inv">
+          <div class="inv-item grow"><b id="invGrow">0</b><span data-i18n="sk.growL">Dev Kale</span></div>
+          <div class="inv-item shrink"><b id="invShrink">0</b><span data-i18n="sk.shrinkL">Kale Kilidi</span></div>
         </div>
         <div id="storeList" class="store-list"></div>
       </div>
-      <div id="storeConfirm" class="store-confirm hidden" role="dialog" aria-label="Satın almayı onayla">
+      <div id="storeConfirm" class="store-confirm hidden" role="dialog" aria-label="Satın almayı onayla" data-i18n-aria="s.confirm">
         <div class="confirm-item">
           <span id="confirmName"></span>
           <b class="price"><i class="coin" aria-hidden="true"></i><span id="confirmPrice"></span></b>
         </div>
-        <p class="unlock-bal">Bakiyen <i class="coin" aria-hidden="true"></i><b id="coinConfirm" class="coin-val">0</b> <span id="confirmNeed" class="need"></span></p>
-        <button id="confirmBuy" class="btn" type="button">SATIN AL</button>
-        <button id="confirmAd" class="earn-btn wide hidden" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span>Reklam izle</span><b>+50</b></button>
-        <button id="confirmPreview" class="btn ghost hidden" type="button">Önizle</button>
-        <button id="confirmCancel" class="btn ghost" type="button">Vazgeç</button>
+        <p class="unlock-bal"><span data-i18n="s.bal">Bakiyen</span> <i class="coin" aria-hidden="true"></i><b id="coinConfirm" class="coin-val">0</b> <span id="confirmNeed" class="need"></span></p>
+        <button id="confirmBuy" class="btn" type="button" data-i18n="s.buy">SATIN AL</button>
+        <button id="confirmAd" class="earn-btn wide hidden" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span data-i18n="ad.watch">Reklam izle</span><b>+50</b></button>
+        <button id="confirmPreview" class="btn ghost hidden" type="button" data-i18n="s.preview">Önizle</button>
+        <button id="confirmCancel" class="btn ghost" type="button" data-i18n="s.cancel">Vazgeç</button>
       </div>
-      <button id="storeClose" class="btn ghost" type="button">Kapat</button>
+      <button id="storeClose" class="btn ghost" type="button" data-i18n="s.close">Kapat</button>
     </div>
   </section>
 
   <!-- Tema önizleme (mağazadan): arkada tema oynar -->
-  <section id="unlockMenu" class="overlay unlock-overlay" aria-label="Tema önizleme">
-    <span class="preview-badge">ÖNİZLEME</span>
+  <section id="unlockMenu" class="overlay unlock-overlay" aria-label="Tema önizleme" data-i18n-aria="pv.aria">
+    <span class="preview-badge" data-i18n="pv.badge">ÖNİZLEME</span>
     <div class="panel small unlock-panel">
       <h2 id="unlockName" class="title"></h2>
       <p id="unlockDesc" class="sub"></p>
       <div class="confirm-item">
-        <span>Fiyat</span>
+        <span data-i18n="pv.price">Fiyat</span>
         <b class="price"><i class="coin" aria-hidden="true"></i><span id="unlockPrice">0</span></b>
       </div>
-      <p class="unlock-bal">Bakiyen <i class="coin" aria-hidden="true"></i><b id="coinUnlock" class="coin-val">0</b> <span id="unlockNeed" class="need"></span></p>
-      <button id="unlockBuy" class="btn" type="button">SATIN AL</button>
-      <button id="unlockCancel" class="btn ghost" type="button">Mağazaya dön</button>
+      <p class="unlock-bal"><span data-i18n="s.bal">Bakiyen</span> <i class="coin" aria-hidden="true"></i><b id="coinUnlock" class="coin-val">0</b> <span id="unlockNeed" class="need"></span></p>
+      <button id="unlockBuy" class="btn" type="button" data-i18n="s.buy">SATIN AL</button>
+      <button id="unlockCancel" class="btn ghost" type="button" data-i18n="pv.back">Mağazaya dön</button>
     </div>
   </section>
 
   <!-- Ödüllü reklam (test modu: gerçek reklam altyapısı bağlanana kadar örnek gösterim) -->
-  <section id="adMenu" class="overlay" aria-label="Reklam">
+  <section id="adMenu" class="overlay" aria-label="Reklam" data-i18n-aria="ad.aria">
     <div class="panel small ad-panel">
       <div class="store-head">
-        <h2 class="title">REKLAM</h2>
-        <span class="test-badge" title="Reklam altyapısı bağlanana kadar örnek gösterim">TEST MODU</span>
+        <h2 class="title" data-i18n="ad.title">REKLAM</h2>
+        <span class="test-badge" title="Reklam altyapısı bağlanana kadar örnek gösterim" data-i18n="ad.test" data-i18n-title="ad.testT">TEST MODU</span>
       </div>
       <div class="ad-box" aria-hidden="true">
-        <div class="ad-art"><span>Reklam alanı</span><small>Gerçek ödüllü reklam burada oynatılacak</small></div>
+        <div class="ad-art"><span data-i18n="ad.space">Reklam alanı</span><small data-i18n="ad.spaceSub">Gerçek ödüllü reklam burada oynatılacak</small></div>
       </div>
       <div class="ad-bar"><i id="adProgress"></i></div>
       <p id="adMsg" class="sub"></p>
-      <button id="adClaim" class="btn" type="button" disabled>ÖDÜLÜ AL</button>
+      <button id="adClaim" class="btn" type="button" disabled data-i18n="ad.claim">ÖDÜLÜ AL</button>
       <button id="adClose" class="btn ghost" type="button">Kapat</button>
     </div>
   </section>
@@ -296,9 +298,9 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <!-- Ses seviyesi paneli -->
-  <div id="volPop" class="vol-pop hidden" role="dialog" aria-label="Ses ayarı">
+  <div id="volPop" class="vol-pop hidden" role="dialog" aria-label="Ses ayarı" data-i18n-aria="hud.sound">
     <div class="vol-head">
-      <span>Ses</span>
+      <span data-i18n="v.title">Ses</span>
       <b id="volPct">100%</b>
     </div>
     <div class="vol-row">
@@ -306,12 +308,12 @@
         <svg class="on" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke-width="2" stroke-linecap="round"/></svg>
         <svg class="off" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16.5 9.5l5 5M21.5 9.5l-5 5" fill="none" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
-      <input id="volRange" class="vol-range" type="range" min="0" max="100" step="1" value="100" aria-label="Ses seviyesi">
+      <input id="volRange" class="vol-range" type="range" min="0" max="100" step="1" value="100" aria-label="Ses seviyesi" data-i18n-aria="v.level">
     </div>
-    <div class="vol-hint">Klavye: <b>−</b> / <b>+</b> seviye, <b>M</b> sessiz</div>
+    <div class="vol-hint" data-i18n-html="v.hint">Klavye: <b>−</b> / <b>+</b> seviye, <b>M</b> sessiz</div>
   </div>
 
-  <div id="rotateHint">Daha iyi deneyim için telefonunu dik tut</div>
+  <div id="rotateHint" data-i18n="rotate">Daha iyi deneyim için telefonunu dik tut</div>
 
   <script src="js/game.js"></script>
 </body>

@@ -20,15 +20,168 @@
   const TAU = Math.PI * 2;
   const MATCH_TIME = 60;              // maç süresi (sn)
   const SECOND_PUCK_AT = 45;         // ikinci topun girdiği saniye
-  // Skiller: etki süresi saniye, delta kale genişliğine eklenir
+  // ---------------------------------------------------------------------------
+  // Dil (Türkçe / English). tl('anahtar', { değişken }) → seçili dildeki metin.
+  // HTML'deki sabit metinler data-i18n (metin), data-i18n-html (biçimli metin),
+  // data-i18n-aria (aria-label), data-i18n-title (title) ve data-i18n-alt ile çevrilir.
+  // ---------------------------------------------------------------------------
+  const STR = {
+    // Genel
+    'meta.desc': ['Neon Air Hockey — tarayıcıda ve telefonda oynanabilen air hockey oyunu.', 'Neon Air Hockey — an air hockey game you can play in the browser and on your phone.'],
+    'board.aria': ['Air hockey masası', 'Air hockey table'],
+    'rotate': ['Daha iyi deneyim için telefonunu dik tut', 'Hold your phone upright for the best experience'],
+    'pct': ['%{n}', '{n}%'],
+    'coin': ['altın', 'gold'],
+    // Oyuncular ve skiller
+    'p.blue': ['MAVİ', 'BLUE'], 'p.blueL': ['Mavi', 'Blue'],
+    'p.pink': ['PEMBE', 'PINK'], 'p.pinkL': ['Pembe', 'Pink'],
+    'you': ['SEN', 'YOU'], 'me': ['BEN', 'ME'],
+    'sk.grow': ['DEV KALE', 'BIG GOAL'], 'sk.growL': ['Dev Kale', 'Big Goal'],
+    'sk.shrink': ['KALE KİLİDİ', 'GOAL LOCK'], 'sk.shrinkL': ['Kale Kilidi', 'Goal Lock'],
+    'sk.growSub': ['Rakip kale büyür', 'Widens rival goal'],
+    'sk.shrinkSub': ['Kalen küçülür', 'Shrinks your goal'],
+    'sk.growAria': ['Dev Kale: rakibin kalesi 5 saniye büyür', 'Big Goal: the rival goal grows for 5 seconds'],
+    'sk.shrinkAria': ['Kale Kilidi: kendi kalen 5 saniye küçülür', 'Goal Lock: your own goal shrinks for 5 seconds'],
+    'sk.bar0': ['Mavi oyuncunun skilleri', "Blue player's skills"],
+    'sk.bar1': ['Pembe oyuncunun skilleri', "Pink player's skills"],
+    'sk.active': ['Aktif · {n} sn', 'Active · {n} s'],
+    'sk.owned': ['Envanter: {n}', 'Owned: {n}'],
+    'sk.buy': ['Satın al', 'Buy'],
+    'sk.free': ['ÜCRETSİZ', 'FREE'],
+    'sk.introTouch': ['Her skillden 1 ücretsiz hakkın var! Alttaki düğmelerle kullan.', 'You get 1 free use of each skill! Use them with the buttons below.'],
+    'sk.introKeys': ['Her skillden 1 ücretsiz hakkın var! 1 ve 2 tuşlarıyla ya da düğmelerle kullan.', 'You get 1 free use of each skill! Use them with keys 1 and 2 or the buttons.'],
+    // HUD
+    'hud.pause': ['Duraklat', 'Pause'], 'hud.pauseT': ['Duraklat (Esc)', 'Pause (Esc)'],
+    'hud.fs': ['Tam ekran', 'Fullscreen'],
+    'hud.sound': ['Ses ayarı', 'Sound settings'],
+    'clock.two': ['2 TOP', '2 PUCKS'], 'clock.soon': ['2. TOP GELİYOR', '2ND PUCK SOON'],
+    // Bannerlar
+    'b.goal': ['GOL!', 'GOAL!'], 'b.second': ['2. TOP!', '2ND PUCK!'], 'b.go': ['BAŞLA!', 'GO!'], 'b.time': ['SÜRE BİTTİ!', "TIME'S UP!"],
+    // Menü
+    'm.mode': ['Mod', 'Mode'], 'm.ai': ['Tek Oyuncu', 'Single Player'], 'm.pvp': ['İki Oyuncu', 'Two Players'],
+    'm.theme': ['Tema', 'Theme'], 'm.diff': ['Zorluk', 'Difficulty'], 'm.lang': ['Dil · Language', 'Language · Dil'],
+    'diff.easy': ['Kolay', 'Easy'], 'diff.medium': ['Orta', 'Medium'], 'diff.hard': ['Zor', 'Hard'],
+    'diffl.easy': ['kolay', 'easy'], 'diffl.medium': ['orta', 'medium'], 'diffl.hard': ['zor', 'hard'],
+    'm.play': ['OYNA', 'PLAY'], 'm.store': ['Mağaza', 'Store'],
+    'm.inv': ['Envanter: {g} Dev Kale · {s} Kale Kilidi', 'Owned: {g} Big Goal · {s} Goal Lock'],
+    'm.wallet': ['Altın bakiyen', 'Your gold'],
+    'hint.pvpTouch': ['Telefonu masaya koyun: <b class="c">alt yarı</b> ve <b class="p">üst yarı</b> kendi raketini parmağıyla sürükler, skiller kendi tarafındaki düğmelerde.', 'Put the phone on the table: the <b class="c">bottom half</b> and the <b class="p">top half</b> each drag their own mallet, with skill buttons on each side.'],
+    'hint.pvpKeys': ['<b class="c">Mavi</b>: fare veya ok tuşları, skiller <b>1</b>/<b>2</b> · <b class="p">Pembe</b>: W A S D, skiller <b>Q</b>/<b>E</b><br>Dokunmatik ekranda iki parmakla da oynanır.', '<b class="c">Blue</b>: mouse or arrow keys, skills <b>1</b>/<b>2</b> · <b class="p">Pink</b>: W A S D, skills <b>Q</b>/<b>E</b><br>On a touch screen, play with two fingers.'],
+    'hint.aiTouch': ['Raketi parmağınla sürükle, skilleri alttaki düğmelerle kullan!', 'Drag your mallet with your finger and use skills with the buttons below!'],
+    'hint.aiKeys': ['Raketi <b>fare</b> (veya ok tuşları) ile yönet, skiller <b>1</b>/<b>2</b>. <b>Esc</b> duraklatır, <b>M</b> sesi kapatır, <b>−</b>/<b>+</b> ses seviyesini değiştirir.', 'Control your mallet with the <b>mouse</b> (or arrow keys), skills <b>1</b>/<b>2</b>. <b>Esc</b> pauses, <b>M</b> mutes, <b>−</b>/<b>+</b> change the volume.'],
+    // Duraklatma
+    'p.title': ['DURAKLATILDI', 'PAUSED'], 'p.resume': ['DEVAM', 'RESUME'], 'p.restart': ['Yeniden Başla', 'Restart'], 'p.menu': ['Ana Menü', 'Main Menu'],
+    // Maç sonu
+    'r.draw': ['BERABERE', 'DRAW'], 'r.wins': ['{name} KAZANDI!', '{name} WINS!'], 'r.win': ['KAZANDIN!', 'YOU WIN!'], 'r.lose': ['KAYBETTİN', 'YOU LOSE'],
+    'r.subDraw': ['Süre bitti, kimse üstün gelemedi. Rövanş?', "Time's up and nobody pulled ahead. Rematch?"],
+    'r.subPvp': ['Rövanş?', 'Rematch?'],
+    'r.subHard': ['Efsane! Zor yapay zekâyı yendin.', 'Legendary! You beat the hard AI.'],
+    'r.subWin': ['{d} seviyeyi geçtin. Bir üst seviyeyi dene!', 'You beat {d}. Try the next level!'],
+    'r.subLose': ['Bir dahaki sefere! Tekrar dene.', 'Next time! Try again.'],
+    'r.balance': ['Bakiye', 'Balance'],
+    'r.double': ['Reklam izle, ödülü 2 katına çıkar (+{n})', 'Watch an ad to double your reward (+{n})'],
+    'r.win2': ['Galibiyet', 'Win'], 'r.draw2': ['Beraberlik', 'Draw'], 'r.match': ['Maç', 'Match'],
+    'r.goals': ['{n} gol +{b}', '{n} goals +{b}'],
+    'r.again': ['TEKRAR OYNA', 'PLAY AGAIN'],
+    // Paylaşım
+    'sh.label': ['Skorunu paylaş', 'Share your score'], 'sh.native': ['Paylaş', 'Share'],
+    'sh.x': ["X'te paylaş", 'Share on X'], 'sh.wa': ["WhatsApp'ta paylaş", 'Share on WhatsApp'],
+    'sh.tg': ["Telegram'da paylaş", 'Share on Telegram'], 'sh.fb': ["Facebook'ta paylaş", 'Share on Facebook'],
+    'sh.copy': ['Metni kopyala', 'Copy text'],
+    'sh.card': ['Skor kartı', 'Score card'], 'sh.cardSub': ['Görseli gör, kaydet veya paylaş', 'View, save or share the image'],
+    'sh.cardAlt': ['Maç sonu skor kartı', 'Match score card'],
+    'sh.hintSave': ['Görseli kaydedip istediğin yerde paylaşabilirsin.', 'Save the image and share it anywhere you like.'],
+    'sh.hintHold': ['Kaydetmek için görsele basılı tut veya sağ tıkla.', 'Press and hold (or right-click) the image to save it.'],
+    'sh.shareImg': ['GÖRSELİ PAYLAŞ', 'SHARE IMAGE'], 'sh.saveImg': ['Görseli kaydet', 'Save image'], 'sh.back': ['Geri', 'Back'],
+    'sh.pvpDraw': ["Neon Air Hockey'de {s} berabere kaldık!", 'We drew {s} in Neon Air Hockey!'],
+    'sh.pvpWin': ["Neon Air Hockey'de {w}, {l} rakibini {hi}-{lo} yendi!", '{w} beat {l} {hi}-{lo} in Neon Air Hockey!'],
+    'sh.aiDraw': ["Neon Air Hockey'de {d} seviyedeki yapay zekâyla {s} berabere kaldım!", 'I drew {s} against the {d} AI in Neon Air Hockey!'],
+    'sh.aiWin': ["Neon Air Hockey'de {d} seviyedeki yapay zekâyı {s} yendim! 🏆", 'I beat the {d} AI {s} in Neon Air Hockey! 🏆'],
+    'sh.aiLose': ["Neon Air Hockey'de {d} seviyedeki yapay zekâya {s} yenildim, rövanş lazım!", 'I lost {s} to the {d} AI in Neon Air Hockey. I need a rematch!'],
+    'sh.tail': ['Sen de dene!', 'Give it a try!'],
+    'sh.copied': ['Paylaşım metni panoya kopyalandı.', 'Share text copied to the clipboard.'],
+    'sh.menuFail': ['Paylaşım menüsü açılamadı; metin panoya kopyalandı.', "Couldn't open the share menu; the text was copied to the clipboard."],
+    'sh.copyFail': ['Kopyalanamadı. Metin: ', "Couldn't copy. Text: "],
+    'sh.saved': ['Skor kartı kaydedildi.', 'Score card saved.'],
+    'sh.busy': ['Kaydetme penceresi zaten açık.', 'The save dialog is already open.'],
+    'sh.saveFail': ['Görsel kaydedilemedi; görsele basılı tutarak kaydedebilirsin.', "Couldn't save the image; press and hold it to save."],
+    'sh.downloaded': ['Skor kartı indirildi.', 'Score card downloaded.'],
+    // Skor kartı görseli
+    'c.won': ['KAZANDIM!', 'I WON!'], 'c.lost': ['KAYBETTİM', 'I LOST'],
+    'c.info': ["60 SN MAÇ  ·  45. SN'DE 2. TOP  ·  {m}", '60 S MATCH  ·  2ND PUCK AT 45 S  ·  {m}'],
+    'c.pvp': ['İKİ OYUNCU', 'TWO PLAYERS'], 'c.ai': ['TEK OYUNCU', 'SINGLE PLAYER'],
+    'c.try': ['SEN DE DENE!', 'YOUR TURN!'],
+    // Ses
+    'v.title': ['Ses', 'Sound'], 'v.off': ['Kapalı', 'Off'], 'v.mute': ['Sesi kapat', 'Mute'], 'v.unmute': ['Sesi aç', 'Unmute'],
+    'v.level': ['Ses seviyesi', 'Volume'],
+    'v.hint': ['Klavye: <b>−</b> / <b>+</b> seviye, <b>M</b> sessiz', 'Keyboard: <b>−</b> / <b>+</b> volume, <b>M</b> mute'],
+    'v.toast': ['Ses: %{n}', 'Volume: {n}%'], 'v.toastOff': ['Ses kapalı', 'Sound off'], 'v.toastOn': ['Ses açık (%{n})', 'Sound on ({n}%)'],
+    // Mağaza
+    's.title': ['MAĞAZA', 'STORE'],
+    's.note': ['Altın her maçtan sonra ve reklam izleyerek kazanılır.', 'Earn gold after every match and by watching ads.'],
+    's.themes': ['Temalar', 'Themes'], 's.skills': ['Yetenekler', 'Skills'], 's.inv': ['Envanterin', 'Your inventory'],
+    's.confirm': ['Satın almayı onayla', 'Confirm purchase'],
+    's.buy': ['SATIN AL', 'BUY'], 's.short': ['YETERSİZ ALTIN', 'NOT ENOUGH GOLD'], 's.need': ['· {n} eksik', '· {n} short'],
+    's.preview': ['Önizle', 'Preview'], 's.cancel': ['Vazgeç', 'Cancel'], 's.close': ['Kapat', 'Close'], 's.bal': ['Bakiyen', 'Balance'],
+    's.selected': ['Seçili', 'Selected'], 's.owned': ['Açık', 'Owned'], 's.select': ['Seç', 'Select'], 's.free': ['Ücretsiz', 'Free'],
+    's.best': ['En avantajlı', 'Best value'],
+    's.uses3': ['3 kullanım', '3 uses'], 's.bundle': ['Skill Paketi', 'Skill Bundle'], 's.bundleD': ['5 Dev Kale + 5 Kale Kilidi', '5 Big Goal + 5 Goal Lock'],
+    's.msgFocus': ['Bu maçtaki ücretsiz {s} hakkını kullandın. Devam etmek için altınla paket al.', "You've used your free {s} for this match. Buy a pack with gold to keep going."],
+    's.msg': ['Her maçta her skillden 1 ücretsiz hakkın var. Fazlası için altınla paket al.', 'You get 1 free use of each skill per match. Buy packs with gold for more.'],
+    's.ariaItem': ['{name}, {desc}, {p} altın', '{name}, {desc}, {p} gold'],
+    's.ariaSel': ['{name}, seçili', '{name}, selected'], 's.ariaOwn': ['{name}, açık', '{name}, owned'], 's.ariaPrice': ['{name}, {p} altın', '{name}, {p} gold'],
+    's.ariaLocked': ['{name}, kilitli, {p} altın', '{name}, locked, {p} gold'],
+    's.chosen': ['{name} seçildi.', '{name} selected.'],
+    's.bought': ['Satın alındı: {x}', 'Purchased: {x}'],
+    's.unlockedSel': ['{name} açıldı ve seçildi!', '{name} unlocked and selected!'],
+    's.unlocked': ['{name} açıldı! Ana menüden seçebilirsin.', '{name} unlocked! Select it from the main menu.'],
+    'pv.aria': ['Tema önizleme', 'Theme preview'], 'pv.badge': ['ÖNİZLEME', 'PREVIEW'], 'pv.price': ['Fiyat', 'Price'], 'pv.back': ['Mağazaya dön', 'Back to store'],
+    // Reklam
+    'ad.watch': ['Reklam izle', 'Watch ad'], 'ad.limit': ['Bugünlük reklam hakkın doldu', 'Daily ad limit reached'],
+    'ad.left': ['Bugün kalan reklam: {l}/{d}', 'Ads left today: {l}/{d}'], 'ad.tomorrow': ['Yarın yeniden reklam izleyebilirsin', 'You can watch more ads tomorrow'],
+    'ad.aria': ['Reklam', 'Ad'], 'ad.title': ['REKLAM', 'AD'], 'ad.test': ['TEST MODU', 'TEST MODE'],
+    'ad.testT': ['Reklam altyapısı bağlanana kadar örnek gösterim', 'Sample ad until a real ad network is connected'],
+    'ad.space': ['Reklam alanı', 'Ad space'], 'ad.spaceSub': ['Gerçek ödüllü reklam burada oynatılacak', 'A real rewarded ad will play here'],
+    'ad.claim': ['ÖDÜLÜ AL', 'CLAIM REWARD'], 'ad.closeNo': ['Kapat (ödülsüz)', 'Close (no reward)'],
+    'ad.wait': ['Ödül için reklamı sonuna kadar izle: {n} sn', 'Watch to the end for your reward: {n} s'],
+    'ad.done': ['Reklam bitti, ödülün hazır.', 'Ad finished, your reward is ready.'],
+    'ad.limitToast': ['Bugünlük reklam hakkın doldu. Yarın yeniden izleyebilirsin.', "You've reached today's ad limit. Come back tomorrow."],
+    'ad.aborted': ['Reklam yarıda kaldı, ödül verilmedi.', "The ad didn't finish, so no reward was given."],
+    'ad.fail': ['Reklam şu an gösterilemiyor. Biraz sonra tekrar dene.', 'No ad available right now. Try again later.'],
+    'ad.earned': ['+{n} altın kazandın!', 'You earned +{n} gold!'],
+    'ad.doubled': ['Ödül 2 katına çıktı: +{n} altın', 'Reward doubled: +{n} gold'],
+    // Temalar
+    'th.water': ['Su Stadyumu', 'Water Stadium'], 'th.water.d': ['Gerçek zamanlı simüle edilen havuz; raketler suyu iter.', 'A real-time simulated pool; mallets push the water.'],
+    'th.neon': ['Neon', 'Neon'], 'th.neon.d': ['Parlayan çizgiler, neon raketler ve ışık izleri.', 'Glowing lines, neon mallets and light trails.'],
+    'th.ice': ['Buz Stadyumu', 'Ice Stadium'], 'th.ice.d': ['Çatlayan, sürekli değişen buz tabakası; sert şutta buz çatırdar.', 'A cracking, ever-changing ice sheet; hard shots make it crackle.'],
+    'th.sand': ['Kum Stadyumu', 'Sand Stadium'], 'th.sand.d': ['Raketlerin ittiği, oluk açılan kum; sert şutta kum savrulur.', 'Sand that mallets plow into grooves; hard shots throw it around.'],
+    'th.lava': ['Lav Stadyumu', 'Lava Stadium'], 'th.lava.d': ['Kırılan bazalt kabuk ve altından fışkıran lav.', 'A cracking basalt crust with lava bursting from beneath.'],
+    'th.mud': ['Bataklık Stadyumu', 'Swamp Stadium'], 'th.mud.d': ['Ağır, yapışkan çamur; yüzen yosunlar ve patlayan kabarcıklar.', 'Heavy, sticky mud with floating moss and popping bubbles.'],
+    'th.space': ['Uzay Stadyumu', 'Space Stadium'], 'th.space.d': ['Kütlelerle bükülen ışık ağı, kutup ışığı ve süpernova golleri.', 'A grid of light bent by mass, auroras and supernova goals.'],
+    'th.crystal': ['Kristal Mağarası', 'Crystal Cave'], 'th.crystal.d': ['Işık dalgalarıyla gökkuşağına bürünen kristaller; her vuruş bir nota.', 'Crystals that turn rainbow in waves of light; every hit plays a note.'],
+    'webgl': ['Bu cihaz WebGL desteklemiyor: {x} durağan gösterilecek.', "This device doesn't support WebGL: the {x} will be shown static."],
+    'webgl.mud': ['çamur', 'mud'], 'webgl.water': ['su', 'water'],
+  };
+
+  let LANG = 'tr';
+  const LOCALE = () => (LANG === 'en' ? 'en-US' : 'tr-TR');
+  function tl(key, vars) {
+    const e = STR[key];
+    let s = e ? e[LANG === 'en' ? 1 : 0] : key;
+    if (vars) s = s.replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined ? vars[k] : m));
+    return s;
+  }
+  const up = (s) => s.toLocaleUpperCase(LANG === 'en' ? 'en' : 'tr');
+
+  // Skiller: etki süresi saniye, delta kale genişliğine eklenir (adlar seçili dilde)
   const SKILLS = {
-    grow:   { dur: 5, delta: 120, name: 'DEV KALE',    label: 'Dev Kale',    rgb: '255,190,60' },
-    shrink: { dur: 5, delta: -92, name: 'KALE KİLİDİ', label: 'Kale Kilidi', rgb: '190,245,255' },
+    grow:   { dur: 5, delta: 120, get name() { return tl('sk.grow'); }, get label() { return tl('sk.growL'); }, rgb: '255,190,60' },
+    shrink: { dur: 5, delta: -92, get name() { return tl('sk.shrink'); }, get label() { return tl('sk.shrinkL'); }, rgb: '190,245,255' },
   };
 
   const COLORS = [
-    { main: '#19e6ff', light: '#c4faff', dark: '#064a74', rgb: '25,230,255', name: 'MAVİ', label: 'Mavi' },
-    { main: '#ff3d9a', light: '#ffd0e6', dark: '#6e0a3c', rgb: '255,61,154', name: 'PEMBE', label: 'Pembe' },
+    { main: '#19e6ff', light: '#c4faff', dark: '#064a74', rgb: '25,230,255', get name() { return tl('p.blue'); }, get label() { return tl('p.blueL'); } },
+    { main: '#ff3d9a', light: '#ffd0e6', dark: '#6e0a3c', rgb: '255,61,154', get name() { return tl('p.pink'); }, get label() { return tl('p.pinkL'); } },
   ];
   const PUCK_RGB = '255,226,110';
   const FONT = '"Exo 2", system-ui, sans-serif';
@@ -61,14 +214,14 @@
   // sonra ve ödüllü reklam izleyerek kazanılır. Bakiye ve açılan temalar cihazda saklanır.
   // ---------------------------------------------------------------------------
   const THEME_INFO = {
-    water: { name: 'Su Stadyumu', price: 0, desc: 'Gerçek zamanlı simüle edilen havuz; raketler suyu iter.' },
-    neon: { name: 'Neon', price: 200, desc: 'Parlayan çizgiler, neon raketler ve ışık izleri.' },
-    ice: { name: 'Buz Stadyumu', price: 250, desc: 'Çatlayan, sürekli değişen buz tabakası; sert şutta buz çatırdar.' },
-    sand: { name: 'Kum Stadyumu', price: 300, desc: 'Raketlerin ittiği, oluk açılan kum; sert şutta kum savrulur.' },
-    lava: { name: 'Lav Stadyumu', price: 400, desc: 'Kırılan bazalt kabuk ve altından fışkıran lav.' },
-    mud: { name: 'Bataklık Stadyumu', price: 450, desc: 'Ağır, yapışkan çamur; yüzen yosunlar ve patlayan kabarcıklar.' },
-    space: { name: 'Uzay Stadyumu', price: 500, desc: 'Kütlelerle bükülen ışık ağı, kutup ışığı ve süpernova golleri.' },
-    crystal: { name: 'Kristal Mağarası', price: 600, desc: 'Işık dalgalarıyla gökkuşağına bürünen kristaller; her vuruş bir nota.' },
+    water: { price: 0, get name() { return tl('th.water'); }, get desc() { return tl('th.water.d'); } },
+    neon: { price: 200, get name() { return tl('th.neon'); }, get desc() { return tl('th.neon.d'); } },
+    ice: { price: 250, get name() { return tl('th.ice'); }, get desc() { return tl('th.ice.d'); } },
+    sand: { price: 300, get name() { return tl('th.sand'); }, get desc() { return tl('th.sand.d'); } },
+    lava: { price: 400, get name() { return tl('th.lava'); }, get desc() { return tl('th.lava.d'); } },
+    mud: { price: 450, get name() { return tl('th.mud'); }, get desc() { return tl('th.mud.d'); } },
+    space: { price: 500, get name() { return tl('th.space'); }, get desc() { return tl('th.space.d'); } },
+    crystal: { price: 600, get name() { return tl('th.crystal'); }, get desc() { return tl('th.crystal.d'); } },
   };
   const COIN = { adReward: 50, adDaily: 10 };
 
@@ -92,6 +245,10 @@
     return !!info && (info.price === 0 || wallet.unlocked.includes(t));
   }
 
+  const savedLang = store.get('lang', null);
+  LANG = savedLang === 'tr' || savedLang === 'en' ? savedLang
+    : (String(navigator.language || '').toLowerCase().startsWith('tr') ? 'tr' : 'en');
+
   const savedTheme = store.get('theme', 'water');
 
   const settings = {
@@ -100,6 +257,7 @@
     sound: store.get('sound', true),
     volume: clamp(Number(store.get('volume', 1)) || 0, 0, 1),
     theme: isUnlocked(savedTheme) ? savedTheme : 'water',
+    lang: LANG,
   };
 
   const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -5675,13 +5833,13 @@
 
     if (game.frenzy) {
       // İki toplu bölümde oyun durmaz: yenen pak kısa süre sonra geri gelir.
-      banner('GOL!', col.rgb, 1.1, 150);
+      banner(tl('b.goal'), col.rgb, 1.1, 150);
       p.respawn = 0.8;
       p.respawnSide = 1 - scorer;
       return;
     }
 
-    banner('GOL!', col.rgb, 1.5, 150);
+    banner(tl('b.goal'), col.rgb, 1.5, 150);
     game.state = 'goal';
     game.timer = 1.6;
   }
@@ -6054,12 +6212,12 @@
       const up = e.code === 'Equal' || e.code === 'NumpadAdd';
       const base = settings.sound ? settings.volume : 0;
       setVolume(Math.round((base + (up ? 0.1 : -0.1)) * 10) / 10, true);
-      toast(settings.sound && settings.volume > 0 ? `Ses: %${Math.round(settings.volume * 100)}` : 'Ses kapalı');
+      toast(settings.sound && settings.volume > 0 ? tl('v.toast', { n: Math.round(settings.volume * 100) }) : tl('v.toastOff'));
       return;
     }
     if (e.code === 'KeyM') {
       toggleSound();
-      toast(settings.sound ? `Ses açık (%${Math.round(settings.volume * 100)})` : 'Ses kapalı');
+      toast(settings.sound ? tl('v.toastOn', { n: Math.round(settings.volume * 100) }) : tl('v.toastOff'));
       return;
     }
     if ((e.code === 'Enter' || e.code === 'Space') && menuEl.classList.contains('show')) {
@@ -6182,9 +6340,7 @@
     if (!store.get('skillsSeen', false)) {
       store.set('skillsSeen', true);
       const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
-      setTimeout(() => toast(touch
-        ? 'Her skillden 1 ücretsiz hakkın var! Alttaki düğmelerle kullan.'
-        : 'Her skillden 1 ücretsiz hakkın var! 1 ve 2 tuşlarıyla ya da düğmelerle kullan.'), 1800);
+      setTimeout(() => toast(touch ? tl('sk.introTouch') : tl('sk.introKeys')), 1800);
     }
     serve(Math.random() < 0.5 ? 0 : 1);
   }
@@ -6210,7 +6366,7 @@
     p.visible = true;
     p.blink = 1.0;
     p.launch = 450;
-    banner('2. TOP!', PUCK_RGB, 1.6, 120);
+    banner(tl('b.second'), PUCK_RGB, 1.6, 120);
     ripple(p.x, p.y, PUCK_RGB, 20, 260, 0.9, 7);
     ripple(p.x, p.y, '255,255,255', 10, 160, 0.6, 3);
     spawn(p.x, p.y, PUCK_RGB, 40, 800, 0.9, 3.5, { spark: true });
@@ -6232,7 +6388,7 @@
     clockEl.classList.toggle('frenzy', game.frenzy);
     clockEl.classList.toggle('soon', soon);
     clockEl.classList.toggle('final', left <= 10);
-    clockTag.textContent = game.frenzy ? '2 TOP' : soon ? '2. TOP GELİYOR' : '';
+    clockTag.textContent = game.frenzy ? tl('clock.two') : soon ? tl('clock.soon') : '';
   }
 
   function updatePucks(dt) {
@@ -6277,7 +6433,7 @@
         } else {
           game.state = 'play';
           pucks[0].active = true;
-          banner('BAŞLA!', PUCK_RGB, 0.7, 96);
+          banner(tl('b.go'), PUCK_RGB, 0.7, 96);
           Sound.beep(true);
         }
       }
@@ -6369,27 +6525,27 @@
     const title = $('resultTitle');
     if (draw) {
       title.className = 'title';
-      title.textContent = 'BERABERE';
+      title.textContent = tl('r.draw');
       $('resultIcon').textContent = '🤝';
     } else {
       title.className = 'title ' + (pvp ? (w === 0 ? 'win' : 'pink') : win ? 'win' : 'lose');
-      title.textContent = pvp ? `${COLORS[w].name} KAZANDI!` : win ? 'KAZANDIN!' : 'KAYBETTİN';
+      title.textContent = pvp ? tl('r.wins', { name: COLORS[w].name }) : win ? tl('r.win') : tl('r.lose');
       $('resultIcon').textContent = win ? '🏆' : '💔';
     }
     $('finalP1').textContent = a;
     $('finalP2').textContent = b;
-    const diffName = { easy: 'Kolay', medium: 'Orta', hard: 'Zor' }[settings.difficulty];
+    const diffName = tl('diff.' + settings.difficulty);
     $('resultSub').textContent = draw
-      ? 'Süre bitti, kimse üstün gelemedi. Rövanş?'
+      ? tl('r.subDraw')
       : pvp
-        ? 'Rövanş?'
+        ? tl('r.subPvp')
         : win
-          ? (settings.difficulty === 'hard' ? 'Efsane! Zor yapay zekâyı yendin.' : `${diffName} seviyeyi geçtin. Bir üst seviyeyi dene!`)
-          : 'Bir dahaki sefere! Tekrar dene.';
+          ? (settings.difficulty === 'hard' ? tl('r.subHard') : tl('r.subWin', { d: diffName }))
+          : tl('r.subLose');
 
     prepareShare({ a, b, draw, w, win, pvp, difficulty: settings.difficulty });
     grantMatchReward({ a, b, draw, win, pvp, difficulty: settings.difficulty });
-    banner('SÜRE BİTTİ!', '255,255,255', 1.3, 84);
+    banner(tl('b.time'), '255,255,255', 1.3, 84);
     Sound.buzzer();
     // Konfeti
     const rgb = draw ? '155,107,255' : COLORS[w].rgb;
@@ -6407,7 +6563,6 @@
   // Paylaşım
   // ---------------------------------------------------------------------------
   const cardEl = $('cardMenu'), toastEl = $('toast');
-  const DIFF_NAMES = { easy: 'kolay', medium: 'orta', hard: 'zor' };
   const share = { blob: null, url: '', result: null };
   let toastTimer = 0;
   let downloadsApi = null; // claude.ai'de yayınlandığında izinli dosya kaydetme
@@ -6425,9 +6580,7 @@
 
   function updateSaveUI() {
     $('cardSave').classList.toggle('hidden', !share.blob || !canSave());
-    $('cardHint').textContent = canSave()
-      ? 'Görseli kaydedip istediğin yerde paylaşabilirsin.'
-      : 'Kaydetmek için görsele basılı tut veya sağ tıkla.';
+    $('cardHint').textContent = canSave() ? tl('sh.hintSave') : tl('sh.hintHold');
   }
 
   function isFramed() {
@@ -6450,17 +6603,13 @@
     if (r.pvp) {
       const hi = Math.max(r.a, r.b), lo = Math.min(r.a, r.b);
       line = r.draw
-        ? `Neon Air Hockey'de ${s} berabere kaldık!`
-        : `Neon Air Hockey'de ${COLORS[r.w].label}, ${COLORS[1 - r.w].label} rakibini ${hi}-${lo} yendi!`;
+        ? tl('sh.pvpDraw', { s })
+        : tl('sh.pvpWin', { w: COLORS[r.w].label, l: COLORS[1 - r.w].label, hi, lo });
     } else {
-      const d = DIFF_NAMES[r.difficulty];
-      line = r.draw
-        ? `Neon Air Hockey'de ${d} seviyedeki yapay zekâyla ${s} berabere kaldım!`
-        : r.win
-          ? `Neon Air Hockey'de ${d} seviyedeki yapay zekâyı ${s} yendim! 🏆`
-          : `Neon Air Hockey'de ${d} seviyedeki yapay zekâya ${s} yenildim, rövanş lazım!`;
+      const d = tl('diffl.' + r.difficulty);
+      line = r.draw ? tl('sh.aiDraw', { d, s }) : r.win ? tl('sh.aiWin', { d, s }) : tl('sh.aiLose', { d, s });
     }
-    return `🏒 ${line} Sen de dene! #NeonAirHockey`;
+    return `🏒 ${line} ${tl('sh.tail')} #NeonAirHockey`;
   }
 
   function fullText() {
@@ -6528,7 +6677,7 @@
       let ok = false;
       try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
       ta.remove();
-      toast(ok ? okMsg : 'Kopyalanamadı. Metin: ' + text);
+      toast(ok ? okMsg : tl('sh.copyFail') + text);
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(() => toast(okMsg), fallback);
@@ -6550,12 +6699,12 @@
       }
     }
     if (!navigator.share) {
-      copyText(fullText(), 'Paylaşım metni panoya kopyalandı.');
+      copyText(fullText(), tl('sh.copied'));
       return;
     }
     navigator.share(data).catch((e) => {
       if (e && e.name === 'AbortError') return;
-      copyText(fullText(), 'Paylaşım menüsü açılamadı; metin panoya kopyalandı.');
+      copyText(fullText(), tl('sh.menuFail'));
     });
   }
 
@@ -6563,12 +6712,12 @@
     if (!share.blob) return;
     if (downloadsApi) {
       downloadsApi.save({ filename: 'neon-air-hockey-skor.jpg', data: share.blob })
-        .then(() => toast('Skor kartı kaydedildi.'))
+        .then(() => toast(tl('sh.saved')))
         .catch((e) => {
           const code = e && e.code;
           if (code === 'declined') return;
-          if (code === 'rate_limited') toast('Kaydetme penceresi zaten açık.');
-          else toast('Görsel kaydedilemedi; görsele basılı tutarak kaydedebilirsin.');
+          if (code === 'rate_limited') toast(tl('sh.busy'));
+          else toast(tl('sh.saveFail'));
         });
       return;
     }
@@ -6579,11 +6728,11 @@
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    toast('Skor kartı indirildi.');
+    toast(tl('sh.downloaded'));
   }
 
   $('shareNative').addEventListener('click', () => nativeShare(true));
-  $('shareCopy').addEventListener('click', () => copyText(fullText(), 'Paylaşım metni panoya kopyalandı.'));
+  $('shareCopy').addEventListener('click', () => copyText(fullText(), tl('sh.copied')));
   $('cardBtn').addEventListener('click', () => showOverlay(cardEl));
   $('cardClose').addEventListener('click', () => showOverlay(overEl));
   $('cardShare').addEventListener('click', () => nativeShare(true));
@@ -6685,7 +6834,7 @@
 
     // Sonuç başlığı
     const titleRgb = r.draw ? '155,107,255' : r.pvp ? COLORS[r.w].rgb : r.win ? COLORS[0].rgb : COLORS[1].rgb;
-    const title = r.draw ? 'BERABERE' : r.pvp ? `${COLORS[r.w].name} KAZANDI!` : r.win ? 'KAZANDIM!' : 'KAYBETTİM';
+    const title = r.draw ? tl('r.draw') : r.pvp ? tl('r.wins', { name: COLORS[r.w].name }) : r.win ? tl('c.won') : tl('c.lost');
     g.font = `italic 900 ${title.length > 12 ? 92 : 108}px ${FONT}`;
     g.shadowColor = `rgba(${titleRgb},1)`;
     g.shadowBlur = 40;
@@ -6731,7 +6880,7 @@
     });
 
     // Oyuncu etiketleri
-    const labels = r.pvp ? [COLORS[0].name, COLORS[1].name] : ['BEN', `CPU · ${DIFF_NAMES[r.difficulty].toLocaleUpperCase('tr')}`];
+    const labels = r.pvp ? [COLORS[0].name, COLORS[1].name] : [tl('me'), `CPU · ${up(tl('diffl.' + r.difficulty))}`];
     spacing('6px');
     g.font = `800 36px ${FONT}`;
     g.shadowBlur = 16;
@@ -6745,14 +6894,14 @@
     spacing('3px');
     g.shadowBlur = 0;
     g.fillStyle = 'rgba(200,205,240,0.75)';
-    const info = `60 SN MAÇ  ·  45. SN'DE 2. TOP  ·  ${r.pvp ? 'İKİ OYUNCU' : 'TEK OYUNCU'}`;
+    const info = tl('c.info', { m: r.pvp ? tl('c.pvp') : tl('c.ai') });
     let fs = 32;
     do { g.font = `700 ${fs}px ${FONT}`; fs -= 1; } while (g.measureText(info).width > CW - 200 && fs > 18);
     g.fillText(info, CW / 2, 1010);
 
     // Alt bilgi
     spacing('0px');
-    const date = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+    const date = new Date().toLocaleDateString(LOCALE(), { day: 'numeric', month: 'long', year: 'numeric' });
     g.font = `600 30px ${FONT}`;
     g.fillStyle = 'rgba(200,205,240,0.6)';
     g.fillText(date, CW / 2, 1150);
@@ -6760,7 +6909,7 @@
     g.shadowColor = `rgba(${PUCK_RGB},0.9)`;
     g.shadowBlur = 20;
     g.fillStyle = '#fff6c4';
-    g.fillText('SEN DE DENE!', CW / 2, 1222);
+    g.fillText(tl('c.try'), CW / 2, 1222);
     return c;
   }
 
@@ -6793,14 +6942,14 @@
     const on = settings.sound && pct > 0;
     volRange.value = String(pct);
     volRange.style.setProperty('--v', pct + '%');
-    volRange.setAttribute('aria-valuetext', on ? `%${pct}` : 'Kapalı');
-    volPct.textContent = on ? `%${pct}` : 'Kapalı';
+    volRange.setAttribute('aria-valuetext', on ? tl('pct', { n: pct }) : tl('v.off'));
+    volPct.textContent = on ? tl('pct', { n: pct }) : tl('v.off');
     volPop.classList.toggle('off', !on);
     soundBtn.classList.toggle('muted', !on);
     soundBtn.classList.toggle('low', on && pct < 45);
     muteBtn.classList.toggle('muted', !on);
-    muteBtn.setAttribute('aria-label', on ? 'Sesi kapat' : 'Sesi aç');
-    muteBtn.title = on ? 'Sesi kapat (M)' : 'Sesi aç (M)';
+    muteBtn.setAttribute('aria-label', on ? tl('v.mute') : tl('v.unmute'));
+    muteBtn.title = `${on ? tl('v.mute') : tl('v.unmute')} (M)`;
   }
 
   function setVolume(v, preview) {
@@ -6898,18 +7047,18 @@
         let state, sub, badge, fill;
         if (left > 0) {
           state = 'active';
-          sub = `Aktif · ${Math.ceil(left)} sn`;
+          sub = tl('sk.active', { n: Math.ceil(left) });
           fill = left / sk.dur;
         } else if (free > 0 || owned > 0) {
           state = playing ? 'ready' : 'wait';
-          sub = free > 0 ? (key === 'grow' ? 'Rakip kale büyür' : 'Kalen küçülür') : `Envanter: ${owned}`;
+          sub = free > 0 ? tl(key === 'grow' ? 'sk.growSub' : 'sk.shrinkSub') : tl('sk.owned', { n: owned });
           fill = 1;
         } else {
           state = 'buy';
-          sub = 'Satın al';
+          sub = tl('sk.buy');
           fill = 0;
         }
-        badge = free > 0 ? 'ÜCRETSİZ' : owned > 0 ? `×${owned}` : '+';
+        badge = free > 0 ? tl('sk.free') : owned > 0 ? `×${owned}` : '+';
         const f = Math.round(fill * 40) / 40;
         const sig = `${state}|${sub}|${badge}|${f}`;
         if (btn._sig === sig && !skillUI.dirty) continue;
@@ -6930,9 +7079,9 @@
   // sekmesi (Dev Kale / Kale Kilidi ek hakları). Gerçek para ile satış yoktur.
   // ---------------------------------------------------------------------------
   const PRODUCTS = [
-    { id: 'grow_3', name: 'Dev Kale', desc: '3 kullanım', give: { grow: 3 }, price: 60 },
-    { id: 'shrink_3', name: 'Kale Kilidi', desc: '3 kullanım', give: { shrink: 3 }, price: 60 },
-    { id: 'bundle_5', name: 'Skill Paketi', desc: '5 Dev Kale + 5 Kale Kilidi', give: { grow: 5, shrink: 5 }, price: 170, tag: 'En avantajlı' },
+    { id: 'grow_3', get name() { return tl('sk.growL'); }, get desc() { return tl('s.uses3'); }, give: { grow: 3 }, price: 60 },
+    { id: 'shrink_3', get name() { return tl('sk.shrinkL'); }, get desc() { return tl('s.uses3'); }, give: { shrink: 3 }, price: 60 },
+    { id: 'bundle_5', get name() { return tl('s.bundle'); }, get desc() { return tl('s.bundleD'); }, give: { grow: 5, shrink: 5 }, price: 170, get tag() { return tl('s.best'); } },
   ];
 
   const SKILL_ICONS = {
@@ -6948,7 +7097,7 @@
     $('invGrow').textContent = inventory.grow;
     $('invShrink').textContent = inventory.shrink;
     const sum = $('menuInv');
-    if (sum) sum.textContent = `Envanter: ${inventory.grow} Dev Kale · ${inventory.shrink} Kale Kilidi`;
+    if (sum) sum.textContent = tl('m.inv', { g: inventory.grow, s: inventory.shrink });
   }
 
   function priceChip(price) {
@@ -6985,7 +7134,7 @@
         t.textContent = pr.tag;
         b.appendChild(t);
       }
-      b.setAttribute('aria-label', `${pr.name}, ${pr.desc}, ${pr.price} altın`);
+      b.setAttribute('aria-label', tl('s.ariaItem', { name: pr.name, desc: pr.desc, p: pr.price }));
       b.addEventListener('click', () => askPurchase({ kind: 'skill', pr, name: `${pr.name} · ${pr.desc}`, price: pr.price }));
       storeList.appendChild(b);
     }
@@ -7001,7 +7150,7 @@
       } else {
         right = document.createElement('span');
         right.className = 'product-price state' + (sel ? ' selected' : '');
-        right.textContent = sel ? 'Seçili' : storeState.fromGame ? 'Açık' : 'Seç';
+        right.textContent = sel ? tl('s.selected') : storeState.fromGame ? tl('s.owned') : tl('s.select');
       }
       const b = productButton('theme', info.name, info.desc || '', `<i class="swatch sw-${t}"></i>`, right);
       b.dataset.theme = t;
@@ -7009,10 +7158,10 @@
       if (info.price === 0) {
         const tg = document.createElement('em');
         tg.className = 'product-tag free';
-        tg.textContent = 'Ücretsiz';
+        tg.textContent = tl('s.free');
         b.appendChild(tg);
       }
-      b.setAttribute('aria-label', `${info.name}, ${open ? (sel ? 'seçili' : 'açık') : `${info.price} altın`}`);
+      b.setAttribute('aria-label', tl(open ? (sel ? 's.ariaSel' : 's.ariaOwn') : 's.ariaPrice', { name: info.name, p: info.price }));
       b.addEventListener('click', () => {
         if (!open) askPurchase({ kind: 'theme', theme: t, name: info.name, price: info.price });
         else if (!storeState.fromGame && !sel) selectTheme(t);
@@ -7021,13 +7170,13 @@
     }
   }
 
-  function selectTheme(t) {
-    settings.theme = t;
-    store.set('theme', t);
+  function selectTheme(th) {
+    settings.theme = th;
+    store.set('theme', th);
     applyTheme();
     syncMenu();
     renderThemes();
-    toast(`${THEME_INFO[t].name} seçildi.`);
+    toast(tl('s.chosen', { name: THEME_INFO[th].name }));
   }
 
   function setTab(tab) {
@@ -7062,9 +7211,8 @@
     } else {
       storeState.back = [menuEl, overEl, pauseEl].find((o) => o.classList.contains('show')) || menuEl;
     }
-    $('storeMsg').textContent = focus
-      ? `Bu maçtaki ücretsiz ${SKILLS[focus].label} hakkını kullandın. Devam etmek için altınla paket al.`
-      : 'Her maçta her skillden 1 ücretsiz hakkın var. Fazlası için altınla paket al.';
+    storeState.msgFocus = focus;
+    renderStoreMsg();
     setTab(tab || (focus ? 'skills' : 'themes'));
     renderProducts();
     renderThemes();
@@ -7075,6 +7223,11 @@
       const info = THEME_INFO[theme];
       askPurchase({ kind: 'theme', theme, name: info.name, price: info.price });
     }
+  }
+
+  function renderStoreMsg() {
+    const focus = storeState.msgFocus;
+    $('storeMsg').textContent = focus ? tl('s.msgFocus', { s: SKILLS[focus].label }) : tl('s.msg');
   }
 
   function closeStore() {
@@ -7100,15 +7253,15 @@
     if (!it) return;
     const need = it.price - wallet.coins, left = adsLeft();
     $('coinConfirm').textContent = fmt(wallet.coins);
-    $('confirmNeed').textContent = need > 0 ? `· ${fmt(need)} eksik` : '';
+    $('confirmNeed').textContent = need > 0 ? tl('s.need', { n: fmt(need) }) : '';
     const buy = $('confirmBuy');
     buy.disabled = need > 0;
-    buy.textContent = need > 0 ? 'YETERSİZ ALTIN' : 'SATIN AL';
+    buy.textContent = need > 0 ? tl('s.short') : tl('s.buy');
     // Yetmiyorsa reklamla altın kazanma kısayolu
     const ad = $('confirmAd');
     ad.classList.toggle('hidden', need <= 0);
     ad.disabled = left <= 0;
-    ad.querySelector('span').textContent = left > 0 ? 'Reklam izle' : 'Bugünlük reklam hakkın doldu';
+    ad.querySelector('span').textContent = left > 0 ? tl('ad.watch') : tl('ad.limit');
     ad.querySelector('b').textContent = left > 0 ? `+${COIN.adReward}` : '';
     // Önizleme yalnızca menüden açılan mağazada (arkada tanıtım maçı oynarken)
     $('confirmPreview').classList.toggle('hidden', it.kind !== 'theme' || storeState.fromGame || storeState.back !== menuEl);
@@ -7129,7 +7282,7 @@
       renderInventory();
       skillUI.dirty = true;
       const got = Object.keys(it.pr.give).map((k) => `${SKILLS[k].label} +${it.pr.give[k]}`).join(', ');
-      toast(`Satın alındı: ${got}`);
+      toast(tl('s.bought', { x: got }));
     } else {
       if (!wallet.unlocked.includes(it.theme)) wallet.unlocked.push(it.theme);
       if (!storeState.fromGame) {
@@ -7138,9 +7291,9 @@
         store.set('theme', it.theme);
         if (!it.previewed) applyTheme(); // önizlemede zaten uygulandı
         syncMenu();
-        toast(`${it.name} açıldı ve seçildi!`);
+        toast(tl('s.unlockedSel', { name: it.name }));
       } else {
-        toast(`${it.name} açıldı! Ana menüden seçebilirsin.`);
+        toast(tl('s.unlocked', { name: it.name }));
       }
     }
     saveWallet();
@@ -7175,9 +7328,9 @@
     $('unlockDesc').textContent = THEME_INFO[it.theme].desc || '';
     $('unlockPrice').textContent = fmt(it.price);
     $('coinUnlock').textContent = fmt(wallet.coins);
-    $('unlockNeed').textContent = need > 0 ? `· ${fmt(need)} eksik` : '';
+    $('unlockNeed').textContent = need > 0 ? tl('s.need', { n: fmt(need) }) : '';
     $('unlockBuy').disabled = need > 0;
-    $('unlockBuy').textContent = need > 0 ? 'YETERSİZ ALTIN' : 'SATIN AL';
+    $('unlockBuy').textContent = need > 0 ? tl('s.short') : tl('s.buy');
   }
 
   function endPreview(bought) {
@@ -7223,7 +7376,7 @@
   // Altın: maç ödülü, ödüllü reklam ve tema kilitleri
   // ---------------------------------------------------------------------------
   const DIFF_MULT = { easy: 1, medium: 1.5, hard: 2 };
-  const fmt = (n) => n.toLocaleString('tr-TR');
+  const fmt = (n) => n.toLocaleString(LOCALE());
   const lastReward = { total: 0, doubled: true };
 
   // Maç ödülü: sonuç (galibiyet 35, beraberlik 20, yenilgi 10) × zorluk (Kolay 1, Orta 1,5, Zor 2)
@@ -7231,16 +7384,16 @@
   function matchReward(r) {
     if (r.pvp) {
       const g = Math.min(10, r.a + r.b);
-      return { total: 15 + g, why: `Maç 15 · ${g} gol +${g}` };
+      return { total: 15 + g, why: `${tl('r.match')} 15 · ${tl('r.goals', { n: g, b: g })}` };
     }
     const base = r.win ? 35 : r.draw ? 20 : 10;
     const mult = DIFF_MULT[r.difficulty] || 1;
     const goals = Math.min(10, r.a) * 2;
-    const label = r.win ? 'Galibiyet' : r.draw ? 'Beraberlik' : 'Maç';
-    const diff = { easy: 'Kolay', medium: 'Orta', hard: 'Zor' }[r.difficulty];
+    const label = tl(r.win ? 'r.win2' : r.draw ? 'r.draw2' : 'r.match');
+    const diff = tl('diff.' + r.difficulty);
     const parts = [`${label} ${base}`];
-    if (mult !== 1) parts.push(`${diff} ×${String(mult).replace('.', ',')}`);
-    if (goals) parts.push(`${r.a} gol +${goals}`);
+    if (mult !== 1) parts.push(`${diff} ×${mult.toLocaleString(LOCALE())}`);
+    if (goals) parts.push(tl('r.goals', { n: r.a, b: goals }));
     return { total: Math.round(base * mult) + goals, why: parts.join(' · ') };
   }
 
@@ -7261,9 +7414,7 @@
     const left = adsLeft();
     btn.classList.toggle('hidden', lastReward.doubled || lastReward.total <= 0);
     btn.disabled = left <= 0;
-    btn.querySelector('span').textContent = left > 0
-      ? `Reklam izle, ödülü 2 katına çıkar (+${lastReward.total})`
-      : 'Bugünlük reklam hakkın doldu';
+    btn.querySelector('span').textContent = left > 0 ? tl('r.double', { n: lastReward.total }) : tl('ad.limit');
   }
 
   function countUp(el, from, to, prefix = '') {
@@ -7296,9 +7447,9 @@
     for (const id of ['earnBtn', 'storeEarnBtn']) {
       const b = $(id);
       b.disabled = left <= 0;
-      b.querySelector('span').textContent = left > 0 ? 'Reklam izle' : 'Bugünlük reklam hakkın doldu';
+      b.querySelector('span').textContent = left > 0 ? tl('ad.watch') : tl('ad.limit');
       b.querySelector('b').textContent = left > 0 ? `+${COIN.adReward}` : '';
-      b.title = left > 0 ? `Bugün kalan reklam: ${left}/${COIN.adDaily}` : 'Yarın yeniden reklam izleyebilirsin';
+      b.title = left > 0 ? tl('ad.left', { l: left, d: COIN.adDaily }) : tl('ad.tomorrow');
     }
     renderReward();
     renderThemeLocks();
@@ -7351,19 +7502,19 @@
       Sound.applyVolume();
       const bar = $('adProgress'), msg = $('adMsg'), claim = $('adClaim');
       claim.disabled = true;
-      $('adClose').textContent = 'Kapat (ödülsüz)';
+      $('adClose').textContent = tl('ad.closeNo');
       const t0 = performance.now();
       const tick = () => {
         const k = Math.min(1, (performance.now() - t0) / (secs * 1000));
         bar.style.transform = `scaleX(${k})`;
         if (k < 1) {
-          msg.textContent = `Ödül için reklamı sonuna kadar izle: ${Math.ceil(secs * (1 - k))} sn`;
+          msg.textContent = tl('ad.wait', { n: Math.ceil(secs * (1 - k)) });
         } else {
           clearInterval(adState.timer);
           adState.done = true;
           claim.disabled = false;
-          msg.textContent = 'Reklam bitti, ödülün hazır.';
-          $('adClose').textContent = 'Kapat';
+          msg.textContent = tl('ad.done');
+          $('adClose').textContent = tl('s.close');
         }
       };
       tick();
@@ -7388,25 +7539,25 @@
 
   function watchAd(onReward) {
     if (adsLeft() <= 0) {
-      toast('Bugünlük reklam hakkın doldu. Yarın yeniden izleyebilirsin.');
+      toast(tl('ad.limitToast'));
       return;
     }
     Ads.showRewarded().then((rewarded) => {
       if (!rewarded) {
-        toast('Reklam yarıda kaldı, ödül verilmedi.');
+        toast(tl('ad.aborted'));
         return;
       }
       wallet.adCount++;
       saveWallet();
       onReward();
       Sound.ready();
-    }).catch(() => toast('Reklam şu an gösterilemiyor. Biraz sonra tekrar dene.'));
+    }).catch(() => toast(tl('ad.fail')));
   }
 
   function earnFromAd() {
     watchAd(() => {
       addCoins(COIN.adReward);
-      toast(`+${COIN.adReward} altın kazandın!`);
+      toast(tl('ad.earned', { n: COIN.adReward }));
     });
   }
 
@@ -7421,7 +7572,7 @@
       addCoins(lastReward.total);
       countUp($('rewardAmt'), lastReward.total, lastReward.total * 2, '+');
       countUp($('coinOver'), before, wallet.coins);
-      toast(`Ödül 2 katına çıktı: +${lastReward.total} altın`);
+      toast(tl('ad.doubled', { n: lastReward.total }));
     });
   });
 
@@ -7429,7 +7580,15 @@
   const LOCK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>';
   function renderThemeLocks() {
     document.querySelectorAll('.seg[data-group="theme"] button').forEach((b) => {
-      const t = b.dataset.value, locked = !isUnlocked(t);
+      const th = b.dataset.value, locked = !isUnlocked(th);
+      const nameEl = b.querySelector('.th-name') || (() => {
+        const n = document.createElement('span');
+        n.className = 'th-name';
+        b.textContent = '';
+        b.appendChild(n);
+        return n;
+      })();
+      nameEl.textContent = THEME_INFO[th].name;
       b.classList.toggle('locked', locked);
       let tag = b.querySelector('.lock-tag');
       if (locked && !tag) {
@@ -7442,10 +7601,10 @@
         tag = null;
       }
       if (tag) {
-        const price = THEME_INFO[t].price;
+        const price = THEME_INFO[th].price;
         tag.querySelector('span').textContent = fmt(price);
         tag.classList.toggle('afford', wallet.coins >= price);
-        b.setAttribute('aria-label', `${THEME_INFO[t].name}, kilitli, ${price} altın`);
+        b.setAttribute('aria-label', tl('s.ariaLocked', { name: THEME_INFO[th].name, p: price }));
       } else {
         b.removeAttribute('aria-label');
       }
@@ -7455,9 +7614,9 @@
 
   // Tema: Neon ya da Su Stadyumu
   function applyTheme() {
-    const t = settings.theme;
+    const t = settings.theme, th = t;
     if ((t === 'water' || t === 'mud') && !Water.init(waterCanvas)) {
-      toast(`Bu cihaz WebGL desteklemiyor: ${t === 'mud' ? 'çamur' : 'su'} durağan gösterilecek.`);
+      toast(tl('webgl', { x: tl(th === 'mud' ? 'webgl.mud' : 'webgl.water') }));
     }
     document.body.classList.toggle('theme-water', t === 'water');
     document.body.classList.toggle('theme-ice', t === 'ice');
@@ -7489,12 +7648,29 @@
     $('diffField').classList.toggle('disabled', settings.mode === 'pvp');
     const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
     $('hint').innerHTML = settings.mode === 'pvp'
-      ? (touch
-        ? 'Telefonu masaya koyun: <b class="c">alt yarı</b> ve <b class="p">üst yarı</b> kendi raketini parmağıyla sürükler, skiller kendi tarafındaki düğmelerde.'
-        : '<b class="c">Mavi</b>: fare veya ok tuşları, skiller <b>1</b>/<b>2</b> · <b class="p">Pembe</b>: W A S D, skiller <b>Q</b>/<b>E</b><br>Dokunmatik ekranda iki parmakla da oynanır.')
-      : (touch
-        ? 'Raketi parmağınla sürükle, skilleri alttaki düğmelerle kullan!'
-        : 'Raketi <b>fare</b> (veya ok tuşları) ile yönet, skiller <b>1</b>/<b>2</b>. <b>Esc</b> duraklatır, <b>M</b> sesi kapatır, <b>−</b>/<b>+</b> ses seviyesini değiştirir.');
+      ? tl(touch ? 'hint.pvpTouch' : 'hint.pvpKeys')
+      : tl(touch ? 'hint.aiTouch' : 'hint.aiKeys');
+  }
+
+  // Dil: sabit metinleri (data-i18n*) ve o an görünen dinamik arayüzü yeniden yazar
+  function applyLang() {
+    document.documentElement.lang = LANG;
+    document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = tl(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-html]').forEach((el) => { el.innerHTML = tl(el.dataset.i18nHtml); });
+    document.querySelectorAll('[data-i18n-aria]').forEach((el) => { el.setAttribute('aria-label', tl(el.dataset.i18nAria)); });
+    document.querySelectorAll('[data-i18n-title]').forEach((el) => { el.title = tl(el.dataset.i18nTitle); });
+    document.querySelectorAll('[data-i18n-alt]').forEach((el) => { el.alt = tl(el.dataset.i18nAlt); });
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.content = tl('meta.desc');
+    textCache.clear();
+    goalSprites[0] = goalSprites[1] = null;
+    syncMenu();
+    syncVolumeUI();
+    renderInventory();
+    renderStoreMsg();
+    updateCoins(false);
+    skillUI.dirty = true;
+    if (game.state !== 'demo') updateClock();
   }
 
   document.querySelectorAll('.seg').forEach((seg) => {
@@ -7511,6 +7687,10 @@
       store.set(key, settings[key]);
       syncMenu();
       if (key === 'theme' && prev !== settings.theme) applyTheme();
+      if (key === 'lang' && prev !== settings.lang) {
+        LANG = settings.lang;
+        applyLang();
+      }
     });
   });
 
@@ -7781,7 +7961,7 @@
   function drawScores() {
     if (game.state === 'demo') return;
     const pvp = settings.mode === 'pvp';
-    const labels = pvp ? [COLORS[0].name, COLORS[1].name] : ['SEN', 'CPU'];
+    const labels = pvp ? [COLORS[0].name, COLORS[1].name] : [tl('you'), 'CPU'];
     for (let i = 0; i < 2; i++) {
       const p = game.pulse[i];
       const col = COLORS[i];
@@ -7957,8 +8137,7 @@
     if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => textCache.clear());
   }
 
-  syncMenu();
-  renderInventory();
+  applyLang();
   applyTheme();
   startDemo();
   requestAnimationFrame(frame);
