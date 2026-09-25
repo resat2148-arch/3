@@ -1454,6 +1454,25 @@
   const DIFF_NAMES = { easy: 'kolay', medium: 'orta', hard: 'zor' };
   const share = { blob: null, url: '', result: null };
   let toastTimer = 0;
+  let downloadsApi = null; // claude.ai'de yayınlandığında izinli dosya kaydetme
+
+  if (window.claude && typeof window.claude.use === 'function') {
+    window.claude.use('downloads').then((d) => {
+      downloadsApi = d;
+      updateSaveUI();
+    }).catch(() => {});
+  }
+
+  function canSave() {
+    return !!downloadsApi || !isFramed();
+  }
+
+  function updateSaveUI() {
+    $('cardSave').classList.toggle('hidden', !share.blob || !canSave());
+    $('cardHint').textContent = canSave()
+      ? 'Görseli kaydedip istediğin yerde paylaşabilirsin.'
+      : 'Kaydetmek için görsele basılı tut veya sağ tıkla.';
+  }
 
   function isFramed() {
     try { return window.self !== window.top; } catch (e) { return true; }
@@ -1511,6 +1530,7 @@
     $('shareNative').classList.toggle('hidden', !canNative);
 
     share.blob = null;
+    updateSaveUI();
     const img = $('cardImg'), thumb = $('cardThumb');
     const ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
     ready.then(() => {
@@ -1524,10 +1544,7 @@
         thumb.src = url;
         const canFile = canNative && !!(navigator.canShare && navigator.canShare({ files: [cardFile()] }));
         $('cardShare').classList.toggle('hidden', !canFile);
-        $('cardSave').classList.toggle('hidden', isFramed());
-        $('cardHint').textContent = isFramed()
-          ? 'Kaydetmek için görsele basılı tut veya sağ tıkla.'
-          : 'Görseli indirip istediğin yerde paylaşabilirsin.';
+        updateSaveUI();
       }, 'image/jpeg', 0.9);
     });
   }
@@ -1588,6 +1605,17 @@
 
   function saveCard() {
     if (!share.blob) return;
+    if (downloadsApi) {
+      downloadsApi.save({ filename: 'neon-air-hockey-skor.jpg', data: share.blob })
+        .then(() => toast('Skor kartı kaydedildi.'))
+        .catch((e) => {
+          const code = e && e.code;
+          if (code === 'declined') return;
+          if (code === 'rate_limited') toast('Kaydetme penceresi zaten açık.');
+          else toast('Görsel kaydedilemedi; görsele basılı tutarak kaydedebilirsin.');
+        });
+      return;
+    }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(share.blob);
     a.download = 'neon-air-hockey-skor.jpg';
