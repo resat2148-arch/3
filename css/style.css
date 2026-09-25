@@ -2260,3 +2260,9 @@ html[data-build="crazygames"] .card-link {
   margin: 0;
   width: 100%;
 }
+
+/* Reklam oynarken tüm girişler engellenir */
+body.ad-busy,
+body.ad-busy * {
+  pointer-events: none !important;
+}

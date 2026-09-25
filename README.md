@@ -55,7 +55,7 @@ Altın kazanma yolları:
 
 Fiyatlar ve ödüller `js/game.js` içindeki `THEME_INFO`, `PRODUCTS`, `COIN` ve `matchReward()` ile ayarlanır.
 
-> **Reklamlar şu an TEST MODUNDA:** gerçek reklam yerine 5 saniyelik örnek bir gösterim oynatılır. Gerçek reklam için `Ads.showRewarded()` bir reklam altyapısına bağlanmalıdır — web için Google H5 Games Ads (Ad Placement API, ödüllü reklam), mobil uygulama için AdMob ödüllü reklam gibi. Gerçek sistemde ödül, reklam sağlayıcısının sunucu tarafı doğrulamasından (SSV) sonra bir sunucuda eklenmelidir; tarayıcıda (localStorage) tutulan bakiye, envanter ve açılan temalar kullanıcı tarafından değiştirilebilir.
+> **Kendi sitendeki sürümde reklamlar şu an TEST MODUNDA** (CrazyGames sürümü gerçek CrazyGames reklamlarını kullanır): gerçek reklam yerine 5 saniyelik örnek bir gösterim oynatılır. Gerçek reklam için `Ads.showRewarded()` bir reklam altyapısına bağlanmalıdır — web için Google H5 Games Ads (Ad Placement API, ödüllü reklam), mobil uygulama için AdMob ödüllü reklam gibi. Gerçek sistemde ödül, reklam sağlayıcısının sunucu tarafı doğrulamasından (SSV) sonra bir sunucuda eklenmelidir; tarayıcıda (localStorage) tutulan bakiye, envanter ve açılan temalar kullanıcı tarafından değiştirilebilir.
 
 ## Temalar
 
@@ -138,6 +138,8 @@ Telefondan oynamak için siteyi **GitHub Pages** üzerinde yayınlayabilirsiniz:
 ```
 
 Bu sürümde `index.html`'e CrazyGames HTML5 SDK'sı (v3) eklenir, PWA dosyaları (manifest, `sw.js`) çıkarılır ve maç sonundaki **sosyal paylaşım düğmeleri gizlenir** (CrazyGames, oyunun başka bir oynanabilir web sürümüne götüren bağlantılara izin vermez; skor kartı görseli kalır). Kendi sitendeki sürümde paylaşım düğmeleri durur. Oyun açılırken SDK başlatılır ve **ilerleme SDK'nın veri modülüne kaydedilir** (altın, açılan temalar, envanter, ayarlar). CrazyGames'in iframe'inde localStorage'a güvenilemediği için bu gereklidir; veri modülü, oyuncu CrazyGames hesabıyla girdiyse ilerlemeyi cihazlar arasında eşitler. Portaldaki gönderim formunda ilerleme kaydı için **"CrazyGames SDK veri modülü"** seçeneği işaretlenmelidir.
+
+**Ödüllü reklamlar** bu sürümde CrazyGames SDK'sının reklamıyla (`SDK.ad.requestAd('rewarded')`) gösterilir; örnek "TEST MODU" ekranı hiç çıkmaz. Ödül yalnızca reklam sonuna kadar izlenince (`adFinished`) verilir. Reklam oynarken oyun durur, ses kısılır ve girişler engellenir. Reklam bulunamazsa ya da reklam engelleyici açıksa oyuncuya bildirilir, ödül verilmez.
 
 Oyuncu fiilen oynarken (maç, geri sayım, gol kutlaması) SDK'ya `gameplayStart`, oyun durduğunda (duraklatma, maç içi mağaza, maç sonu, ana menü, sekme gizlenince) `gameplayStop` bildirilir; bildirim yalnızca durum değiştiğinde gönderilir.
 

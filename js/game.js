@@ -178,6 +178,7 @@
     'ad.limitToast': ['Bugünlük reklam hakkın doldu. Yarın yeniden izleyebilirsin.', "You've reached today's ad limit. Come back tomorrow."],
     'ad.aborted': ['Reklam yarıda kaldı, ödül verilmedi.', "The ad didn't finish, so no reward was given."],
     'ad.fail': ['Reklam şu an gösterilemiyor. Biraz sonra tekrar dene.', 'No ad available right now. Try again later.'],
+    'ad.blocked': ['Reklam engelleyici açık görünüyor; ödüllü reklam için kapatman gerekiyor.', 'An ad blocker seems to be on; turn it off to watch rewarded ads.'],
     'ad.earned': ['+{n} altın kazandın!', 'You earned +{n} gold!'],
     'ad.doubled': ['Ödül 2 katına çıktı: +{n} altın', 'Reward doubled: +{n} gold'],
     // Temalar
@@ -6227,6 +6228,7 @@
   const KEY_MOVE = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD'];
 
   window.addEventListener('keydown', (e) => {
+    if (Ads.playing) return; // reklam oynarken girişler engellenir
     if (e.code === 'Escape' && !volPop.classList.contains('hidden')) {
       closeVolume();
       return;
@@ -7534,18 +7536,67 @@
     return Math.max(0, COIN.adDaily - wallet.adCount);
   }
 
-  // Ödüllü reklam sağlayıcısı. Şu an TEST modunda: gerçek reklam yerine kısa bir örnek gösterim
-  // oynatılır. Gerçek reklam için showRewarded() bir reklam altyapısına bağlanmalıdır (web için
-  // Google H5 Games Ads / Ad Placement API'nin ödüllü reklamı, mobil uygulama için AdMob ödüllü
-  // reklam vb.). Ödül ancak reklam sonuna kadar izlenince verilir; gerçek sistemde ödül, reklam
-  // sağlayıcısının sunucu tarafı doğrulamasından (SSV) sonra sunucuda eklenmelidir.
+  // Ödüllü reklam sağlayıcısı.
+  // - CrazyGames sürümü: CrazyGames SDK'sının ödüllü reklamı (SDK.ad.requestAd('rewarded')).
+  // - Diğer yerler: TEST modu; gerçek reklam yerine kısa bir örnek gösterim oynatılır. Gerçek reklam
+  //   için showRewarded() bir reklam altyapısına bağlanmalıdır (web için Google H5 Games Ads / Ad
+  //   Placement API, mobil uygulama için AdMob vb.); gerçek sistemde ödül, sağlayıcının sunucu
+  //   tarafı doğrulamasından (SSV) sonra sunucuda eklenmelidir.
+  // Ödül yalnızca reklam sonuna kadar izlenince verilir (söz true ile çözülür).
+  const isCrazyBuild = document.documentElement.dataset.build === 'crazygames';
   const Ads = {
-    mode: 'test',
     testDuration: 5, // sn
+    playing: false,  // reklam oynarken oyun donar, girişler engellenir
+    get mode() {
+      return crazyAdsReady() ? 'crazygames' : isCrazyBuild ? 'unavailable' : 'test';
+    },
     showRewarded() {
+      if (crazyAdsReady()) return playCrazyAd();
+      // CrazyGames sürümünde SDK yoksa örnek reklam gösterilmez
+      if (isCrazyBuild) return Promise.reject(Object.assign(new Error('unavailable'), { code: 'unavailable' }));
       return playTestAd(this.testDuration);
     },
   };
+
+  function crazyAdsReady() {
+    const sdk = cloudData && window.CrazyGames && window.CrazyGames.SDK;
+    return !!(sdk && sdk.ad && typeof sdk.ad.requestAd === 'function');
+  }
+
+  function setAdPlaying(on) {
+    Ads.playing = on;
+    document.body.classList.toggle('ad-busy', on);
+    Sound.adMute = on;
+    Sound.applyVolume();
+    if (on) keys.clear();
+  }
+
+  function playCrazyAd() {
+    return new Promise((resolve, reject) => {
+      let settled = false, guard = 0;
+      const finish = (ok, err) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(guard);
+        setAdPlaying(false);
+        if (ok) resolve(true);
+        else reject(err || new Error('ad'));
+      };
+      // Reklam bitene ya da hata verene kadar oyun durur ve girişler engellenir
+      setAdPlaying(true);
+      // Hiçbir geri çağrı gelmezse oyun kilitli kalmasın
+      guard = setTimeout(() => finish(false, { code: 'timeout' }), 120000);
+      try {
+        window.CrazyGames.SDK.ad.requestAd('rewarded', {
+          adStarted: () => setAdPlaying(true),
+          adFinished: () => finish(true),
+          adError: (error) => finish(false, error),
+        });
+      } catch (e) {
+        finish(false, e);
+      }
+    });
+  }
 
   const adState = { back: null, done: false, timer: 0, resolve: null };
 
@@ -7607,7 +7658,7 @@
       saveWallet();
       onReward();
       Sound.ready();
-    }).catch(() => toast(tl('ad.fail')));
+    }).catch((err) => toast(tl(err && err.code === 'adblocker' ? 'ad.blocked' : 'ad.fail')));
   }
 
   function earnFromAd() {
@@ -8168,7 +8219,7 @@
     const dt = Math.min(Math.max(raw / 1000, 0), 0.1);
     last = now;
     trackFrame(raw);
-    if (dt > 0) update(dt);
+    if (dt > 0 && !Ads.playing) update(dt); // reklam oynarken oyun (tanıtım maçı dahil) donar
     // Duraklatılmışken ekranda değişen bir şey yok: çizme (pil ve ısınma için)
     if (game.state !== 'paused') {
       if (isLiquid()) Water.render();
