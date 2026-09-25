@@ -144,6 +144,7 @@
     'v.title': ['Ses', 'Sound'], 'v.off': ['Kapalı', 'Off'], 'v.mute': ['Sesi kapat', 'Mute'], 'v.unmute': ['Sesi aç', 'Unmute'],
     'v.level': ['Ses seviyesi', 'Volume'],
     'v.hint': ['Klavye: <b>−</b> / <b>+</b> seviye, <b>M</b> sessiz', 'Keyboard: <b>−</b> / <b>+</b> volume, <b>M</b> mute'],
+    'v.platformMuted': ['Ses, CrazyGames ayarlarından kapatılmış.', 'Sound is muted in the CrazyGames settings.'],
     'v.toast': ['Ses: %{n}', 'Volume: {n}%'], 'v.toastOff': ['Ses kapalı', 'Sound off'], 'v.toastOn': ['Ses açık (%{n})', 'Sound on ({n}%)'],
     // Mağaza
     's.title': ['MAĞAZA', 'STORE'],
@@ -803,6 +804,7 @@
     // Kaydırıcı değeri kulağa doğrusal gelsin diye karesi alınır (%50 ≈ yarı yükseklik hissi)
     level() {
       if (this.adMute) return 0; // reklam oynarken oyun sesi kısılır
+      if (this.platformMute) return 0; // CrazyGames "sesi kapat" ayarı oyun içi ayardan önce gelir
       return settings.sound ? settings.volume * settings.volume : 0;
     },
     applyVolume() {
@@ -6250,10 +6252,15 @@
       const up = e.code === 'Equal' || e.code === 'NumpadAdd';
       const base = settings.sound ? settings.volume : 0;
       setVolume(Math.round((base + (up ? 0.1 : -0.1)) * 10) / 10, true);
-      toast(settings.sound && settings.volume > 0 ? tl('v.toast', { n: Math.round(settings.volume * 100) }) : tl('v.toastOff'));
+      toast(Sound.platformMute ? tl('v.platformMuted')
+        : settings.sound && settings.volume > 0 ? tl('v.toast', { n: Math.round(settings.volume * 100) }) : tl('v.toastOff'));
       return;
     }
     if (e.code === 'KeyM') {
+      if (Sound.platformMute) {
+        toggleSound(); // uyarıyı gösterir
+        return;
+      }
       toggleSound();
       toast(settings.sound ? tl('v.toastOn', { n: Math.round(settings.volume * 100) }) : tl('v.toastOff'));
       return;
@@ -6977,7 +6984,7 @@
 
   function syncVolumeUI() {
     const pct = Math.round(settings.volume * 100);
-    const on = settings.sound && pct > 0;
+    const on = settings.sound && pct > 0 && !Sound.platformMute;
     volRange.value = String(pct);
     volRange.style.setProperty('--v', pct + '%');
     volRange.setAttribute('aria-valuetext', on ? tl('pct', { n: pct }) : tl('v.off'));
@@ -7005,6 +7012,10 @@
   }
 
   function toggleSound() {
+    if (Sound.platformMute) {
+      toast(tl('v.platformMuted'));
+      return;
+    }
     settings.sound = !settings.sound;
     if (settings.sound && settings.volume <= 0) {
       settings.volume = 0.5;
@@ -8173,6 +8184,21 @@
   if (document.fonts) {
     if (document.fonts.ready) document.fonts.ready.then(() => textCache.clear());
     if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => textCache.clear());
+  }
+
+  // CrazyGames: platformun ses kapatma ayarı (SDK game.settings.muteAudio) uygulanır ve değişiklikleri
+  // dinlenir; açıkken oyun içi ses düğmesi sesi geri açamaz.
+  const crazySdk = cloudData && window.CrazyGames && window.CrazyGames.SDK;
+  if (crazySdk && crazySdk.game) {
+    const applyPlatformMute = (st) => {
+      Sound.platformMute = !!(st && st.muteAudio);
+      Sound.applyVolume();
+      syncVolumeUI();
+    };
+    try {
+      applyPlatformMute(crazySdk.game.settings);
+      crazySdk.game.addSettingsChangeListener(applyPlatformMute);
+    } catch (e) { /* SDK bu özelliği sunmuyorsa yok say */ }
   }
 
   applyLang();
