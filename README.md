@@ -45,7 +45,7 @@ Menüdeki **Tema** seçiminden değiştirilir; seçim cihazda saklanır.
   - **Etkileşim**: raketler ve paklar suyu hacimleriyle iter; önlerinde kabarma, arkalarında V biçimli iz ve dalga halkaları oluşur. Hızlı hareket köpük bırakır; çarpışmalar ve goller sıçrama ve halka dalgaları üretir.
   - **Görüntü (WebGL)**: tabana boyanmış saha çizgileri ve mozaik fayanslar dalgaların altında kırılarak görünür; yüzey eğriliğinden kostik ışık desenleri, Fresnel yansıması, projektör pırıltıları, nesnelerin tabana düşen gölgeleri ve köpük.
   - **Ses**: çarpışmalarda su sıçraması ve kabarcık sesleri, arka planda hafif havuz ambiyansı.
-  - WebGL olmayan cihazlarda havuz durağan gösterilir. Zayıf cihazlarda su, uyarlanabilir kaliteyle daha düşük çözünürlükte çizilir.
+  - WebGL olmayan cihazlarda havuz (ve bataklık) durağan gösterilir. Zayıf cihazlarda su, uyarlanabilir kaliteyle daha düşük çözünürlükte çizilir.
 - **Buz Stadyumu**: çatlayan, sürekli değişen buz tabakası.
   - **Görüntü**: derin, yarı saydam turkuaz bir buzul gölü; buzun içinde farklı derinliklerde donmuş kabarcık kümeleri ve eski silik çatlaklar, buzun altında süzülen ışık ve yükselen kabarcıklar, bantların dibinde kar, buz altına boyanmış saha çizgileri. Disk klasik siyah kauçuk hokey diskidir.
   - **Etkileşim**: kayan disk buzda ince paralel çizikler, raketler hafif sürtme izi bırakır. Sert şut, duvara şiddetli çarpma, gol ya da skill kullanımı çarpma noktasından dallanarak yayılan çatlaklar oluşturur (güçlü darbede örümcek ağı gibi halka çatlaklar) ve etrafa buz kristalleri sıçrar. İzler zamanla yavaşça "yeniden donar"; her maç temiz buzla başlar.
@@ -68,6 +68,11 @@ Menüdeki **Tema** seçiminden değiştirilir; seçim cihazda saklanır.
   - **Görüntü**: renk bölgelerine ayrılmış (ametist, safir, akuamarin, zümrüt, topaz, yakut) fasetli kristaller; her yüz ışığa göre farklı tonda, kristaller hafifçe nefes alır gibi ışıldar. Kenarlarda küçük kristal kümeleri. Disk berrak, fasetli bir kristaldir.
   - **Etkileşim**: vuruşlar genişleyen ışık dalgaları yayar. Dalga cephesi prizmadaki gibi gökkuşağına ayrışır; geçtiği kristaller halka halka gökkuşağı renkleri alır (bantlar uzaklaştıkça açılır) ve bir süre parlamaya devam eder. Raketler ve disk altlarındaki kristalleri aydınlatır. Gol, kale ağzından yayılan güçlü bir ışık patlamasıdır.
   - **Ses**: her vuruş kristal çanı gibi çalar; nota, vurulan kristalin rengine göre C majör pentatonik gamdan seçilir (ametist Do, safir Re, akuamarin Mi, zümrüt Sol, topaz La, yakut ince Do), böylece maç bir melodiye dönüşür. Bantlarda bir oktav pes nota, iki disk çarpışınca nota ve beşlisi, golde yükselen çan arpeji. Arkada mağara esintisi, kristallerin sessiz rezonansı ve ara sıra damlayan su.
+- **Bataklık Stadyumu**: koyu, parlak, yoğun çamur; üzerinde yosun kümeleri, nilüferler ve yapraklar yüzer.
+  - **Fizik**: su motoru çamur ayarlarıyla çalışır. Dalgalar ağır ve yavaş yayılıp çabuk söner. Çamurun kalıcı biçimi dalgalardan ayrı tutulur: raketler ve disk geçtikleri yerde oluk açar, çıkan çamur önlerine ve yanlarına yığılır (hacim korunur). Oluklar ve kraterler ancak birkaç saniyede, çamur yavaşça akıp düzleştikçe kapanır. Yosun ve yapraklar yüzey eğimiyle sürüklenir, raket ve disk onları iter.
+  - **Görüntü (WebGL)**: ıslak çamurda keskin ışık pırıltıları, alçak açılı ışıkla belirginleşen oluk ve tümsekler, karıştırılan çamurda açık ve daha ıslak izler, nesnelerin çamura düşen gölgeleri. Kenarda yosun tutmuş eski ahşap iskele ve köşelerde sazlar. Disk, üstünde çamur lekeleri olan sarı bir kauçuk disktir.
+  - **Etkileşim**: zeminden ara sıra kabarcıklar yükselir, kabarıp "blop" diye patlar ve küçük bir çukur bırakır. Sert şutta, şiddetli çarpışmada ve golde çamur sıçrar.
+  - **Ses**: vıcık vuruşlar, çamur sıçraması ve düşen damlaların şıpırtısı, patlayan kabarcıklar, raket ve diskin çamuru yarma sesi; arkada nemli bataklık havası, cırcır böceği korosu ve ara sıra kurbağa vıraklaması.
 
 ## Özellikler
 

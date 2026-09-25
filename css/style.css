@@ -148,7 +148,8 @@ body.playing .bg-grid::before {
   display: none;
 }
 
-body.theme-water #water {
+body.theme-water #water,
+body.theme-mud #water {
   display: block;
 }
 
@@ -188,8 +189,27 @@ body.theme-sand .bg-grid,
 body.theme-space .blob,
 body.theme-space .bg-grid,
 body.theme-crystal .blob,
-body.theme-crystal .bg-grid {
+body.theme-crystal .bg-grid,
+body.theme-mud .blob,
+body.theme-mud .bg-grid {
   display: none;
+}
+
+/* Bataklık Stadyumu teması: sisli bataklık gecesi, ay ışığı ve yeşilimsi pus */
+body.theme-mud .bg {
+  background:
+    radial-gradient(28% 18% at 82% 6%, rgba(230, 235, 200, 0.22), transparent 70%),
+    radial-gradient(90% 30% at 50% 100%, rgba(70, 90, 50, 0.35), transparent 70%),
+    radial-gradient(60% 25% at 20% 60%, rgba(90, 110, 80, 0.12), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 50% 50%, #1c2416, transparent 75%),
+    linear-gradient(#070a08, #10160e 55%, #0a0d08);
+}
+
+body.theme-mud #game {
+  box-shadow:
+    0 0 0 1px rgba(170, 190, 140, 0.12),
+    0 0 80px rgba(120, 150, 80, 0.16),
+    0 30px 80px rgba(0, 0, 0, 0.85);
 }
 
 /* Kristal Mağarası teması: karanlık mağara, duvarlarda soluk renkli kristal ışıltıları */
