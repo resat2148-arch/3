@@ -60,6 +60,7 @@
     difficulty: store.get('difficulty', 'medium'),
     sound: store.get('sound', true),
     volume: clamp(Number(store.get('volume', 1)) || 0, 0, 1),
+    theme: store.get('theme', 'neon') === 'water' ? 'water' : 'neon',
   };
 
   const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -123,6 +124,61 @@
       const d = buf.getChannelData(0);
       for (let i = 0; i < nlen; i++) d[i] = Math.random() * 2 - 1;
       this.noiseBuf = buf;
+      if (settings.theme === 'water') this.ambient(true);
+    },
+    // Su teması ambiyansı: havuz suyunun alçak, dalgalanan uğultusu (döngü)
+    ambient(on) {
+      if (!this.ctx) return;
+      if (on && !this.amb) {
+        const c = this.ctx;
+        const src = c.createBufferSource();
+        src.buffer = this.noiseBuf;
+        src.loop = true;
+        const lp = c.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.value = 520;
+        lp.Q.value = 0.4;
+        const bp = c.createBiquadFilter();
+        bp.type = 'peaking';
+        bp.frequency.value = 260;
+        bp.gain.value = 5;
+        const g = c.createGain();
+        g.gain.value = 0.07;
+        // Yavaş dalgalanma (dalgaların kıyıya vurması hissi)
+        const lfo = c.createOscillator();
+        lfo.frequency.value = 0.23;
+        const lfoGain = c.createGain();
+        lfoGain.gain.value = 0.03;
+        lfo.connect(lfoGain);
+        lfoGain.connect(g.gain);
+        src.connect(lp);
+        lp.connect(bp);
+        bp.connect(g);
+        g.connect(this.bus);
+        src.start();
+        lfo.start();
+        this.amb = { src, lfo, g };
+      } else if (!on && this.amb) {
+        const { src, lfo, g } = this.amb;
+        const t = this.ctx.currentTime;
+        g.gain.cancelScheduledValues(t);
+        g.gain.setTargetAtTime(0, t, 0.15);
+        src.stop(t + 0.8);
+        lfo.stop(t + 0.8);
+        this.amb = null;
+      }
+    },
+    // Su sıçraması: süpürülen gürültü + yükselen kabarcık sesleri (kabarcık yükseldikçe perdesi artar)
+    splash(k, x) {
+      if (!this.ok('splash', 0.05)) return;
+      const pan = this.panOf(x);
+      this.noise({ dur: 0.16 + k * 0.28, vol: 0.2 + k * 0.5, freq: 1500 + k * 900, freqTo: 320, q: 0.9, pan, rev: 0.25 });
+      this.noise({ dur: 0.08, vol: 0.12 + k * 0.25, type: 'highpass', freq: 5000, pan });
+      const nb = 2 + Math.round(k * 4);
+      for (let i = 0; i < nb; i++) {
+        const f = 380 + Math.random() * 760;
+        this.tone({ f0: f, f1: f * 1.9, dur: 0.045 + Math.random() * 0.05, vol: 0.06 + k * 0.1, delay: 0.03 + Math.random() * 0.2, pan, rev: 0.15 });
+      }
     },
     // Kaydırıcı değeri kulağa doğrusal gelsin diye karesi alınır (%50 ≈ yarı yükseklik hissi)
     level() {
@@ -380,10 +436,13 @@
   // Tuval ve ölçekleme
   // ---------------------------------------------------------------------------
   const canvas = document.getElementById('game');
-  // Opak tuval: tarayıcı saydamlık karışımı yapmak zorunda kalmaz (köşeleri CSS yuvarlatır).
-  const ctx = canvas.getContext('2d', { alpha: false });
+  // Saydam tuval: su temasında oyun alanının altından WebGL su katmanı görünür.
+  const ctx = canvas.getContext('2d', { alpha: true });
+  const waterCanvas = document.getElementById('water');
+  const isWater = () => settings.theme === 'water';
   const stage = document.getElementById('stage');
   let S = 1; // mantıksal birim başına cihaz pikseli
+  let cssScale = 1, boardShaken = false;
   const textCache = new Map();
 
   // Uyarlanabilir kalite: kareler yetişmiyorsa çözünürlüğü kademeli düşür.
@@ -443,9 +502,19 @@
     canvas.width = Math.round(cssW * dpr);
     canvas.height = Math.round(cssH * dpr);
     S = canvas.width / LW;
+    cssScale = scale;
     textCache.clear();
+    const board = canvas.parentElement;
+    board.style.width = cssW + 'px';
+    board.style.height = cssH + 'px';
+    if (isWater()) {
+      // Su yumuşak bir yüzey: daha düşük çözünürlükte çizmek görüntüyü bozmaz, çok hızlandırır
+      const wd = Math.min(dpr, 1.5) * (quality.lite ? 0.75 : 1);
+      Water.resize(cssW, cssH, wd, Math.round(44 * scale));
+    }
     buildTable();
     buildSprites();
+    if (isWater()) Water.render();
   }
 
   function rr(g, x, y, w, h, r) {
@@ -458,12 +527,100 @@
     g.closePath();
   }
 
+  // Su teması: havuz kenarı (taş kaplama + su hattı fayans bandı); oyun alanı saydam bırakılır,
+  // altından WebGL su katmanı görünür. WebGL yoksa taban durağan olarak çizilir.
+  function buildPoolTable(g) {
+    // Kaplama taşı
+    rr(g, 0, 0, LW, LH, 44);
+    const st = g.createLinearGradient(0, 0, LW, LH);
+    st.addColorStop(0, '#eef2f5');
+    st.addColorStop(0.5, '#c9d2da');
+    st.addColorStop(1, '#e3e8ed');
+    g.fillStyle = st;
+    g.fill();
+    // Taş derzleri
+    g.save();
+    rr(g, 0, 0, LW, LH, 44);
+    g.clip();
+    g.strokeStyle = 'rgba(90, 105, 120, 0.25)';
+    g.lineWidth = 1;
+    for (let x = 36; x < LW; x += 36) {
+      g.beginPath(); g.moveTo(x, 0); g.lineTo(x, B - 7); g.moveTo(x, LH - B + 7); g.lineTo(x, LH); g.stroke();
+    }
+    for (let y = 36; y < LH; y += 36) {
+      g.beginPath(); g.moveTo(0, y); g.lineTo(B - 7, y); g.moveTo(LW - B + 7, y); g.lineTo(LW, y); g.stroke();
+    }
+    g.restore();
+    rr(g, 1.5, 1.5, LW - 3, LH - 3, 43);
+    g.lineWidth = 2;
+    g.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+    g.stroke();
+
+    // Kale uçlarında takım renginde şerit
+    [[COLORS[1], 4], [COLORS[0], LH - 8]].forEach(([col, y]) => {
+      g.fillStyle = `rgba(${col.rgb}, 0.55)`;
+      rr(g, LW / 2 - 150, y, 300, 4, 2);
+      g.fill();
+    });
+
+    // Su hattı: koyu mavi fayans bandı
+    rr(g, B - 7, B - 7, W + 14, H + 14, 32);
+    g.fillStyle = '#0d4f7c';
+    g.fill();
+    g.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    g.lineWidth = 1;
+    g.stroke();
+
+    g.save();
+    g.translate(B, B);
+    if (Water.ok) {
+      // Oyun alanını sil: su altta görünür
+      g.globalCompositeOperation = 'destination-out';
+      rr(g, 0, 0, W, H, 26);
+      g.fill();
+      g.globalCompositeOperation = 'source-over';
+    } else {
+      rr(g, 0, 0, W, H, 26);
+      g.save();
+      g.clip();
+      g.drawImage(Water.floor, 0, 0, W, H);
+      g.fillStyle = 'rgba(4, 60, 96, 0.38)';
+      g.fillRect(0, 0, W, H);
+      g.restore();
+    }
+    // Duvarın suya düşen gölgesi ve suyun kenara değdiği ince parlak çizgi
+    g.save();
+    rr(g, 0, 0, W, H, 26);
+    g.clip();
+    const E = 18;
+    const side = (x0, y0, x1, y1) => {
+      const gr = g.createLinearGradient(x0, y0, x1, y1);
+      gr.addColorStop(0, 'rgba(0, 20, 35, 0.35)');
+      gr.addColorStop(1, 'rgba(0, 20, 35, 0)');
+      return gr;
+    };
+    g.fillStyle = side(0, 0, E, 0); g.fillRect(0, 0, E, H);
+    g.fillStyle = side(W, 0, W - E, 0); g.fillRect(W - E, 0, E, H);
+    g.fillStyle = side(0, 0, 0, E); g.fillRect(0, 0, W, E);
+    g.fillStyle = side(0, H, 0, H - E); g.fillRect(0, H - E, W, E);
+    g.restore();
+    rr(g, 0, 0, W, H, 26);
+    g.lineWidth = 1.5;
+    g.strokeStyle = 'rgba(210, 240, 255, 0.55)';
+    g.stroke();
+    g.restore();
+  }
+
   // Statik masa katmanı: yalnızca boyut değiştiğinde yeniden çizilir.
   function buildTable() {
     const [c, g] = makeLayer(LW, LH);
     tableLayer = c;
     g.fillStyle = '#05060f'; // opak tuvalin köşeleri (CSS ile yuvarlatılır)
     g.fillRect(0, 0, LW, LH);
+    if (isWater()) {
+      buildPoolTable(g);
+      return;
+    }
 
     // Dış çerçeve
     rr(g, 0, 0, LW, LH, 44);
@@ -613,7 +770,7 @@
   const PS_PAD = 28, PS = (PUCK_R + PS_PAD) * 2;
 
   function buildSprites() {
-    malletSprites = COLORS.map(buildMallet);
+    malletSprites = COLORS.map((col) => buildMallet(col, !isWater()));
     glowSprites = COLORS.map((col) => {
       const [c, g] = makeLayer(MS, MS);
       const r = MS / 2;
@@ -625,14 +782,18 @@
       g.fillRect(0, 0, MS, MS);
       return c;
     });
-    puckSprite = buildPuck();
+    puckSprite = buildPuck(!isWater());
   }
 
-  function buildMallet(col) {
+  // neon: parlak hale + yüzeye düşen gölge; su: hale yok, suyla temas çizgisi (menisküs)
+  function buildMallet(col, neon = true) {
     const [c, g] = makeLayer(MS, MS);
     const R = MALLET_R;
     g.translate(MS / 2, MS / 2);
 
+    if (!neon) {
+      meniscus(g, R);
+    } else {
     // Gölge
     g.save();
     g.shadowColor = 'rgba(0,0,0,0.75)';
@@ -653,6 +814,7 @@
     g.beginPath();
     g.arc(0, 0, R + MS_PAD, 0, TAU);
     g.fill();
+    }
 
     // Gövde
     const base = g.createRadialGradient(-R * 0.35, -R * 0.4, R * 0.1, 0, 0, R);
@@ -703,10 +865,26 @@
     return c;
   }
 
-  function buildPuck() {
+  // Suya oturan nesnenin çevresindeki ince karanlık/aydınlık halka
+  function meniscus(g, R) {
+    g.lineWidth = 3;
+    g.strokeStyle = 'rgba(0, 25, 45, 0.35)';
+    g.beginPath();
+    g.arc(0, 0, R + 3.5, 0, TAU);
+    g.stroke();
+    g.lineWidth = 1.5;
+    g.strokeStyle = 'rgba(225, 245, 255, 0.55)';
+    g.beginPath();
+    g.arc(0, 0, R + 1.5, 0, TAU);
+    g.stroke();
+  }
+
+  function buildPuck(neon = true) {
     const [c, g] = makeLayer(PS, PS);
     const r = PUCK_R;
     g.translate(PS / 2, PS / 2);
+
+    if (!neon) return buildWaterPuck(c, g, r);
 
     g.save();
     g.shadowColor = 'rgba(0,0,0,0.7)';
@@ -755,6 +933,508 @@
     g.fill();
     return c;
   }
+
+  // Su teması pakı: suda yüzen, parlak turuncu kauçuk disk (mavi su üzerinde iyi seçilir)
+  function buildWaterPuck(c, g, r) {
+    meniscus(g, r);
+    const body = g.createRadialGradient(-r * 0.3, -r * 0.35, 1, 0, 0, r);
+    body.addColorStop(0, '#ffb066');
+    body.addColorStop(0.55, '#ff6a1a');
+    body.addColorStop(1, '#a8360a');
+    g.fillStyle = body;
+    g.beginPath();
+    g.arc(0, 0, r, 0, TAU);
+    g.fill();
+    g.lineWidth = 3;
+    g.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    g.beginPath();
+    g.arc(0, 0, r * 0.6, 0, TAU);
+    g.stroke();
+    g.fillStyle = 'rgba(255, 255, 255, 0.45)';
+    g.beginPath();
+    g.ellipse(-r * 0.35, -r * 0.45, r * 0.34, r * 0.13, -0.6, 0, TAU);
+    g.fill();
+    return c;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Su Stadyumu: gerçek zamanlı su yüzeyi
+  // Fizik: yükseklik alanında dalga denklemi (duvarlardan yansır, zamanla söner).
+  // Etkileşim: raket ve paklar suyun hacmini iter (önde çukur, arkada kabarma → baş dalgası
+  // ve iz); çarpışmalar sıçrama, hızlı hareket köpük üretir.
+  // Görüntü (WebGL): havuz tabanı ışığın kırılmasıyla görünür; yüzey eğriliğinden kostikler,
+  // Fresnel yansıması, projektör pırıltıları, nesnelerin tabana düşen gölgeleri ve köpük.
+  // ---------------------------------------------------------------------------
+  const Water = (() => {
+    const NX = 108, NY = 180;          // ızgara: hücre = 5 oyun birimi
+    const CELL = W / NX;
+    const N = NX * NY;
+    const STEP = 1 / 150;              // simülasyon adımı (sn)
+    const SPEED = 0.62;                // dalga hızı katsayısı (< 2 kararlı)
+    const DAMP = 0.9975;               // adım başına sönümleme
+    const h = new Float32Array(N), v = new Float32Array(N), foam = new Float32Array(N);
+    const pix = new Uint8ClampedArray(N * 4);
+    const pixU8 = new Uint8Array(pix.buffer);
+    const bodies = new Map();
+    const objs = new Float32Array(16); // gölgeler için en fazla 4 nesne: x, y, yarıçap, güç
+    let acc = 0, time = 0, dirty = true;
+    let gl = null, canvas = null, prog = null, simTex = null, floorTex = null, U = null;
+    let ok = false, tried = false;
+    let floor = null;
+
+    const VS = `
+      attribute vec2 aPos;
+      attribute vec2 aUv;
+      varying vec2 vUv;
+      void main() { vUv = aUv; gl_Position = vec4(aPos, 0.0, 1.0); }`;
+
+    const FS = `
+      #ifdef GL_FRAGMENT_PRECISION_HIGH
+      precision highp float;
+      #else
+      precision mediump float;
+      #endif
+      varying vec2 vUv;
+      uniform sampler2D uSim;
+      uniform sampler2D uFloor;
+      uniform vec2 uSize;
+      uniform float uTime;
+      uniform float uLite;
+      uniform vec4 uObj[4];
+
+      const float DEPTH = 60.0;                  // su derinliği (oyun birimi)
+      const float SLOPE = 2.4;                   // simülasyon eğimi → yüzey normali
+      const vec3 DEEP = vec3(0.0, 0.30, 0.46);   // derin su rengi (soğurma)
+
+      float hash(vec2 p) {
+        p = fract(p * vec2(123.34, 456.21));
+        p += dot(p, p + 45.32);
+        return fract(p.x * p.y);
+      }
+
+      // Hareketli hücre deseni: F2 - F1 sınırları, ince dalgacıkların taban üzerinde
+      // topladığı ışık çizgilerine (kostik) benzer.
+      float cells(vec2 p, float t) {
+        vec2 ip = floor(p), fp = fract(p);
+        float f1 = 8.0, f2 = 8.0;
+        for (int j = -1; j <= 1; j++) {
+          for (int i = -1; i <= 1; i++) {
+            vec2 g = vec2(float(i), float(j));
+            float a = hash(ip + g), b = hash(ip + g + 17.7);
+            vec2 o = 0.5 + 0.4 * vec2(sin(t * (0.8 + a) + 6.2831 * a), cos(t * (0.7 + b) + 6.2831 * b));
+            float d = length(g + o - fp);
+            if (d < f1) { f2 = f1; f1 = d; } else if (d < f2) { f2 = d; }
+          }
+        }
+        return 1.0 - smoothstep(0.02, 0.2, f2 - f1);
+      }
+
+      // Havuz sirkülasyonunun oluşturduğu çok küçük dalgacıklar (yüzey eğimine katkı)
+      vec2 ripples(vec2 p, float t) {
+        vec2 d1 = vec2(0.8, 0.6), d2 = vec2(-0.55, 0.83), d3 = vec2(0.15, -0.99), d4 = vec2(-0.96, -0.28);
+        vec2 g = d1 * cos(dot(p, d1) * 0.23 + t * 1.7);
+        g += d2 * cos(dot(p, d2) * 0.37 + t * 2.3) * 0.7;
+        g += d3 * cos(dot(p, d3) * 0.61 + t * 2.9) * 0.45;
+        g += d4 * cos(dot(p, d4) * 0.97 + t * 3.8) * 0.3;
+        return g * 0.012;
+      }
+
+      void main() {
+        vec2 p = vUv * uSize;
+        vec4 s = texture2D(uSim, vUv);
+        vec2 grad = (s.rg - 0.5) * SLOPE + ripples(p, uTime);
+        vec3 N = normalize(vec3(grad.x, 1.0, grad.y));
+        vec3 I = vec3(0.0, -1.0, 0.0);
+
+        // Kırılma: taban, dalga eğimine göre kaymış görünür (hava → su, n = 1.33)
+        vec3 T = refract(I, N, 0.7519);
+        vec2 off = T.xz / max(-T.y, 0.3) * DEPTH;
+        vec2 fp = p + off;
+        vec2 fuv = fp / uSize;
+        vec2 disp = off / uSize * 0.035; // renk ayrışması (hafif dispersiyon)
+        vec3 floorCol = vec3(
+          texture2D(uFloor, fuv + disp).r,
+          texture2D(uFloor, fuv).g,
+          texture2D(uFloor, fuv - disp).b);
+
+        // Kostikler: dışbükey yüzey ışığı tabanda toplar (simülasyondan) + ince dalgacık deseni
+        float focus = (texture2D(uSim, fuv).b - 0.5) * 2.2;
+        float c = cells(fp / 34.0 + grad * 3.0, uTime * 0.8) * 0.6;
+        if (uLite < 0.5) c += cells(fp / 21.0 - grad * 4.0 + 5.1, uTime * 1.15) * 0.4;
+        floorCol *= 0.74 + clamp(focus, -0.5, 1.4) * 0.6 + c * 0.42;
+
+        // Yüzen nesnelerin tabana düşen yumuşak gölgeleri
+        float sh = 1.0;
+        for (int k = 0; k < 4; k++) {
+          vec4 o = uObj[k];
+          float d = length(fp - o.xy - vec2(9.0, 15.0)) / max(o.z, 1.0);
+          sh *= 1.0 - o.w * 0.42 * (1.0 - smoothstep(0.7, 1.55, d));
+        }
+        floorCol *= sh;
+
+        // Derinlik boyunca ışık soğurması
+        vec3 col = mix(DEEP, floorCol, 0.66);
+
+        // Fresnel: eğik yüzeyler stadyum çatısını yansıtır
+        vec3 Rf = reflect(I, N);
+        float fres = 0.02 + 0.98 * pow(1.0 - clamp(N.y, 0.0, 1.0), 5.0);
+        vec3 env = mix(vec3(0.02, 0.04, 0.08), vec3(0.09, 0.13, 0.19), clamp(Rf.y, 0.0, 1.0));
+        col = mix(col, env, clamp(fres * 1.4, 0.0, 1.0));
+
+        // Dört köşe projektörünün dalga yamaçlarındaki pırıltısı
+        vec3 L1 = normalize(vec3(-0.42, 1.0, -0.58)), L2 = normalize(vec3(0.42, 1.0, -0.58));
+        vec3 L3 = normalize(vec3(-0.42, 1.0, 0.58)), L4 = normalize(vec3(0.42, 1.0, 0.58));
+        float sp = pow(max(dot(Rf, L1), 0.0), 700.0) + pow(max(dot(Rf, L2), 0.0), 700.0)
+                 + pow(max(dot(Rf, L3), 0.0), 700.0) + pow(max(dot(Rf, L4), 0.0), 700.0);
+        float sheen = pow(max(dot(Rf, L1), 0.0), 40.0) + pow(max(dot(Rf, L4), 0.0), 40.0);
+        col += vec3(1.0, 0.97, 0.9) * (sp * 2.6 + sheen * 0.05);
+
+        // Köpük: kabarcık dokusuyla
+        float fo = s.a;
+        if (uLite < 0.5) fo *= 0.55 + 0.45 * cells(p / 5.0, uTime * 2.0);
+        col = mix(col, vec3(0.94, 0.98, 1.0), clamp(fo, 0.0, 0.92));
+
+        gl_FragColor = vec4(col, 1.0);
+      }`;
+
+    // Havuz tabanı: mozaik fayanslar ve tabana boyanmış saha çizgileri
+    function buildFloor() {
+      const k = 1.25;
+      const c = document.createElement('canvas');
+      c.width = Math.round(W * k);
+      c.height = Math.round(H * k);
+      const g = c.getContext('2d');
+      g.scale(k, k);
+      g.fillStyle = '#6fb4c9'; // derz
+      g.fillRect(0, 0, W, H);
+      const T = 18, gap = 1.3;
+      let seed = 7;
+      const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      for (let y = 0; y < H; y += T) {
+        for (let x = 0; x < W; x += T) {
+          const l = 74 + rnd() * 7, s = 62 + rnd() * 12;
+          g.fillStyle = `hsl(${188 + rnd() * 6}, ${s}%, ${l}%)`;
+          g.fillRect(x + gap / 2, y + gap / 2, T - gap, T - gap);
+        }
+      }
+      // Boyalı çizgiler
+      g.lineCap = 'round';
+      g.strokeStyle = 'rgba(12, 52, 96, 0.85)';
+      g.lineWidth = 7;
+      g.beginPath();
+      g.moveTo(0, H / 2);
+      g.lineTo(W, H / 2);
+      g.stroke();
+      g.beginPath();
+      g.arc(W / 2, H / 2, 80, 0, TAU);
+      g.stroke();
+      g.fillStyle = 'rgba(12, 52, 96, 0.85)';
+      g.beginPath();
+      g.arc(W / 2, H / 2, 10, 0, TAU);
+      g.fill();
+      [[0, H / 4], [W, H / 4], [0, (H * 3) / 4], [W, (H * 3) / 4]].forEach(([x, y]) => {
+        g.lineWidth = 5;
+        g.beginPath();
+        g.arc(x, y, 34, 0, TAU);
+        g.stroke();
+      });
+      [['#b8285e', 0, 0, Math.PI], ['#0d6fb3', H, Math.PI, TAU]].forEach(([colr, y, a0, a1]) => {
+        g.globalAlpha = 0.22;
+        g.fillStyle = colr;
+        g.beginPath();
+        g.arc(W / 2, y, 118, a0, a1);
+        g.fill();
+        g.globalAlpha = 0.9;
+        g.strokeStyle = colr;
+        g.lineWidth = 7;
+        g.beginPath();
+        g.arc(W / 2, y, 118, a0, a1);
+        g.stroke();
+        g.globalAlpha = 1;
+      });
+      // Duvar diplerinde ortam gölgesi
+      const edge = (x0, y0, x1, y1) => {
+        const gr = g.createLinearGradient(x0, y0, x1, y1);
+        gr.addColorStop(0, 'rgba(0, 30, 50, 0.45)');
+        gr.addColorStop(1, 'rgba(0, 30, 50, 0)');
+        return gr;
+      };
+      const E = 40;
+      g.fillStyle = edge(0, 0, E, 0); g.fillRect(0, 0, E, H);
+      g.fillStyle = edge(W, 0, W - E, 0); g.fillRect(W - E, 0, E, H);
+      g.fillStyle = edge(0, 0, 0, E); g.fillRect(0, 0, W, E);
+      g.fillStyle = edge(0, H, 0, H - E); g.fillRect(0, H - E, W, E);
+      return c;
+    }
+
+    function compile(type, src) {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || 'shader');
+      return s;
+    }
+
+    function setupGL() {
+      prog = gl.createProgram();
+      gl.attachShader(prog, compile(gl.VERTEX_SHADER, VS));
+      gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FS));
+      gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog) || 'link');
+      gl.useProgram(prog);
+
+      // Yalnızca oyun alanını kaplayan dörtgen (kenar 2B katmanda çizilir)
+      const x0 = (B / LW) * 2 - 1, x1 = ((B + W) / LW) * 2 - 1;
+      const yT = 1 - (B / LH) * 2, yB = 1 - ((B + H) / LH) * 2;
+      const buf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+        x0, yT, 0, 0, x1, yT, 1, 0, x0, yB, 0, 1, x1, yB, 1, 1,
+      ]), gl.STATIC_DRAW);
+      const aPos = gl.getAttribLocation(prog, 'aPos'), aUv = gl.getAttribLocation(prog, 'aUv');
+      gl.enableVertexAttribArray(aPos);
+      gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 16, 0);
+      gl.enableVertexAttribArray(aUv);
+      gl.vertexAttribPointer(aUv, 2, gl.FLOAT, false, 16, 8);
+
+      const tex = (unit) => {
+        const t = gl.createTexture();
+        gl.activeTexture(gl.TEXTURE0 + unit);
+        gl.bindTexture(gl.TEXTURE_2D, t);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        return t;
+      };
+      simTex = tex(0);
+      encode();
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, NX, NY, 0, gl.RGBA, gl.UNSIGNED_BYTE, pixU8);
+      floorTex = tex(1);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, floor);
+
+      U = {};
+      for (const n of ['uSim', 'uFloor', 'uSize', 'uTime', 'uLite', 'uObj']) U[n] = gl.getUniformLocation(prog, n);
+      gl.uniform1i(U.uSim, 0);
+      gl.uniform1i(U.uFloor, 1);
+      gl.uniform2f(U.uSize, W, H);
+      gl.clearColor(0.02, 0.05, 0.09, 1);
+      dirty = true;
+    }
+
+    function init(el) {
+      if (tried) return ok;
+      tried = true;
+      canvas = el;
+      floor = buildFloor();
+      try {
+        const opts = { alpha: false, antialias: false, depth: false, stencil: false, premultipliedAlpha: false, powerPreference: 'high-performance' };
+        gl = canvas.getContext('webgl', opts) || canvas.getContext('experimental-webgl', opts);
+        if (!gl) return false;
+        setupGL();
+        ok = true;
+        canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); ok = false; });
+        canvas.addEventListener('webglcontextrestored', () => {
+          try { setupGL(); ok = true; } catch (err) { ok = false; }
+        });
+      } catch (err) {
+        ok = false;
+      }
+      return ok;
+    }
+
+    function resize(cssW, cssH, dpr, radius) {
+      if (!canvas) return;
+      canvas.style.width = cssW + 'px';
+      canvas.style.height = cssH + 'px';
+      canvas.style.borderRadius = radius + 'px';
+      if (!ok) return;
+      canvas.width = Math.max(1, Math.round(cssW * dpr));
+      canvas.height = Math.max(1, Math.round(cssH * dpr));
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+
+    // Yumuşak (kosinüs) tümsek ekler; amt < 0 çukur açar
+    function stamp(cx, cy, r, amt) {
+      const gx = cx / CELL - 0.5, gy = cy / CELL - 0.5, gr = r / CELL;
+      const x0 = Math.max(0, Math.floor(gx - gr)), x1 = Math.min(NX - 1, Math.ceil(gx + gr));
+      const y0 = Math.max(0, Math.floor(gy - gr)), y1 = Math.min(NY - 1, Math.ceil(gy + gr));
+      const inv = 1 / gr;
+      for (let y = y0; y <= y1; y++) {
+        const dy = y - gy;
+        for (let x = x0; x <= x1; x++) {
+          const dx = x - gx;
+          const t = Math.sqrt(dx * dx + dy * dy) * inv;
+          if (t < 1) h[y * NX + x] += amt * (0.5 + 0.5 * Math.cos(Math.PI * t));
+        }
+      }
+    }
+
+    function addFoam(cx, cy, r, amt) {
+      const gx = cx / CELL - 0.5, gy = cy / CELL - 0.5, gr = r / CELL;
+      const x0 = Math.max(0, Math.floor(gx - gr)), x1 = Math.min(NX - 1, Math.ceil(gx + gr));
+      const y0 = Math.max(0, Math.floor(gy - gr)), y1 = Math.min(NY - 1, Math.ceil(gy + gr));
+      for (let y = y0; y <= y1; y++) {
+        for (let x = x0; x <= x1; x++) {
+          const t = Math.hypot(x - gx, y - gy) / gr;
+          if (t < 1) {
+            const i = y * NX + x;
+            foam[i] = Math.min(1, foam[i] + amt * (1 - t));
+          }
+        }
+      }
+    }
+
+    // Çarpışma / gol sıçraması: çukur + halka dalgası + köpük
+    function splash(x, y, k) {
+      if (!tried) return;
+      k = clamp(k, 0, 2);
+      stamp(x, y, 12 + k * 16, -(0.2 + k * 0.8));
+      addFoam(x, y, 14 + k * 14, 0.25 + k * 0.6);
+    }
+
+    function simStep() {
+      for (let y = 0; y < NY; y++) {
+        const row = y * NX;
+        const up = y > 0 ? row - NX : row, dn = y < NY - 1 ? row + NX : row;
+        for (let x = 0; x < NX; x++) {
+          const i = row + x;
+          const l = x > 0 ? h[i - 1] : h[i];
+          const r = x < NX - 1 ? h[i + 1] : h[i];
+          const avg = (l + r + h[up + x] + h[dn + x]) * 0.25;
+          v[i] = (v[i] + (avg - h[i]) * SPEED) * DAMP;
+        }
+      }
+      for (let i = 0; i < N; i++) {
+        h[i] = (h[i] + v[i]) * 0.99995;
+        foam[i] *= 0.991;
+      }
+    }
+
+    // Yükseklik alanı → doku: R/G yüzey eğimi, B eğrilik (kostik), A köpük
+    function encode() {
+      for (let y = 0; y < NY; y++) {
+        const row = y * NX;
+        const up = y > 0 ? row - NX : row, dn = y < NY - 1 ? row + NX : row;
+        for (let x = 0; x < NX; x++) {
+          const i = row + x, j = i * 4;
+          const c = h[i];
+          const l = x > 0 ? h[i - 1] : c, r = x < NX - 1 ? h[i + 1] : c;
+          const u = h[up + x], d = h[dn + x];
+          pix[j] = 128 + (l - r) * 170;
+          pix[j + 1] = 128 + (u - d) * 170;
+          pix[j + 2] = 128 - (l + r + u + d - 4 * c) * 420;
+          pix[j + 3] = foam[i] * 255;
+        }
+      }
+      dirty = true;
+    }
+
+    // list: { id, x, y, r, depth } — o karedeki yüzen nesneler
+    function update(dt, list, lite) {
+      if (!tried) return;
+      time += dt;
+      acc = Math.min(acc + dt, STEP * 8);
+      const n = Math.min(lite ? 2 : 4, Math.floor(acc / STEP));
+      if (!n) return;
+      acc -= n * STEP;
+
+      // Kaybolan nesnelerin çukuru kapanır; yeni gelenler suya oturur
+      for (const [id, b] of bodies) {
+        if (!list.some((o) => o.id === id)) {
+          stamp(b.x, b.y, b.r, b.depth);
+          bodies.delete(id);
+        }
+      }
+      for (const o of list) {
+        let b = bodies.get(o.id);
+        if (!b) {
+          b = { x: o.x, y: o.y, r: o.r, depth: o.depth, sx: o.x, sy: o.y };
+          bodies.set(o.id, b);
+          stamp(o.x, o.y, o.r, -o.depth);
+        }
+        b.sx = b.x;
+        b.sy = b.y;
+      }
+
+      for (let s = 1; s <= n; s++) {
+        const f = s / n;
+        for (const o of list) {
+          const b = bodies.get(o.id);
+          const nx = b.sx + (o.x - b.sx) * f, ny = b.sy + (o.y - b.sy) * f;
+          const dist = Math.hypot(nx - b.x, ny - b.y);
+          if (dist > 0.01) {
+            // Hacim korunur: eski yerde su geri dolar, yeni yerde çukur açılır
+            stamp(b.x, b.y, o.r, o.depth);
+            stamp(nx, ny, o.r, -o.depth);
+            const speed = dist / STEP;
+            if (speed > 550) addFoam(nx, ny, o.r * 0.9, Math.min(0.25, (speed - 550) / 9000));
+            b.x = nx;
+            b.y = ny;
+          }
+        }
+        // Havuz sirkülasyonundan küçük rastgele damlalar (yüzey hiç tamamen durmaz)
+        if (Math.random() < 0.35) stamp(Math.random() * W, Math.random() * H, 6 + Math.random() * 8, (Math.random() - 0.5) * 0.05);
+        simStep();
+      }
+      encode();
+    }
+
+    function render() {
+      if (!ok) return;
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.useProgram(prog);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, simTex);
+      if (dirty) {
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, NX, NY, gl.RGBA, gl.UNSIGNED_BYTE, pixU8);
+        dirty = false;
+      }
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, floorTex);
+      gl.uniform1f(U.uTime, time);
+      gl.uniform1f(U.uLite, quality.lite ? 1 : 0);
+      gl.uniform4fv(U.uObj, objs);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+
+    function setObjects(list) {
+      objs.fill(0);
+      for (let k = 0; k < Math.min(4, list.length); k++) {
+        const o = list[k];
+        objs[k * 4] = o.x;
+        objs[k * 4 + 1] = o.y;
+        objs[k * 4 + 2] = o.r;
+        objs[k * 4 + 3] = 1;
+      }
+    }
+
+    function reset() {
+      h.fill(0);
+      v.fill(0);
+      foam.fill(0);
+      bodies.clear();
+      encode();
+    }
+
+    function stats() {
+      let mx = 0, bad = 0, mv = 0;
+      for (let i = 0; i < N; i++) {
+        const a = Math.abs(h[i]);
+        if (!Number.isFinite(h[i])) bad++;
+        else if (a > mx) mx = a;
+        const b = Math.abs(v[i]);
+        if (b > mv) mv = b;
+      }
+      return { maxH: +mx.toFixed(3), maxV: +mv.toFixed(3), bad, bodies: bodies.size };
+    }
+
+    return {
+      init, resize, update, render, splash, setObjects, reset, stats,
+      get ok() { return ok; },
+      get floor() { return floor || (floor = buildFloor()); },
+    };
+  })();
 
   // ---------------------------------------------------------------------------
   // Oyun durumu
@@ -858,6 +1538,7 @@
   function spawn(x, y, rgb, count, speed, life, size, opts = {}) {
     if (quality.lite) count = Math.ceil(count * 0.5);
     const max = quality.lite ? 180 : 360;
+    if (isWater() && !opts.keep) rgb = '215,240,255'; // suda kıvılcım yerine su damlası
     const col = `rgb(${rgb})`;
     for (let i = 0; i < count; i++) {
       if (particles.length >= max) break;
@@ -1123,6 +1804,10 @@
     if (k > 0.35) ripple(m.hx, m.hy, col.rgb, 10, 50 + k * 50, 0.35, 3);
     game.shake = Math.max(game.shake, k * 5);
     Sound.hit(k, m.hx);
+    if (isWater()) {
+      Water.splash(m.hx, m.hy, k * 0.9);
+      Sound.splash(k * 0.8, m.hx);
+    }
     if (!m.ai) vibrate(Math.round(6 + k * 18));
   }
 
@@ -1131,6 +1816,10 @@
     ripple(x, y, PUCK_RGB, 6, 30 + k * 40, 0.4, 2.5);
     if (k > 0.2) spawn(x, y, PUCK_RGB, Math.round(3 + k * 8), 150 + k * 350, 0.35, 2.4, { spark: true });
     Sound.wall(k, x);
+    if (isWater()) {
+      Water.splash(x, y, k * 0.7);
+      Sound.splash(k * 0.55, x);
+    }
   }
 
   function onPuckHit(x, y, imp) {
@@ -1139,6 +1828,7 @@
     spawn(x, y, '255,255,255', Math.round(4 + k * 10), 200 + k * 400, 0.35, 2.4, { spark: true });
     spawn(x, y, PUCK_RGB, Math.round(3 + k * 8), 150 + k * 300, 0.4, 2.4, { spark: true });
     Sound.clack(k, x);
+    if (isWater()) Water.splash(x, y, k * 0.6);
   }
 
   function onGoal(scorer, p) {
@@ -1152,7 +1842,9 @@
     p.visible = false;
 
     const dir = scorer === 0 ? Math.PI / 2 : -Math.PI / 2;
-    spawn(gx, gy, col.rgb, 70, 1100, 1.1, 4, { dir, spread: 1.25, spark: true });
+    spawn(gx, gy, col.rgb, 70, 1100, 1.1, 4, { dir, spread: 1.25, spark: true, keep: true });
+    Water.splash(gx, scorer === 0 ? 14 : H - 14, 1.8);
+    if (isWater()) Sound.splash(1, gx);
     spawn(gx, gy, PUCK_RGB, 30, 700, 0.9, 3.5, { dir, spread: 1.4 });
     spawn(gx, gy, '255,255,255', 20, 500, 0.6, 2.5, { dir, spread: 1.5, spark: true });
     ripple(gx, gy, col.rgb, 20, 300, 0.8, 8);
@@ -1255,6 +1947,7 @@
     ripple(W / 2, gy, sk.rgb, 20, 240, 0.7, 6);
     spawn(W / 2, gy, sk.rgb, 34, 650, 0.8, 3, { dir: gi === 1 ? Math.PI / 2 : -Math.PI / 2, spread: 1.3, spark: true });
     floaters.push({ text: sk.name + '!', gi, rgb: sk.rgb, t: 0, dur: 1.3 });
+    if (isWater()) Water.splash(W / 2, gi === 1 ? 16 : H - 16, 1.2);
     Sound.skill(key);
     if (human) vibrate(25);
     skillUI.dirty = true;
@@ -1784,6 +2477,36 @@
     // Kare hızı düşse de oyun gerçek zamanlı aksın: fiziği en fazla 1/60 sn'lik adımlarla çalıştır.
     const n = Math.max(1, Math.ceil(dt * 60 - 1e-6));
     for (let i = 0; i < n; i++) stepPhysics(dt / n, n - 1 - i);
+    if (isWater()) updateWater(dt);
+  }
+
+  // Suda yüzen nesneler: raketler daha derin oturur (daha çok su iter), paklar daha sığ
+  const floatBodies = [
+    { id: 'm0', x: 0, y: 0, r: MALLET_R, depth: 0.5 },
+    { id: 'm1', x: 0, y: 0, r: MALLET_R, depth: 0.5 },
+    { id: 'p0', x: 0, y: 0, r: PUCK_R, depth: 0.38 },
+    { id: 'p1', x: 0, y: 0, r: PUCK_R, depth: 0.38 },
+  ];
+  const floatList = [];
+
+  function updateWater(dt) {
+    floatList.length = 0;
+    for (let i = 0; i < 2; i++) {
+      const b = floatBodies[i];
+      b.x = mallets[i].x;
+      b.y = mallets[i].y;
+      floatList.push(b);
+    }
+    for (let i = 0; i < pucks.length && i < 2; i++) {
+      const p = pucks[i];
+      if (!p.visible) continue;
+      const b = floatBodies[2 + i];
+      b.x = p.x;
+      b.y = p.y;
+      floatList.push(b);
+    }
+    Water.update(dt, floatList, quality.lite);
+    Water.setObjects(floatList);
   }
 
   function endMatch() {
@@ -2329,7 +3052,7 @@
           fill = left / sk.dur;
         } else if (free > 0 || owned > 0) {
           state = playing ? 'ready' : 'wait';
-          sub = free > 0 ? 'Ücretsiz hakkın var' : `Envanter: ${owned}`;
+          sub = free > 0 ? (key === 'grow' ? 'Rakip kale büyür' : 'Kalen küçülür') : `Envanter: ${owned}`;
           fill = 1;
         } else {
           state = 'buy';
@@ -2506,6 +3229,19 @@
     }
   }
 
+  // Tema: Neon ya da Su Stadyumu
+  function applyTheme() {
+    const water = isWater();
+    if (water && !Water.init(waterCanvas)) {
+      toast('Bu cihaz WebGL desteklemiyor: su durağan gösterilecek.');
+    }
+    document.body.classList.toggle('theme-water', water);
+    goalSprites[0] = goalSprites[1] = null;
+    if (water) Water.reset();
+    resize();
+    Sound.ambient(water);
+  }
+
   // Menü seçimleri
   function syncMenu() {
     document.querySelectorAll('.seg').forEach((seg) => {
@@ -2530,9 +3266,11 @@
       const b = e.target.closest('button');
       if (!b) return;
       const key = seg.dataset.group;
+      const prev = settings[key];
       settings[key] = b.dataset.value;
       store.set(key, settings[key]);
       syncMenu();
+      if (key === 'theme' && prev !== settings.theme) applyTheme();
     });
   });
 
@@ -2743,14 +3481,32 @@
   }
 
   function render() {
+    if (isWater()) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
     let ox = 0, oy = 0;
-    if (game.shake > 0.3 && !reduceMotion) {
+    if (isWater()) {
+      // Su ve kenar birlikte sarsılsın: iki tuvali taşıyan kutuyu kaydır
+      const board = canvas.parentElement;
+      if (game.shake > 0.3 && !reduceMotion) {
+        const k = cssScale;
+        board.style.transform = `translate(${(rand(-1, 1) * game.shake * k).toFixed(1)}px, ${(rand(-1, 1) * game.shake * k).toFixed(1)}px)`;
+        boardShaken = true;
+      } else if (boardShaken) {
+        board.style.transform = '';
+        boardShaken = false;
+      }
+    } else if (game.shake > 0.3 && !reduceMotion) {
       ox = rand(-1, 1) * game.shake;
       oy = rand(-1, 1) * game.shake;
-      // Sarsıntıda kenarlarda eski kare kalmasın
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.fillStyle = '#05060f';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Sarsıntıda kenarlarda eski kare kalmasın (su temasında tuval zaten her karede temizleniyor;
+      // doldurmak alttaki suyu örterdi)
+      if (!isWater()) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillStyle = '#05060f';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
     }
     ctx.setTransform(S, 0, 0, S, ox * S, oy * S);
     ctx.drawImage(tableLayer, 0, 0, LW, LH);
@@ -2798,7 +3554,7 @@
   }
 
   function drawRipples() {
-    if (!ripples.length) return;
+    if (!ripples.length || isWater()) return; // suda gerçek dalgalar var
     ctx.globalCompositeOperation = 'lighter';
     for (const r of ripples) {
       const t = r.t / r.dur;
@@ -2821,7 +3577,7 @@
   function drawPuck(p) {
     const tr = p.trail;
     const n = tr.length / 2;
-    if (n > 1) {
+    if (n > 1 && !isWater()) { // suda iz yerine köpük ve dalga bırakır
       const sp = Math.hypot(p.vx, p.vy);
       const heat = clamp((sp - 600) / 1500, 0, 1);
       ctx.globalCompositeOperation = 'lighter';
@@ -2850,7 +3606,7 @@
 
   function drawMallets() {
     for (const m of mallets) {
-      if (m.glow > 0.01) {
+      if (m.glow > 0.01 && !isWater()) {
         ctx.globalCompositeOperation = 'lighter';
         ctx.globalAlpha = m.glow;
         const s = MS * (1 + (1 - m.glow) * 0.35);
@@ -2927,7 +3683,10 @@
     trackFrame(raw);
     if (dt > 0) update(dt);
     // Duraklatılmışken ekranda değişen bir şey yok: çizme (pil ve ısınma için)
-    if (game.state !== 'paused') render();
+    if (game.state !== 'paused') {
+      if (isWater()) Water.render();
+      render();
+    }
     if (game.state !== 'demo') updateSkillUI();
     requestAnimationFrame(frame);
   }
@@ -2949,7 +3708,7 @@
 
   syncMenu();
   renderInventory();
-  resize();
+  applyTheme();
   startDemo();
   requestAnimationFrame(frame);
 
@@ -2960,5 +3719,5 @@
   }
 
   // Test ve hata ayıklama için
-  window.__airHockey = { game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update };
+  window.__airHockey = { Water, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update };
 })();

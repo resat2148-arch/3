@@ -26,7 +26,10 @@
   </div>
 
   <main id="stage">
-    <canvas id="game" aria-label="Air hockey masası"></canvas>
+    <div class="board">
+      <canvas id="water" aria-hidden="true"></canvas>
+      <canvas id="game" aria-label="Air hockey masası"></canvas>
+    </div>
   </main>
 
   <!-- Skill düğmeleri (alt: Mavi, üst: Pembe — iki oyunculu modda) -->
@@ -34,13 +37,13 @@
     <button class="skill-btn" data-skill="grow" type="button" aria-label="Dev Kale: rakibin kalesi 5 saniye büyür">
       <span class="skill-ico"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6v12M15 6v12M2 12h4M4 10l-2 2 2 2M22 12h-4M20 10l2 2-2 2"/></svg></span></span>
       <span class="skill-count" aria-hidden="true"></span>
-      <span class="skill-text"><b>Dev Kale</b><small data-role="sub">Ücretsiz hakkın var</small></span>
+      <span class="skill-text"><b>Dev Kale</b><small data-role="sub">Rakip kale büyür</small></span>
       <kbd>1</kbd>
     </button>
     <button class="skill-btn" data-skill="shrink" type="button" aria-label="Kale Kilidi: kendi kalen 5 saniye küçülür">
       <span class="skill-ico"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12h6"/></svg></span></span>
       <span class="skill-count" aria-hidden="true"></span>
-      <span class="skill-text"><b>Kale Kilidi</b><small data-role="sub">Ücretsiz hakkın var</small></span>
+      <span class="skill-text"><b>Kale Kilidi</b><small data-role="sub">Kalen küçülür</small></span>
       <kbd>2</kbd>
     </button>
   </div>
@@ -48,13 +51,13 @@
     <button class="skill-btn" data-skill="grow" type="button" aria-label="Dev Kale: rakibin kalesi 5 saniye büyür">
       <span class="skill-ico"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6v12M15 6v12M2 12h4M4 10l-2 2 2 2M22 12h-4M20 10l2 2-2 2"/></svg></span></span>
       <span class="skill-count" aria-hidden="true"></span>
-      <span class="skill-text"><b>Dev Kale</b><small data-role="sub">Ücretsiz hakkın var</small></span>
+      <span class="skill-text"><b>Dev Kale</b><small data-role="sub">Rakip kale büyür</small></span>
       <kbd>Q</kbd>
     </button>
     <button class="skill-btn" data-skill="shrink" type="button" aria-label="Kale Kilidi: kendi kalen 5 saniye küçülür">
       <span class="skill-ico"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12h6"/></svg></span></span>
       <span class="skill-count" aria-hidden="true"></span>
-      <span class="skill-text"><b>Kale Kilidi</b><small data-role="sub">Ücretsiz hakkın var</small></span>
+      <span class="skill-text"><b>Kale Kilidi</b><small data-role="sub">Kalen küçülür</small></span>
       <kbd>E</kbd>
     </button>
   </div>
@@ -93,6 +96,14 @@
         <div class="seg" data-group="mode">
           <button data-value="ai">Tek Oyuncu</button>
           <button data-value="pvp">İki Oyuncu</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="label">Tema</div>
+        <div class="seg" data-group="theme">
+          <button data-value="neon">Neon</button>
+          <button data-value="water">Su Stadyumu</button>
         </div>
       </div>
 

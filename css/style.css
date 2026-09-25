@@ -135,7 +135,25 @@ body.playing .bg-grid::before {
   padding: calc(var(--safe-t) + 64px) calc(var(--safe-r) + 10px) calc(var(--safe-b) + 10px) calc(var(--safe-l) + 10px);
 }
 
+.board {
+  position: relative;
+  line-height: 0;
+}
+
+/* Su teması: WebGL su katmanı oyun tuvalinin altında */
+#water {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: none;
+}
+
+body.theme-water #water {
+  display: block;
+}
+
 #game {
+  position: relative;
   display: block;
   touch-action: none;
   box-shadow:
@@ -146,6 +164,29 @@ body.playing .bg-grid::before {
 
 body.playing #game {
   cursor: none;
+}
+
+/* Su Stadyumu teması: gece stadyumu, projektör ışıkları */
+body.theme-water .bg {
+  background:
+    radial-gradient(40% 30% at 8% 0%, rgba(255, 250, 225, 0.22), transparent 70%),
+    radial-gradient(40% 30% at 92% 0%, rgba(255, 250, 225, 0.22), transparent 70%),
+    radial-gradient(40% 30% at 8% 100%, rgba(255, 250, 225, 0.14), transparent 70%),
+    radial-gradient(40% 30% at 92% 100%, rgba(255, 250, 225, 0.14), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 50% 50%, #0b2d4a, transparent 75%),
+    linear-gradient(#03080f, #06172a 50%, #03080f);
+}
+
+body.theme-water .blob,
+body.theme-water .bg-grid {
+  display: none;
+}
+
+body.theme-water #game {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 70px rgba(80, 180, 255, 0.18),
+    0 30px 80px rgba(0, 0, 0, 0.8);
 }
 
 /* Maç sırasında arka plan bulanıklığı yerine opak zemin (her karede bulanıklık hesaplanmasın) */
