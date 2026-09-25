@@ -60,7 +60,7 @@
     difficulty: store.get('difficulty', 'medium'),
     sound: store.get('sound', true),
     volume: clamp(Number(store.get('volume', 1)) || 0, 0, 1),
-    theme: ['water', 'ice', 'lava', 'sand', 'space'].includes(store.get('theme', 'neon')) ? store.get('theme', 'neon') : 'neon',
+    theme: ['water', 'ice', 'lava', 'sand', 'space', 'crystal'].includes(store.get('theme', 'neon')) ? store.get('theme', 'neon') : 'neon',
   };
 
   const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -138,7 +138,7 @@
         this.scrapeNode = null;
       }
       this.ambTheme = theme;
-      if (!['water', 'ice', 'lava', 'sand', 'space'].includes(theme)) return;
+      if (!['water', 'ice', 'lava', 'sand', 'space', 'crystal'].includes(theme)) return;
       const loop = () => {
         const src = c.createBufferSource();
         src.buffer = this.noiseBuf;
@@ -280,6 +280,36 @@
         for (const o of [...oscs, lfo, air, lfo2, hum, hum2]) o.start();
         this.scrapeNode = hg;
         stop.push(...oscs, lfo, air, lfo2, hum, hum2);
+      } else if (theme === 'crystal') {
+        // Mağara: derinden esen, yavaşça kabarıp inen hava + çok hafif kristal uğultusu
+        const cave = loop();
+        const cg = c.createGain();
+        cg.gain.value = 0.06;
+        const lfo = c.createOscillator();
+        lfo.frequency.value = 0.07;
+        const lg = c.createGain();
+        lg.gain.value = 0.03;
+        lfo.connect(lg);
+        lg.connect(cg.gain);
+        chain(cave, filt('lowpass', 260, 0.7), filt('peaking', 110, 1, 4), cg, out);
+        // Kristallerin sessiz rezonansı: C ve G, çok hafif, yavaşça dalgalanan
+        const res = [261.63, 392, 523.25].map((hz, i) => {
+          const o = c.createOscillator();
+          o.frequency.value = hz * (1 + (i - 1) * 0.0015);
+          return o;
+        });
+        const rg = c.createGain();
+        rg.gain.value = 0.006;
+        res.forEach((o) => o.connect(rg));
+        chain(rg, out);
+        // Diskin kristaller üzerinde kayma sesi (setScrape): ince cam hışırtısı
+        const sc = loop();
+        const sg = c.createGain();
+        sg.gain.value = 0;
+        chain(sc, filt('bandpass', 5200, 1.2), sg, out);
+        for (const o of [cave, lfo, ...res, sc]) o.start();
+        this.scrapeNode = sg;
+        stop.push(cave, lfo, ...res, sc);
       } else {
         // Soğuk arena uğultusu
         const hum = loop();
@@ -380,6 +410,39 @@
       [880, 1318.5, 1760, 2637].forEach((f, i) => {
         this.tone({ f0: f * 0.5, f1: f, dur: 1.1, vol: 0.05, delay: 0.05 + i * 0.07, pan: (i % 2 ? 1 : -1) * 0.5, rev: 0.6, detune: i * 5 });
       });
+    },
+    // Kristal çanı: berrak temel + hafif akortsuz ikizi (parıltılı çınlama) + cam kısmileri
+    // (1 : 2.61 : 4.9). strike: raket vuruşunun tok gövdesi de eklenir.
+    bell(f, k, x, strike, name = 'bell') {
+      if (!this.ok(name, 0.035)) return;
+      const pan = this.panOf(x);
+      k = clamp(k, 0, 1);
+      const v = 0.2 + k * 0.35;
+      this.tone({ f0: f, f1: f, dur: 1.4 + k * 1.2, vol: v, pan, rev: 0.55, attack: 0.002 });
+      this.tone({ f0: f * 1.004, f1: f * 1.004, dur: 1.2 + k, vol: v * 0.45, pan: -pan * 0.3, rev: 0.55 });
+      this.tone({ f0: f * 2.61, f1: f * 2.6, dur: 0.5 + k * 0.4, vol: v * 0.22, pan, rev: 0.45 });
+      this.tone({ f0: f * 4.9, f1: f * 4.88, dur: 0.22 + k * 0.2, vol: v * 0.12, pan, rev: 0.4 });
+      this.noise({ dur: 0.02, vol: 0.12 + k * 0.25, type: 'highpass', freq: 6500, pan });
+      if (strike) {
+        this.tone({ f0: 200 + k * 80, f1: 70, dur: 0.1, vol: 0.4 + k * 0.4, pan, lp: 900 });
+      }
+    },
+    // Golde yükselen kristal arpeji (golün girdiği kristalin notasından başlar)
+    chime(f, x) {
+      if (!this.ok('chime', 0.3)) return;
+      const steps = [0, 2, 4, 7, 9, 12, 14, 16];
+      steps.forEach((st, i) => {
+        const g = f * Math.pow(2, st / 12);
+        this.tone({ f0: g, f1: g, dur: 1.6, vol: 0.14, delay: 0.1 + i * 0.075, pan: ((i % 3) - 1) * 0.5, rev: 0.6 });
+        this.tone({ f0: g * 2.61, f1: g * 2.6, dur: 0.4, vol: 0.03, delay: 0.1 + i * 0.075, rev: 0.5 });
+      });
+    },
+    // Mağarada damlayan su
+    drip(x) {
+      if (!this.ok('drip', 0.5)) return;
+      const f = 900 + Math.random() * 700;
+      const pan = this.panOf(x);
+      this.tone({ f0: f * 1.5, f1: f * 0.7, dur: 0.09, vol: 0.05, pan, rev: 0.8 });
     },
     // Lav kabarcığı patlaması
     bloop(x) {
@@ -688,6 +751,7 @@
   const isLava = () => settings.theme === 'lava';
   const isSand = () => settings.theme === 'sand';
   const isSpace = () => settings.theme === 'space';
+  const isCrystal = () => settings.theme === 'crystal';
   const stage = document.getElementById('stage');
   let S = 1; // mantıksal birim başına cihaz pikseli
   let cssScale = 1, boardShaken = false;
@@ -1168,6 +1232,180 @@
     return c;
   }
 
+  // Kristal Mağarası: kaba kaya kenar, karanlık zeminde koyu renkli fasetli kristaller (her yüz
+  // ışığa göre farklı tonda), ince parlak kenarlar ve kristale kazınmış soluk saha çizgileri.
+  // Işık dalgaları ve parıltı Crystal katmanıyla üstten gelir.
+  function buildCrystalTable(g) {
+    rr(g, 0, 0, LW, LH, 44);
+    const rock = g.createLinearGradient(0, 0, LW, LH);
+    rock.addColorStop(0, '#2a2638');
+    rock.addColorStop(0.5, '#15131f');
+    rock.addColorStop(1, '#241f33');
+    g.fillStyle = rock;
+    g.fill();
+    let seed = 57;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    g.save();
+    rr(g, 0, 0, LW, LH, 44);
+    g.clip();
+    for (let i = 0; i < 600; i++) {
+      g.fillStyle = rnd() < 0.5 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.3)';
+      g.fillRect(rnd() * LW, rnd() * LH, 1.5, 1.5);
+    }
+    // Kenarda küçük kristal kümeleri
+    const fams = Crystal.FAMILIES;
+    for (let i = 0; i < 26; i++) {
+      const side = i % 4;
+      const t = rnd();
+      const x = side === 0 ? t * LW : side === 1 ? LW - B * 0.5 : side === 2 ? t * LW : B * 0.5;
+      const y = side === 0 ? B * 0.5 : side === 1 ? t * LH : side === 2 ? LH - B * 0.5 : t * LH;
+      const [r, gg, b] = fams[(rnd() * fams.length) | 0].rgb;
+      for (let k = 0; k < 3; k++) {
+        const a = rnd() * TAU, len = 5 + rnd() * 9, w = 2 + rnd() * 2;
+        g.save();
+        g.translate(x + (rnd() - 0.5) * 8, y + (rnd() - 0.5) * 8);
+        g.rotate(a);
+        g.fillStyle = `rgba(${r}, ${gg}, ${b}, 0.55)`;
+        g.beginPath();
+        g.moveTo(0, -w); g.lineTo(len, 0); g.lineTo(0, w);
+        g.closePath();
+        g.fill();
+        g.restore();
+      }
+    }
+    g.restore();
+    [[COLORS[1], 4], [COLORS[0], LH - 8]].forEach(([col, y]) => {
+      g.fillStyle = `rgba(${col.rgb}, 0.8)`;
+      rr(g, LW / 2 - 150, y, 300, 4, 2);
+      g.fill();
+    });
+    rr(g, B - 2, B - 2, W + 4, H + 4, 28);
+    g.lineWidth = 2;
+    g.strokeStyle = 'rgba(190, 170, 255, 0.35)';
+    g.stroke();
+
+    g.save();
+    g.translate(B, B);
+    rr(g, 0, 0, W, H, 26);
+    g.clip();
+    g.fillStyle = '#06050b';
+    g.fillRect(0, 0, W, H);
+    // Kristaller: her yüz ışığa göre farklı koyulukta
+    for (const c of Crystal.cells) {
+      const [r, gg, b] = fams[c.fam].rgb;
+      const poly = c.poly;
+      for (let k = 0; k < poly.length; k++) {
+        const a = poly[k], q = poly[(k + 1) % poly.length], f = c.facets[k];
+        const m = 0.06 + f * 0.11;
+        g.fillStyle = `rgb(${(r * m + 8) | 0}, ${(gg * m + 6) | 0}, ${(b * m + 12) | 0})`;
+        g.beginPath();
+        g.moveTo(c.apex[0], c.apex[1]);
+        g.lineTo(a[0], a[1]);
+        g.lineTo(q[0], q[1]);
+        g.closePath();
+        g.fill();
+      }
+    }
+    // Faset çizgileri ve kristal kenarları
+    g.lineWidth = 0.7;
+    g.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+    g.beginPath();
+    for (const c of Crystal.cells) {
+      for (const a of c.poly) { g.moveTo(c.apex[0], c.apex[1]); g.lineTo(a[0], a[1]); }
+    }
+    g.stroke();
+    g.lineWidth = 1.4;
+    g.strokeStyle = 'rgba(0, 0, 0, 0.75)';
+    g.beginPath();
+    for (const c of Crystal.cells) {
+      c.poly.forEach((a, k) => (k ? g.lineTo(a[0], a[1]) : g.moveTo(a[0], a[1])));
+      g.closePath();
+    }
+    g.stroke();
+    // Kristale kazınmış soluk saha çizgileri
+    g.lineCap = 'round';
+    const paint = (color, width, alpha, fn) => {
+      g.globalAlpha = alpha;
+      g.strokeStyle = color;
+      g.lineWidth = width;
+      g.beginPath();
+      fn();
+      g.stroke();
+      g.globalAlpha = 1;
+    };
+    paint('#e6e0ff', 2.5, 0.3, () => { g.moveTo(0, H / 2); g.lineTo(W, H / 2); });
+    paint('#e6e0ff', 2.5, 0.28, () => g.arc(W / 2, H / 2, 80, 0, TAU));
+    [['#ff6aa6', 0, 0, Math.PI], ['#4cc8f5', H, Math.PI, TAU]].forEach(([colr, y, a0, a1]) => {
+      paint(colr, 3.5, 0.45, () => g.arc(W / 2, y, 118, a0, a1));
+    });
+    // Mağara karanlığı: kenarlara doğru koyulaşır
+    const vig = g.createRadialGradient(W / 2, H / 2, H * 0.25, W / 2, H / 2, H * 0.62);
+    vig.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    vig.addColorStop(1, 'rgba(0, 0, 0, 0.55)');
+    g.fillStyle = vig;
+    g.fillRect(0, 0, W, H);
+    g.restore();
+  }
+
+  // Kristal Mağarası pakı: berrak, fasetli bir kristal disk
+  function buildCrystalPuck(c, g, r) {
+    const halo = g.createRadialGradient(0, 0, r * 0.7, 0, 0, r + PS_PAD * 0.7);
+    halo.addColorStop(0, 'rgba(220, 230, 255, 0.4)');
+    halo.addColorStop(1, 'rgba(180, 160, 255, 0)');
+    g.fillStyle = halo;
+    g.beginPath();
+    g.arc(0, 0, r + PS_PAD * 0.7, 0, TAU);
+    g.fill();
+    // Altıgen fasetler
+    const n = 6;
+    for (let k = 0; k < n; k++) {
+      const a0 = (k / n) * TAU - Math.PI / 2, a1 = ((k + 1) / n) * TAU - Math.PI / 2;
+      const l = 0.55 + 0.4 * Math.max(0, Math.cos((a0 + a1) / 2 + 2.3));
+      g.fillStyle = `rgba(${(200 + 55 * l) | 0}, ${(215 + 40 * l) | 0}, 255, ${0.55 + 0.35 * l})`;
+      g.beginPath();
+      g.moveTo(0, 0);
+      g.arc(0, 0, r, a0, a1);
+      g.closePath();
+      g.fill();
+    }
+    // İç altıgen tabla
+    g.beginPath();
+    for (let k = 0; k < n; k++) {
+      const a = (k / n) * TAU - Math.PI / 2;
+      g.lineTo(Math.cos(a) * r * 0.5, Math.sin(a) * r * 0.5);
+    }
+    g.closePath();
+    g.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    g.fill();
+    g.lineWidth = 1;
+    g.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+    g.stroke();
+    g.beginPath();
+    for (let k = 0; k < n; k++) {
+      const a = (k / n) * TAU - Math.PI / 2;
+      g.moveTo(Math.cos(a) * r * 0.5, Math.sin(a) * r * 0.5);
+      g.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    g.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    g.stroke();
+    g.lineWidth = 2;
+    g.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+    g.beginPath();
+    g.arc(0, 0, r - 1, 0, TAU);
+    g.stroke();
+    // Prizma pırıltısı
+    g.globalCompositeOperation = 'lighter';
+    [['255, 80, 120', -0.9], ['255, 220, 80', -0.7], ['80, 255, 160', -0.5], ['90, 140, 255', -0.3]].forEach(([col, a]) => {
+      g.strokeStyle = `rgba(${col}, 0.5)`;
+      g.lineWidth = 1.5;
+      g.beginPath();
+      g.arc(0, 0, r * 0.78, a * Math.PI - 0.12, a * Math.PI + 0.12);
+      g.stroke();
+    });
+    g.globalCompositeOperation = 'source-over';
+    return c;
+  }
+
   // Buz teması: saha kenarı (beyaz bant + sarı tekme şeridi), derin buzul gölü, buzun içinde
   // donmuş kabarcıklar ve eski çatlaklar, buz altı çizgileri, kırağı, kenarda kar, ışık parlaması.
   function buildIceTable(g) {
@@ -1515,6 +1753,10 @@
       buildSpaceTable(g);
       return;
     }
+    if (isCrystal()) {
+      buildCrystalTable(g);
+      return;
+    }
 
     // Dış çerçeve
     rr(g, 0, 0, LW, LH, 44);
@@ -1785,6 +2027,7 @@
     if (style === 'lava') return buildLavaPuck(c, g, r);
     if (style === 'sand') return buildSandPuck(c, g, r);
     if (style === 'space') return buildSpacePuck(c, g, r);
+    if (style === 'crystal') return buildCrystalPuck(c, g, r);
 
     g.save();
     g.shadowColor = 'rgba(0,0,0,0.7)';
@@ -3739,6 +3982,312 @@
   })();
 
   // ---------------------------------------------------------------------------
+  // Kristal Mağarası: zemin, karanlık bir mağarada renk bölgelerine ayrılmış fasetli kristallerden
+  // oluşur. Vuruşlar genişleyen ışık dalgaları yayar; dalga cephesi ilerledikçe prizmadaki gibi
+  // gökkuşağı bantlarına ayrışır (uzaklaştıkça bantlar açılır). Işığın geçtiği kristaller o rengi
+  // alır ve bir süre parlamaya devam eder. Her kristal renginin pentatonik gamda bir notası vardır.
+  // Parıltı, düşük çözünürlüklü bir katmanda piksel piksel (kristal kimliği × faset parlaklığı)
+  // hesaplanır ve tahtaya tek seferde eklenir.
+  // ---------------------------------------------------------------------------
+  const Crystal = (() => {
+    // Renk aileleri: ad, taban rengi, pentatonik nota (C majör pentatonik, yarım ton)
+    const FAMILIES = [
+      { name: 'ametist', rgb: [168, 92, 255], semi: 0 },
+      { name: 'safir', rgb: [70, 120, 255], semi: 2 },
+      { name: 'akuamarin', rgb: [60, 225, 235], semi: 4 },
+      { name: 'zümrüt', rgb: [50, 235, 140], semi: 7 },
+      { name: 'topaz', rgb: [255, 190, 70], semi: 9 },
+      { name: 'yakut', rgb: [255, 70, 130], semi: 12 },
+    ];
+    const FXS = 2, CW = Math.ceil(W / FXS), CH = Math.ceil(H / FXS);
+    const CELL = 40;
+    let cells = null;          // { x, y, fam, poly: [[x,y]...], apex, facets: [brightness...], ph }
+    let idMap = null, facetMap = null;
+    let gr, gg, gb;            // hücre başına ışık birikimi (renk)
+    let outR, outG, outB;
+    let layer = null, lg = null, img = null;
+    const waves = [];
+    const RAINBOW = [];
+    let time = 0, dripT = 3, humLevel = 0;
+    // Mağara ışığı: sol üstten
+    const LX = -0.45, LY = -0.55, LZ = 0.7;
+
+    for (let i = 0; i < 32; i++) {
+      // Önde kırmızı, arkada mor (kırılma ile ayrışma)
+      const h = (i / 31) * 280;
+      const f = (n) => { const k = (n + h / 30) % 12; return Math.max(0, Math.min(1, Math.min(k - 3, 9 - k))) ; };
+      RAINBOW.push([f(0), f(8), f(4)]);
+    }
+
+    function clip(poly, nx, ny, c) {
+      // nx*x + ny*y <= c tarafını tut
+      const out = [];
+      for (let i = 0; i < poly.length; i++) {
+        const a = poly[i], b = poly[(i + 1) % poly.length];
+        const da = nx * a[0] + ny * a[1] - c, db = nx * b[0] + ny * b[1] - c;
+        if (da <= 0) out.push(a);
+        if ((da <= 0) !== (db <= 0)) {
+          const t = da / (da - db);
+          out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+        }
+      }
+      return out;
+    }
+
+    function init() {
+      if (cells) return;
+      let seed = 1234;
+      const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      // Renk bölgeleri: iri Voronoi tohumları
+      const zones = [];
+      for (let i = 0; i < 11; i++) zones.push([rnd() * W, rnd() * H, i % FAMILIES.length]);
+      const nx = Math.ceil(W / CELL), ny = Math.ceil(H / CELL);
+      const grid = [];
+      cells = [];
+      for (let j = 0; j < ny; j++) {
+        for (let i = 0; i < nx; i++) {
+          const x = (i + 0.15 + rnd() * 0.7) * (W / nx), y = (j + 0.15 + rnd() * 0.7) * (H / ny);
+          let best = 0, bd = 1e18;
+          for (const z of zones) {
+            const d = (z[0] - x) ** 2 + ((z[1] - y) * 0.8) ** 2;
+            if (d < bd) { bd = d; best = z[2]; }
+          }
+          grid.push(cells.length);
+          cells.push({ x, y, fam: best, gi: i, gj: j, ph: rnd() * TAU });
+        }
+      }
+      // Hücre çokgenleri: kutudan başlayıp komşu açıortaylarıyla kırp
+      for (const c of cells) {
+        let poly = [[0, 0], [W, 0], [W, H], [0, H]];
+        for (let dj = -2; dj <= 2; dj++) {
+          for (let di = -2; di <= 2; di++) {
+            const i = c.gi + di, j = c.gj + dj;
+            if ((!di && !dj) || i < 0 || j < 0 || i >= nx || j >= ny) continue;
+            const o = cells[grid[j * nx + i]];
+            const vx = o.x - c.x, vy = o.y - c.y;
+            poly = clip(poly, vx, vy, (o.x * o.x + o.y * o.y - c.x * c.x - c.y * c.y) / 2);
+          }
+        }
+        c.poly = poly;
+        // Tepe noktası: merkezden biraz kayık; yüzey üçgenleri eğimli prizma yüzleri gibi
+        c.apex = [c.x + (rnd() - 0.5) * 12, c.y + (rnd() - 0.5) * 12];
+        const h = 14 + rnd() * 14;
+        c.facets = poly.map((a, k) => {
+          const b = poly[(k + 1) % poly.length];
+          const ax = a[0] - c.apex[0], ay = a[1] - c.apex[1], bx = b[0] - c.apex[0], by = b[1] - c.apex[1];
+          // Normal = (a - tepe) × (b - tepe), tepe h kadar yüksekte
+          let nx3 = ay * -h - -h * by, ny3 = -h * bx - ax * -h, nz3 = ax * by - ay * bx;
+          if (nz3 < 0) { nx3 = -nx3; ny3 = -ny3; nz3 = -nz3; }
+          const l = Math.hypot(nx3, ny3, nz3) || 1;
+          const dl = (nx3 * LX + ny3 * LY + nz3 * LZ) / l;
+          return clamp(0.35 + dl * 0.75, 0.25, 1.15);
+        });
+        c.angles = poly.map((a) => Math.atan2(a[1] - c.apex[1], a[0] - c.apex[0]));
+      }
+      // Düşük çözünürlüklü kimlik ve faset haritaları
+      const N = cells.length;
+      gr = new Float32Array(N); gg = new Float32Array(N); gb = new Float32Array(N);
+      outR = new Float32Array(N); outG = new Float32Array(N); outB = new Float32Array(N);
+      idMap = new Uint16Array(CW * CH);
+      facetMap = new Float32Array(CW * CH);
+      for (let py = 0; py < CH; py++) {
+        for (let px = 0; px < CW; px++) {
+          const x = (px + 0.5) * FXS, y = (py + 0.5) * FXS;
+          const gi = Math.min(nx - 1, Math.floor(x / (W / nx))), gj = Math.min(ny - 1, Math.floor(y / (H / ny)));
+          let best = 0, bd = 1e18;
+          for (let dj = -1; dj <= 1; dj++) {
+            for (let di = -1; di <= 1; di++) {
+              const i = gi + di, j = gj + dj;
+              if (i < 0 || j < 0 || i >= nx || j >= ny) continue;
+              const k = grid[j * nx + i], c = cells[k];
+              const d = (c.x - x) ** 2 + (c.y - y) ** 2;
+              if (d < bd) { bd = d; best = k; }
+            }
+          }
+          const c = cells[best];
+          const a = Math.atan2(y - c.apex[1], x - c.apex[0]);
+          // Pikselin düştüğü üçgen yüz: açısı iki köşe açısı arasında olan
+          let f = c.facets[0];
+          for (let k = 0; k < c.angles.length; k++) {
+            const a0 = c.angles[k], a1 = c.angles[(k + 1) % c.angles.length];
+            let span = a1 - a0; if (span < 0) span += TAU;
+            let rel = a - a0; if (rel < 0) rel += TAU;
+            if (rel <= span) { f = c.facets[k]; break; }
+          }
+          idMap[py * CW + px] = best;
+          facetMap[py * CW + px] = f;
+        }
+      }
+      // Kristal kenarları daha parlak (ışık kenarlarda toplanır)
+      for (let py = 1; py < CH - 1; py++) {
+        for (let px = 1; px < CW - 1; px++) {
+          const p = py * CW + px, id = idMap[p];
+          if (idMap[p + 1] !== id || idMap[p + CW] !== id || idMap[p - 1] !== id || idMap[p - CW] !== id) facetMap[p] *= 0.55;
+        }
+      }
+      layer = document.createElement('canvas');
+      layer.width = CW;
+      layer.height = CH;
+      lg = layer.getContext('2d');
+      img = lg.createImageData(CW, CH);
+      for (let i = 3; i < img.data.length; i += 4) img.data[i] = 255;
+    }
+
+    function reset() {
+      init();
+      gr.fill(0); gg.fill(0); gb.fill(0);
+      waves.length = 0;
+    }
+
+    function cellAt(x, y) {
+      init();
+      const px = clamp((x / FXS) | 0, 0, CW - 1), py = clamp((y / FXS) | 0, 0, CH - 1);
+      return cells[idMap[py * CW + px]];
+    }
+
+    // Vuruş noktasındaki kristalin notası (Hz). oct: oktav kaydırma
+    function noteAt(x, y, oct = 0) {
+      const f = FAMILIES[cellAt(x, y).fam];
+      return 523.25 * Math.pow(2, f.semi / 12 + oct);
+    }
+
+    function famRgb(x, y) {
+      return FAMILIES[cellAt(x, y).fam].rgb.join(',');
+    }
+
+    // Işık dalgası: s gücü; cephe prizmadaki gibi gökkuşağına ayrışır
+    function wave(x, y, s) {
+      init();
+      if (waves.length > 10) waves.shift();
+      waves.push({ x, y, s: clamp(s, 0.1, 2.5), r: 0, max: 150 + s * 240, ph: Math.random() });
+      // Çıkış noktasındaki kristal hemen parlar
+      const c = cellAt(x, y), i = cells.indexOf(c), rgb = FAMILIES[c.fam].rgb;
+      gr[i] += (rgb[0] / 255) * s; gg[i] += (rgb[1] / 255) * s; gb[i] += (rgb[2] / 255) * s;
+    }
+
+    function light(x, y, rgb, amt, R) {
+      for (let i = 0; i < cells.length; i++) {
+        const c = cells[i], dx = c.x - x, dy = c.y - y;
+        if (Math.abs(dx) > R || Math.abs(dy) > R) continue;
+        const d2 = dx * dx + dy * dy;
+        if (d2 > R * R) continue;
+        const k = amt * (1 - d2 / (R * R));
+        gr[i] += rgb[0] * k; gg[i] += rgb[1] * k; gb[i] += rgb[2] * k;
+      }
+    }
+
+    function update(dt) {
+      if (!cells) return;
+      time += dt;
+      const N = cells.length;
+      // Işığın geçtiği kristaller yavaşça söner
+      const dec = Math.exp(-dt / 1.2);
+      for (let i = 0; i < N; i++) { gr[i] *= dec; gg[i] *= dec; gb[i] *= dec; }
+      // Dalga cepheleri
+      const SPEED = 430;
+      for (let w = waves.length - 1; w >= 0; w--) {
+        const wv = waves[w];
+        const r0 = wv.r;
+        wv.r += SPEED * dt;
+        if (r0 > wv.max) { waves.splice(w, 1); continue; }
+        // Cephenin bu karede geçtiği kristaller, uzaklığa göre gökkuşağının bir rengini alır:
+        // halka halka renk bantları, uzaklaştıkça açılır (prizmada ayrışma gibi)
+        for (let i = 0; i < N; i++) {
+          const c = cells[i];
+          const dx = c.x - wv.x, dy = c.y - wv.y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < r0 || d >= wv.r || d > wv.max) continue;
+          const fade = 1 - d / wv.max;
+          const hue = (Math.sqrt(d) * 0.085 + wv.ph) % 1;
+          const rb = RAINBOW[(hue * 31) | 0];
+          const amt = wv.s * fade * Math.sqrt(fade) * 0.95;
+          gr[i] += rb[0] * amt; gg[i] += rb[1] * amt; gb[i] += rb[2] * amt;
+        }
+      }
+      // Raketler ve diskler altlarındaki kristalleri hafifçe aydınlatır
+      for (const m of mallets) light(m.x, m.y, m.i ? [1, 0.4, 0.7] : [0.3, 0.8, 1], dt * 0.45, 60);
+      let sp = 0;
+      for (const p of pucks) {
+        if (!p.active) continue;
+        light(p.x, p.y, [0.85, 0.9, 1], dt * 0.6, 44);
+        sp = Math.max(sp, Math.hypot(p.vx, p.vy));
+      }
+      // Hücre renkleri: gelen ışık + kristalin kendi rengi + hafif nefes alan iç ışık
+      for (let i = 0; i < N; i++) {
+        const c = cells[i], base = FAMILIES[c.fam].rgb;
+        let r = gr[i], g = gg[i], b = gb[i];
+        const lum = Math.min(1.6, (r + g + b) / 3);
+        const amb = 0.035 + 0.03 * Math.sin(time * 0.8 + c.ph);
+        const tint = lum * 0.25 + amb;
+        outR[i] = Math.min(1.4, r * 0.85 + (base[0] / 255) * tint);
+        outG[i] = Math.min(1.4, g * 0.85 + (base[1] / 255) * tint);
+        outB[i] = Math.min(1.4, b * 0.85 + (base[2] / 255) * tint);
+        if (r > 1.8) gr[i] = 1.8;
+        if (g > 1.8) gg[i] = 1.8;
+        if (b > 1.8) gb[i] = 1.8;
+      }
+      // Diskin kristaller üzerindeki cam hışırtısı
+      const lv = game.state === 'play' ? Math.min(0.05, (sp / MAX_PUCK) * 0.06) : 0;
+      if (Math.abs(lv - humLevel) > 0.003) {
+        humLevel = lv;
+        Sound.setScrape(lv);
+      }
+      // Mağarada ara sıra damlayan su
+      dripT -= dt;
+      if (dripT <= 0) {
+        dripT = rand(2.5, 7);
+        if (game.state !== 'demo') Sound.drip(rand(0, W));
+      }
+    }
+
+    function drawOver(c) {
+      if (!cells) return;
+      const d = img.data;
+      for (let p = 0, j = 0; p < idMap.length; p++, j += 4) {
+        const id = idMap[p], f = facetMap[p] * 175;
+        d[j] = outR[id] * f;
+        d[j + 1] = outG[id] * f;
+        d[j + 2] = outB[id] * f;
+      }
+      lg.putImageData(img, 0, 0);
+      c.globalCompositeOperation = 'lighter';
+      c.drawImage(layer, 0, 0, CW * FXS, CH * FXS);
+      if (!waves.length) {
+        c.globalCompositeOperation = 'source-over';
+        return;
+      }
+      // Dalga cepheleri: kırmızıdan mora ayrışan ince yaylar (saha içinde)
+      c.save();
+      c.beginPath();
+      c.rect(0, 0, W, H);
+      c.clip();
+      c.lineWidth = 1 / S;
+      for (const wv of waves) {
+        const band = 14 + wv.r * 0.16, fade = 1 - wv.r / wv.max;
+        for (let k = 0; k < 4; k++) {
+          const rb = RAINBOW[Math.round((k / 3) * 31)];
+          const r = wv.r - (k / 3) * band;
+          if (r <= 1) continue;
+          c.globalAlpha = Math.min(1, fade * wv.s * 0.55);
+          c.strokeStyle = `rgb(${(rb[0] * 255) | 0},${(rb[1] * 255) | 0},${(rb[2] * 255) | 0})`;
+          c.beginPath();
+          c.arc(wv.x, wv.y, r, 0, TAU);
+          c.stroke();
+        }
+      }
+      c.restore();
+      c.globalAlpha = 1;
+      c.globalCompositeOperation = 'source-over';
+    }
+
+    return {
+      init, reset, update, drawOver, wave, noteAt, famRgb,
+      get cells() { init(); return cells; },
+      FAMILIES,
+    };
+  })();
+
+  // ---------------------------------------------------------------------------
   // Oyun durumu
   // ---------------------------------------------------------------------------
   const game = {
@@ -3844,6 +4393,7 @@
     else if (isIce() && !opts.keep) rgb = '232,248,255'; // buzda kıvılcım yerine buz kristali
     else if (isLava() && !opts.keep) rgb = '255,150,50'; // lavda kor parçaları
     else if (isSand() && !opts.keep) rgb = '225,195,145'; // kumda savrulan kum
+    else if (isCrystal() && !opts.keep) rgb = '225,235,255'; // kristal kıymıkları
     const col = `rgb(${rgb})`;
     for (let i = 0; i < count; i++) {
       if (particles.length >= max) break;
@@ -4110,6 +4660,7 @@
     game.shake = Math.max(game.shake, k * 5);
     if (isSand()) Sound.sandHit(k, m.hx);
     else if (isSpace()) Sound.spaceHit(k, m.hx);
+    else if (isCrystal()) Sound.bell(Crystal.noteAt(m.hx, m.hy), k, m.hx, true);
     else Sound.hit(k, m.hx);
     if (isWater()) {
       Water.splash(m.hx, m.hy, k * 0.9);
@@ -4143,6 +4694,14 @@
       }
     } else if (isSpace()) {
       Space.pulse(m.hx, m.hy, 0.35 + k * 0.9, 70 + k * 60);
+    } else if (isCrystal()) {
+      Crystal.wave(m.hx, m.hy, 0.15 + k * 1.15);
+      // Prizmadan saçılan gökkuşağı kıvılcımları
+      if (k > 0.3) {
+        ['255,90,110', '255,210,90', '90,255,150', '90,160,255', '190,110,255'].forEach((c) => {
+          spawn(m.hx, m.hy, c, 1 + Math.round(k * 4), 200 + k * 500, 0.55, 2.2, { dir, spread: 1.2, spark: true, keep: true });
+        });
+      }
     }
     if (!m.ai) vibrate(Math.round(6 + k * 18));
   }
@@ -4198,6 +4757,10 @@
     } else if (isSpace()) {
       Space.pulse(x, y, 0.3 + k * 0.8, 60 + k * 50);
       if (k > 0.35) Sound.spaceRing(k * 0.6, x);
+    } else if (isCrystal()) {
+      if (k > 0.15) Crystal.wave(x, y, 0.1 + k * 0.7);
+      // Bantta bir oktav pes, daha yumuşak nota
+      if (k > 0.25) Sound.bell(Crystal.noteAt(x, y, -1), k * 0.6, x);
     }
   }
 
@@ -4221,6 +4784,12 @@
       // İki kütlenin çarpışması ağda halka halka yayılır
       Space.pulse(x, y, 0.8 + k * 1.4, 140 + k * 100);
       Sound.warp(k, x);
+    } else if (isCrystal()) {
+      // İki kristal: nota ve beşlisi birlikte çalar
+      Crystal.wave(x, y, 0.6 + k * 1.2);
+      const f = Crystal.noteAt(x, y);
+      Sound.bell(f, k, x, false, 'bellA');
+      Sound.bell(f * 1.5, k * 0.7, x, false, 'bellB');
     }
   }
 
@@ -4264,6 +4833,15 @@
       spawn(gx, sy, '150,210,255', 40, 750, 1.5, 3.2, { dir, spread: 1.6, keep: true });
       spawn(gx, sy, '200,130,255', 30, 520, 1.8, 2.6, { dir, spread: 1.6, keep: true });
       Sound.supernova(gx);
+    } else if (isCrystal()) {
+      // Kristal patlaması: kale ağzından güçlü bir ışık dalgası ve yükselen çan arpeji
+      const cy = scorer === 0 ? 10 : H - 10;
+      Crystal.wave(gx, cy, 2.3);
+      setTimeout(() => Crystal.wave(gx, cy, 1.4), 180);
+      ['255,90,110', '255,170,80', '255,235,90', '90,255,150', '90,200,255', '120,120,255', '200,110,255'].forEach((c) => {
+        spawn(gx, cy, c, 10, 900, 1.3, 2.8, { dir, spread: 1.5, spark: true, keep: true });
+      });
+      Sound.chime(Crystal.noteAt(gx, cy), gx);
     }
     spawn(gx, gy, PUCK_RGB, 30, 700, 0.9, 3.5, { dir, spread: 1.4 });
     spawn(gx, gy, '255,255,255', 20, 500, 0.6, 2.5, { dir, spread: 1.5, spark: true });
@@ -4379,6 +4957,8 @@
       Sound.sandBlast(0.5, W / 2);
     } else if (isSpace()) {
       Space.pulse(W / 2, gi === 1 ? 10 : H - 10, 1.6, 200);
+    } else if (isCrystal()) {
+      Crystal.wave(W / 2, gi === 1 ? 10 : H - 10, 1.3);
     }
     Sound.skill(key);
     if (human) vibrate(25);
@@ -4763,6 +5343,7 @@
     if (isLava()) Lava.reset();
     if (isSand()) Sand.reset();
     if (isSpace()) Space.reset();
+    if (isCrystal()) Crystal.reset();
     mallets.forEach(resetMallet);
     mallets[0].ai = false;
     mallets[1].ai = settings.mode === 'ai';
@@ -4918,6 +5499,7 @@
     else if (isLava()) Lava.update(dt);
     else if (isSand()) Sand.update(dt);
     else if (isSpace()) Space.update(dt);
+    else if (isCrystal()) Crystal.update(dt);
   }
 
   // Suda yüzen nesneler: raketler daha derin oturur (daha çok su iter), paklar daha sığ
@@ -5680,12 +6262,14 @@
     document.body.classList.toggle('theme-lava', t === 'lava');
     document.body.classList.toggle('theme-sand', t === 'sand');
     document.body.classList.toggle('theme-space', t === 'space');
+    document.body.classList.toggle('theme-crystal', t === 'crystal');
     goalSprites[0] = goalSprites[1] = null;
     if (t === 'water') Water.reset();
     if (t === 'ice') Ice.reset();
     if (t === 'lava') Lava.reset();
     if (t === 'sand') Sand.reset();
     if (t === 'space') Space.reset();
+    if (t === 'crystal') Crystal.reset();
     resize();
     Sound.ambient(t);
   }
@@ -5964,6 +6548,7 @@
     else if (isLava()) Lava.drawOver(ctx);
     else if (isSand()) Sand.drawOver(ctx);
     else if (isSpace()) Space.drawOver(ctx);
+    else if (isCrystal()) Crystal.drawOver(ctx);
     drawGoals();
     drawScores();
     drawRipples();
@@ -6175,5 +6760,5 @@
   }
 
   // Test ve hata ayıklama için
-  window.__airHockey = { Water, Ice, Lava, Sand, Space, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update };
+  window.__airHockey = { Water, Ice, Lava, Sand, Space, Crystal, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update };
 })();

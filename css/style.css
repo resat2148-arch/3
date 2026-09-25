@@ -186,8 +186,28 @@ body.theme-lava .bg-grid,
 body.theme-sand .blob,
 body.theme-sand .bg-grid,
 body.theme-space .blob,
-body.theme-space .bg-grid {
+body.theme-space .bg-grid,
+body.theme-crystal .blob,
+body.theme-crystal .bg-grid {
   display: none;
+}
+
+/* Kristal Mağarası teması: karanlık mağara, duvarlarda soluk renkli kristal ışıltıları */
+body.theme-crystal .bg {
+  background:
+    radial-gradient(35% 25% at 6% 12%, rgba(168, 92, 255, 0.22), transparent 70%),
+    radial-gradient(30% 22% at 96% 30%, rgba(60, 225, 235, 0.16), transparent 70%),
+    radial-gradient(35% 25% at 4% 82%, rgba(50, 235, 140, 0.13), transparent 70%),
+    radial-gradient(32% 24% at 94% 88%, rgba(255, 70, 130, 0.15), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 50% 50%, #1a1430, transparent 75%),
+    linear-gradient(#050409, #0c0916 50%, #050409);
+}
+
+body.theme-crystal #game {
+  box-shadow:
+    0 0 0 1px rgba(200, 180, 255, 0.14),
+    0 0 90px rgba(150, 100, 255, 0.24),
+    0 30px 80px rgba(0, 0, 0, 0.85);
 }
 
 /* Uzay Stadyumu teması: yıldızlı gökyüzü ve yavaşça dalgalanan kutup ışığı */

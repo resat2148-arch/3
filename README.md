@@ -64,6 +64,10 @@ Menüdeki **Tema** seçiminden değiştirilir; seçim cihazda saklanır.
   - **Fizik**: ağın düğümleri yaylarla birbirine ve dinlenme konumlarına bağlıdır (iki boyutlu dalga denklemi). Raketler ve disk kütleleriyle ağı kendilerine doğru büker; hızlı hareket, vuruşlar ve iki diskin çarpışması ağda dalga dalga yayılan halkalar üretir, dalgalar bantlardan yansır. Uyarılan bölgeler parlar; ağ büküldükçe arkadaki parlak yıldızların konumu da kayar (kütleçekimsel mercek).
   - **Gol**: süpernova — parlak bir çekirdek, genişleyen şok dalgası halkaları ve tüm ağı sarsan dalga.
   - **Ses**: derin sentezleyici dronu ve uzak kozmik esinti, diskin hızına göre yükselen çekim uğultusu, vuruşlarda çan benzeri metalik çınlama, disk çarpışmasında "vuuv" bükülme sesi, golde süpernova patlaması.
+- **Kristal Mağarası**: karanlık bir mağarada ışıldayan kristallerden bir zemin.
+  - **Görüntü**: renk bölgelerine ayrılmış (ametist, safir, akuamarin, zümrüt, topaz, yakut) fasetli kristaller; her yüz ışığa göre farklı tonda, kristaller hafifçe nefes alır gibi ışıldar. Kenarlarda küçük kristal kümeleri. Disk berrak, fasetli bir kristaldir.
+  - **Etkileşim**: vuruşlar genişleyen ışık dalgaları yayar. Dalga cephesi prizmadaki gibi gökkuşağına ayrışır; geçtiği kristaller halka halka gökkuşağı renkleri alır (bantlar uzaklaştıkça açılır) ve bir süre parlamaya devam eder. Raketler ve disk altlarındaki kristalleri aydınlatır. Gol, kale ağzından yayılan güçlü bir ışık patlamasıdır.
+  - **Ses**: her vuruş kristal çanı gibi çalar; nota, vurulan kristalin rengine göre C majör pentatonik gamdan seçilir (ametist Do, safir Re, akuamarin Mi, zümrüt Sol, topaz La, yakut ince Do), böylece maç bir melodiye dönüşür. Bantlarda bir oktav pes nota, iki disk çarpışınca nota ve beşlisi, golde yükselen çan arpeji. Arkada mağara esintisi, kristallerin sessiz rezonansı ve ara sıra damlayan su.
 
 ## Özellikler
 
