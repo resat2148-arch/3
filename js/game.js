@@ -24,8 +24,8 @@
   const POSTS = [[GOAL_L, 0], [GOAL_R, 0], [GOAL_L, H], [GOAL_R, H]];
 
   const COLORS = [
-    { main: '#19e6ff', light: '#c4faff', dark: '#064a74', rgb: '25,230,255', name: 'MAVİ' },
-    { main: '#ff3d9a', light: '#ffd0e6', dark: '#6e0a3c', rgb: '255,61,154', name: 'PEMBE' },
+    { main: '#19e6ff', light: '#c4faff', dark: '#064a74', rgb: '25,230,255', name: 'MAVİ', label: 'Mavi' },
+    { main: '#ff3d9a', light: '#ffd0e6', dark: '#6e0a3c', rgb: '255,61,154', name: 'PEMBE', label: 'Pembe' },
   ];
   const PUCK_RGB = '255,226,110';
   const FONT = '"Exo 2", system-ui, sans-serif';
@@ -1226,7 +1226,7 @@
   let clockShown = '';
 
   function showOverlay(el) {
-    [menuEl, pauseEl, overEl].forEach((o) => o.classList.toggle('show', o === el));
+    [menuEl, pauseEl, overEl, cardEl].forEach((o) => o.classList.toggle('show', o === el));
     const inGame = !el;
     pauseBtn.classList.toggle('hidden', !inGame);
     document.body.classList.toggle('playing', inGame);
@@ -1432,6 +1432,7 @@
           ? (settings.difficulty === 'hard' ? 'Efsane! Zor yapay zekâyı yendin.' : `${diffName} seviyeyi geçtin. Bir üst seviyeyi dene!`)
           : 'Bir dahaki sefere! Tekrar dene.';
 
+    prepareShare({ a, b, draw, w, win, pvp, difficulty: settings.difficulty });
     banner('SÜRE BİTTİ!', '255,255,255', 1.3, 84);
     Sound.buzzer();
     // Konfeti
@@ -1444,6 +1445,339 @@
     setTimeout(() => Sound.finale(win || draw), 500);
     vibrate(win ? [60, 50, 60, 50, 140] : 200);
     setTimeout(() => showOverlay(overEl), 1300);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Paylaşım
+  // ---------------------------------------------------------------------------
+  const cardEl = $('cardMenu'), toastEl = $('toast');
+  const DIFF_NAMES = { easy: 'kolay', medium: 'orta', hard: 'zor' };
+  const share = { blob: null, url: '', result: null };
+  let toastTimer = 0;
+
+  function isFramed() {
+    try { return window.self !== window.top; } catch (e) { return true; }
+  }
+
+  // Paylaşılacak oyun adresi: kendi sitesinde sayfanın adresi, gömülü görünümde (varsa) çerçeveyi açan sayfa.
+  function shareLink() {
+    if (isFramed()) {
+      return /^https:\/\/claude\.ai\/(code\/)?artifact\//.test(document.referrer) ? document.referrer : '';
+    }
+    if (!/^https?:$/.test(location.protocol) || /^(localhost|127\.|0\.0\.0\.0|\[::1\])/.test(location.hostname)) return '';
+    return location.origin + location.pathname;
+  }
+
+  function shareText() {
+    const r = share.result;
+    const s = `${r.a}-${r.b}`;
+    let line;
+    if (r.pvp) {
+      const hi = Math.max(r.a, r.b), lo = Math.min(r.a, r.b);
+      line = r.draw
+        ? `Neon Air Hockey'de ${s} berabere kaldık!`
+        : `Neon Air Hockey'de ${COLORS[r.w].label}, ${COLORS[1 - r.w].label} rakibini ${hi}-${lo} yendi!`;
+    } else {
+      const d = DIFF_NAMES[r.difficulty];
+      line = r.draw
+        ? `Neon Air Hockey'de ${d} seviyedeki yapay zekâyla ${s} berabere kaldım!`
+        : r.win
+          ? `Neon Air Hockey'de ${d} seviyedeki yapay zekâyı ${s} yendim! 🏆`
+          : `Neon Air Hockey'de ${d} seviyedeki yapay zekâya ${s} yenildim, rövanş lazım!`;
+    }
+    return `🏒 ${line} Sen de dene! #NeonAirHockey`;
+  }
+
+  function fullText() {
+    return share.url ? `${shareText()} ${share.url}` : shareText();
+  }
+
+  function prepareShare(result) {
+    share.result = result;
+    share.url = shareLink();
+    const t = encodeURIComponent(shareText());
+    const u = encodeURIComponent(share.url);
+    const all = encodeURIComponent(fullText());
+    $('shareX').href = `https://twitter.com/intent/tweet?text=${t}${share.url ? `&url=${u}` : ''}`;
+    $('shareWa').href = `https://wa.me/?text=${all}`;
+    $('shareTg').href = share.url
+      ? `https://t.me/share/url?url=${u}&text=${t}`
+      : `https://t.me/share/url?url=${all}`;
+    // Facebook yalnızca bir bağlantı paylaşabilir
+    $('shareFb').classList.toggle('hidden', !share.url);
+    if (share.url) $('shareFb').href = `https://www.facebook.com/sharer/sharer.php?u=${u}&quote=${t}`;
+    // Gömülü görünümde tarayıcı paylaşım menüsü engellidir; orada düğmeyi gösterme.
+    const canNative = !!navigator.share && !isFramed();
+    $('shareNative').classList.toggle('hidden', !canNative);
+
+    share.blob = null;
+    const img = $('cardImg'), thumb = $('cardThumb');
+    const ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+    ready.then(() => {
+      const c = drawCard(result);
+      c.toBlob((blob) => {
+        if (!blob) return;
+        if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+        share.blob = blob;
+        const url = URL.createObjectURL(blob);
+        img.src = url;
+        thumb.src = url;
+        const canFile = canNative && !!(navigator.canShare && navigator.canShare({ files: [cardFile()] }));
+        $('cardShare').classList.toggle('hidden', !canFile);
+        $('cardSave').classList.toggle('hidden', isFramed());
+        $('cardHint').textContent = isFramed()
+          ? 'Kaydetmek için görsele basılı tut veya sağ tıkla.'
+          : 'Görseli indirip istediğin yerde paylaşabilirsin.';
+      }, 'image/jpeg', 0.9);
+    });
+  }
+
+  function cardFile() {
+    return new File([share.blob || new Blob()], 'neon-air-hockey-skor.jpg', { type: 'image/jpeg' });
+  }
+
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
+  }
+
+  // Tıklama anında çağrılmalı (pano izni kullanıcı etkileşimi ister).
+  function copyText(text, okMsg) {
+    const fallback = () => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      ta.remove();
+      toast(ok ? okMsg : 'Kopyalanamadı. Metin: ' + text);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => toast(okMsg), fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  function nativeShare(withImage) {
+    const data = { title: 'Neon Air Hockey', text: shareText() };
+    if (share.url) data.url = share.url;
+    if (withImage && share.blob) {
+      const file = cardFile();
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        // Bazı uygulamalar dosyayla birlikte url alanını yok sayar; bağlantıyı metne ekle.
+        data.files = [file];
+        data.text = fullText();
+        delete data.url;
+      }
+    }
+    if (!navigator.share) {
+      copyText(fullText(), 'Paylaşım metni panoya kopyalandı.');
+      return;
+    }
+    navigator.share(data).catch((e) => {
+      if (e && e.name === 'AbortError') return;
+      copyText(fullText(), 'Paylaşım menüsü açılamadı; metin panoya kopyalandı.');
+    });
+  }
+
+  function saveCard() {
+    if (!share.blob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(share.blob);
+    a.download = 'neon-air-hockey-skor.jpg';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast('Skor kartı indirildi.');
+  }
+
+  $('shareNative').addEventListener('click', () => nativeShare(true));
+  $('shareCopy').addEventListener('click', () => copyText(fullText(), 'Paylaşım metni panoya kopyalandı.'));
+  $('cardBtn').addEventListener('click', () => showOverlay(cardEl));
+  $('cardClose').addEventListener('click', () => showOverlay(overEl));
+  $('cardShare').addEventListener('click', () => nativeShare(true));
+  $('cardSave').addEventListener('click', saveCard);
+
+  // 1080×1350 skor kartı (Instagram, X ve WhatsApp için uygun oran)
+  function drawCard(r) {
+    const CW = 1080, CH = 1350;
+    const c = document.createElement('canvas');
+    c.width = CW;
+    c.height = CH;
+    const g = c.getContext('2d');
+    const spacing = (v) => { if ('letterSpacing' in g) g.letterSpacing = v; };
+
+    // Zemin
+    g.fillStyle = '#05060f';
+    g.fillRect(0, 0, CW, CH);
+    [[180, 160, `rgba(${COLORS[1].rgb},0.38)`], [900, 1200, `rgba(${COLORS[0].rgb},0.32)`], [540, 700, 'rgba(90,60,200,0.25)']].forEach(([x, y, col]) => {
+      const gr = g.createRadialGradient(x, y, 0, x, y, 700);
+      gr.addColorStop(0, col);
+      gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr;
+      g.fillRect(0, 0, CW, CH);
+    });
+
+    // Perspektif ızgara (çerçevenin içinde)
+    g.save();
+    rr(g, 48, 48, CW - 96, CH - 96, 56);
+    g.clip();
+    g.strokeStyle = 'rgba(155,107,255,0.22)';
+    g.lineWidth = 2;
+    const hy = 980, vx = CW / 2;
+    for (let i = -12; i <= 12; i++) {
+      g.beginPath();
+      g.moveTo(vx + i * 30, hy);
+      g.lineTo(vx + i * 260, CH);
+      g.stroke();
+    }
+    for (let k = 1; k < 9; k++) {
+      const y = hy + Math.pow(k / 8, 2) * (CH - hy);
+      g.globalAlpha = k / 9;
+      g.beginPath();
+      g.moveTo(0, y);
+      g.lineTo(CW, y);
+      g.stroke();
+    }
+    g.restore();
+
+    // Neon çerçeve
+    const edge = g.createLinearGradient(0, 0, 0, CH);
+    edge.addColorStop(0, COLORS[1].main);
+    edge.addColorStop(0.5, '#9b6bff');
+    edge.addColorStop(1, COLORS[0].main);
+    g.shadowColor = 'rgba(155,107,255,0.9)';
+    g.shadowBlur = 30;
+    g.strokeStyle = edge;
+    g.lineWidth = 7;
+    rr(g, 48, 48, CW - 96, CH - 96, 56);
+    g.stroke();
+    g.shadowBlur = 0;
+    g.lineWidth = 2;
+    g.strokeStyle = 'rgba(255,255,255,0.5)';
+    rr(g, 48, 48, CW - 96, CH - 96, 56);
+    g.stroke();
+
+    // Kale ağızları
+    [[48, COLORS[1]], [CH - 48, COLORS[0]]].forEach(([y, col]) => {
+      g.shadowColor = `rgba(${col.rgb},1)`;
+      g.shadowBlur = 24;
+      g.strokeStyle = col.light;
+      g.lineWidth = 8;
+      g.beginPath();
+      g.moveTo(CW / 2 - 150, y);
+      g.lineTo(CW / 2 + 150, y);
+      g.stroke();
+    });
+    g.shadowBlur = 0;
+
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+
+    // Logo
+    spacing('26px');
+    g.font = `italic 900 40px ${FONT}`;
+    g.shadowColor = COLORS[0].main;
+    g.shadowBlur = 24;
+    g.fillStyle = '#c9fbff';
+    g.fillText('NEON', CW / 2 + 13, 170);
+    spacing('0px');
+    g.font = `italic 900 108px ${FONT}`;
+    const lg = g.createLinearGradient(170, 0, 910, 0);
+    lg.addColorStop(0, COLORS[0].main);
+    lg.addColorStop(0.5, '#9b6bff');
+    lg.addColorStop(1, COLORS[1].main);
+    g.shadowColor = 'rgba(155,107,255,0.8)';
+    g.shadowBlur = 30;
+    g.fillStyle = lg;
+    g.fillText('AIR HOCKEY', CW / 2, 262);
+
+    // Sonuç başlığı
+    const titleRgb = r.draw ? '155,107,255' : r.pvp ? COLORS[r.w].rgb : r.win ? COLORS[0].rgb : COLORS[1].rgb;
+    const title = r.draw ? 'BERABERE' : r.pvp ? `${COLORS[r.w].name} KAZANDI!` : r.win ? 'KAZANDIM!' : 'KAYBETTİM';
+    g.font = `italic 900 ${title.length > 12 ? 92 : 108}px ${FONT}`;
+    g.shadowColor = `rgba(${titleRgb},1)`;
+    g.shadowBlur = 40;
+    g.fillStyle = `rgba(${titleRgb},1)`;
+    g.fillText(title, CW / 2, 450);
+    g.shadowBlur = 14;
+    g.fillStyle = 'rgba(255,255,255,0.92)';
+    g.fillText(title, CW / 2, 450);
+
+    // Orta çizgi ve pak
+    g.shadowBlur = 20;
+    g.shadowColor = 'rgba(175,130,255,0.9)';
+    g.strokeStyle = 'rgba(215,195,255,0.45)';
+    g.lineWidth = 4;
+    g.beginPath();
+    g.moveTo(48, 700);
+    g.lineTo(CW - 48, 700);
+    g.stroke();
+    g.beginPath();
+    g.arc(CW / 2, 700, 84, 0, TAU);
+    g.stroke();
+    g.shadowColor = `rgba(${PUCK_RGB},1)`;
+    g.shadowBlur = 40;
+    g.fillStyle = '#141729';
+    g.beginPath();
+    g.arc(CW / 2, 700, 44, 0, TAU);
+    g.fill();
+    g.strokeStyle = '#fff1b0';
+    g.lineWidth = 8;
+    g.stroke();
+
+    // Skor
+    g.font = `italic 900 300px ${FONT}`;
+    [[r.a, 0, CW / 2 - 250], [r.b, 1, CW / 2 + 250]].forEach(([v, i, x]) => {
+      const col = COLORS[i];
+      g.shadowColor = `rgba(${col.rgb},1)`;
+      g.shadowBlur = 50;
+      g.fillStyle = col.main;
+      g.fillText(String(v), x, 712);
+      g.shadowBlur = 0;
+      g.fillStyle = `rgba(255,255,255,0.18)`;
+      g.fillText(String(v), x, 712);
+    });
+
+    // Oyuncu etiketleri
+    const labels = r.pvp ? [COLORS[0].name, COLORS[1].name] : ['BEN', `CPU · ${DIFF_NAMES[r.difficulty].toLocaleUpperCase('tr')}`];
+    spacing('6px');
+    g.font = `800 36px ${FONT}`;
+    g.shadowBlur = 16;
+    labels.forEach((t, i) => {
+      g.shadowColor = `rgba(${COLORS[i].rgb},0.9)`;
+      g.fillStyle = COLORS[i].light;
+      g.fillText(t, CW / 2 + (i ? 250 : -250), 900);
+    });
+
+    // Maç bilgisi
+    spacing('3px');
+    g.shadowBlur = 0;
+    g.fillStyle = 'rgba(200,205,240,0.75)';
+    const info = `60 SN MAÇ  ·  45. SN'DE 2. TOP  ·  ${r.pvp ? 'İKİ OYUNCU' : 'TEK OYUNCU'}`;
+    let fs = 32;
+    do { g.font = `700 ${fs}px ${FONT}`; fs -= 1; } while (g.measureText(info).width > CW - 200 && fs > 18);
+    g.fillText(info, CW / 2, 1010);
+
+    // Alt bilgi
+    spacing('0px');
+    const date = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+    g.font = `600 30px ${FONT}`;
+    g.fillStyle = 'rgba(200,205,240,0.6)';
+    g.fillText(date, CW / 2, 1150);
+    g.font = `italic 900 46px ${FONT}`;
+    g.shadowColor = `rgba(${PUCK_RGB},0.9)`;
+    g.shadowBlur = 20;
+    g.fillStyle = '#fff6c4';
+    g.fillText('SEN DE DENE!', CW / 2, 1222);
+    return c;
   }
 
   function togglePause() {

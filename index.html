@@ -112,10 +112,53 @@
         <span class="s1" id="finalP2">0</span>
       </div>
       <p id="resultSub" class="sub"></p>
+
+      <div class="share">
+        <div class="share-label">Skorunu paylaş</div>
+        <div class="share-row" id="shareRow">
+          <button id="shareNative" aria-label="Paylaş" title="Paylaş" class="share-btn native hidden" type="button">
+            <i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></i>
+          </button>
+          <a id="shareX" aria-label="X'te paylaş" title="X'te paylaş" class="share-btn x" target="_blank" rel="noopener noreferrer" href="#">
+            <i><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 1.2h3.7l-8 9.2L24 22.8h-7.4l-5.8-7.6-6.6 7.6H.5l8.6-9.8L0 1.2h7.6l5.2 6.9zm-1.3 19.4h2L6.5 3.2H4.3z"/></svg></i>
+          </a>
+          <a id="shareWa" aria-label="WhatsApp'ta paylaş" title="WhatsApp'ta paylaş" class="share-btn wa" target="_blank" rel="noopener noreferrer" href="#">
+            <i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3a9 9 0 0 0-7.7 13.6L3 21l4.5-1.2A9 9 0 1 0 12 3z"/><path d="M9 8.5c0 3.6 2.9 6.5 6.5 6.5l1-1.6-2-1-1 1a4.6 4.6 0 0 1-2.4-2.4l1-1-1-2z" fill="currentColor" stroke-width="1"/></svg></i>
+          </a>
+          <a id="shareTg" aria-label="Telegram'da paylaş" title="Telegram'da paylaş" class="share-btn tg" target="_blank" rel="noopener noreferrer" href="#">
+            <i><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.4 3.6 2.9 10.8c-1.1.4-1.1 1.2 0 1.5l4.6 1.5 1.8 5.4c.2.7.6.8 1.1.4l2.6-2.2 5 3.7c.8.5 1.4.2 1.6-.8l3.1-14.6c.3-1.3-.5-1.9-1.3-1.5zM9.6 14.3l8.2-7.5-6.4 8.5-.3 3.2z"/></svg></i>
+          </a>
+          <a id="shareFb" aria-label="Facebook'ta paylaş" title="Facebook'ta paylaş" class="share-btn fb" target="_blank" rel="noopener noreferrer" href="#">
+            <i><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.8c0-.9.3-1.5 1.6-1.5h1.7V4.4c-.3 0-1.3-.1-2.5-.1-2.5 0-4.1 1.5-4.1 4.2v2.3H7.4V14h2.8v8z"/></svg></i>
+          </a>
+          <button id="shareCopy" aria-label="Metni kopyala" title="Metni kopyala" class="share-btn copy" type="button">
+            <i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg></i>
+          </button>
+        </div>
+        <button id="cardBtn" class="card-link" type="button">
+          <img id="cardThumb" alt="">
+          <span><b>Skor kartı</b><small>Görseli gör, kaydet veya paylaş</small></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+
       <button id="againBtn" class="btn">TEKRAR OYNA</button>
       <button id="menuBtn" class="btn ghost">Ana Menü</button>
     </div>
   </section>
+
+  <!-- Skor kartı -->
+  <section id="cardMenu" class="overlay">
+    <div class="panel small card-panel">
+      <img id="cardImg" class="card-img" alt="Maç sonu skor kartı">
+      <p id="cardHint" class="sub">Kaydetmek için görsele basılı tut.</p>
+      <button id="cardShare" class="btn hidden" type="button">GÖRSELİ PAYLAŞ</button>
+      <button id="cardSave" class="btn ghost hidden" type="button">Görseli indir</button>
+      <button id="cardClose" class="btn ghost" type="button">Geri</button>
+    </div>
+  </section>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <div id="rotateHint">Daha iyi deneyim için telefonunu dik tut</div>
 
