@@ -158,6 +158,17 @@ Tanıtım videosu çekmek için:
 
 Bu sürümde tüm temalar açıktır, oyun 9.999 altın ve 99'ar Dev Kale / Kale Kilidi hakkıyla başlar (her açılışta yenilenir), reklam düğmeleri gizlidir ve görüntü kalitesi performansa göre otomatik düşürülmez. Kayıtları gerçek oyundan ayrı tutulur (`aquash_` önekiyle), yani aynı tarayıcıdaki gerçek ilerlemeye dokunmaz. Yayına ya da CrazyGames'e yüklenmek için değildir.
 
+### Önizleme videoları
+
+CrazyGames için iki sessiz önizleme videosu (yatay 1920×1080, dikey 1080×1620, ~16 sn) tanıtım sürümünden kare kare, sanal zamanla çekilir; çekim yavaş olsa da video akıcıdır. Etkileyici anlar (sert şut, duvar çarpması, 2. top, süpernova golü) betikte tetiklenir.
+
+```bash
+./tools/build-showcase.sh && (cd dist/showcase && python3 -m http.server 8772 &)
+cd tools/preview-video && npm pack @fontsource/exo-2 && mkdir -p font && tar xzf fontsource-exo-2-*.tgz -C font
+node record.js portrait            # Playwright gerekir; kareler dist/preview-video/portrait altına
+python3 compose.py ../../dist/preview-video/portrait ffmpeg   # H.264 destekli ffmpeg gerekir
+```
+
 ## Dosya yapısı
 
 ```
