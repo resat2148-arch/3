@@ -33,6 +33,10 @@
     <button id="pauseBtn" class="hud-btn hidden" aria-label="Duraklat" title="Duraklat (Esc)">
       <svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg>
     </button>
+    <div id="clock" class="clock hidden" aria-live="off">
+      <span id="clockTime" class="clock-time">1:00</span>
+      <span id="clockTag" class="clock-tag"></span>
+    </div>
     <div class="hud-right">
       <button id="fsBtn" class="hud-btn hidden" aria-label="Tam ekran" title="Tam ekran">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
@@ -70,12 +74,14 @@
         </div>
       </div>
 
-      <div class="field">
-        <div class="label">Kaç golde biter?</div>
-        <div class="seg" data-group="target">
-          <button data-value="5">5</button>
-          <button data-value="7">7</button>
-          <button data-value="10">10</button>
+      <div class="rules">
+        <div class="rule">
+          <b>60 sn</b>
+          <span>maç süresi</span>
+        </div>
+        <div class="rule hot">
+          <b>45. sn</b>
+          <span>2. top oyuna girer</span>
         </div>
       </div>
 

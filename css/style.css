@@ -114,13 +114,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: calc(var(--safe-t) + 10px) calc(var(--safe-r) + 10px) calc(var(--safe-b) + 10px) calc(var(--safe-l) + 10px);
-}
-
-@media (orientation: portrait) {
-  #stage {
-    padding-top: calc(var(--safe-t) + 62px);
-  }
+  padding: calc(var(--safe-t) + 64px) calc(var(--safe-r) + 10px) calc(var(--safe-b) + 10px) calc(var(--safe-l) + 10px);
 }
 
 #game {
@@ -146,6 +140,85 @@ body.playing #game {
   display: flex;
   justify-content: space-between;
   pointer-events: none;
+}
+
+/* Maç sayacı */
+.clock {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 100px;
+  padding: 3px 16px 4px;
+  border-radius: 16px;
+  background: rgba(16, 20, 46, 0.7);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(155, 107, 255, 0.35);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), 0 0 18px rgba(155, 107, 255, 0.25);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.clock-time {
+  font-size: 24px;
+  line-height: 1.1;
+  font-style: italic;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(155, 107, 255, 0.9);
+}
+
+.clock-tag {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  padding-left: 0.16em;
+  color: #ffe98a;
+  text-shadow: 0 0 8px rgba(255, 226, 110, 0.9);
+}
+
+.clock-tag:empty {
+  display: none;
+}
+
+.clock.soon .clock-tag {
+  animation: blink 0.5s steps(2, jump-none) infinite;
+}
+
+.clock.frenzy {
+  border-color: rgba(255, 226, 110, 0.7);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), 0 0 26px rgba(255, 226, 110, 0.45);
+}
+
+.clock.frenzy .clock-time {
+  text-shadow: 0 0 10px rgba(255, 226, 110, 0.95), 0 0 24px rgba(255, 170, 60, 0.6);
+}
+
+.clock.final {
+  border-color: rgba(255, 61, 154, 0.8);
+  animation: throb 1s ease-in-out infinite;
+}
+
+.clock.final .clock-time {
+  color: #ffe3f0;
+  text-shadow: 0 0 10px var(--pink), 0 0 24px var(--pink);
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes throb {
+  50% {
+    transform: translateX(-50%) scale(1.06);
+  }
 }
 
 .hud-right {
@@ -397,6 +470,47 @@ body.playing #game {
   pointer-events: none;
 }
 
+/* Kurallar */
+.rules {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.rule {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(155, 107, 255, 0.3);
+}
+
+.rule b {
+  font-size: 22px;
+  font-style: italic;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(155, 107, 255, 0.9);
+}
+
+.rule span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.rule.hot {
+  border-color: rgba(255, 226, 110, 0.45);
+}
+
+.rule.hot b {
+  color: #fff6c4;
+  text-shadow: 0 0 10px rgba(255, 226, 110, 0.9);
+}
+
 /* Butonlar */
 .btn {
   display: block;
@@ -561,7 +675,9 @@ body.playing #game {
   .bg-grid,
   .logo .l1,
   .btn,
-  .logo-rail i {
+  .logo-rail i,
+  .clock,
+  .clock-tag {
     animation: none;
   }
 }

@@ -2,6 +2,12 @@
 
 Tarayıcıda ve telefonda çalışan, neon temalı bir air hockey oyunu. Kurulum veya derleme gerektirmez: saf HTML, CSS ve JavaScript (Canvas 2D + Web Audio).
 
+## Kurallar
+
+- Maç **60 saniye** sürer. Süre yalnızca oyun akarken işler (gol kutlaması ve geri sayımda durur).
+- **45. saniyede ikinci top** ortadan oyuna girer. Bu son 15 saniyede oyun gollerde durmaz: gol olan top kısa süre sonra yiyen tarafın yarısından geri gelir.
+- Süre bitince çok gol atan kazanır; eşitlikte maç berabere biter.
+
 ## Özellikler
 
 - **Tek oyuncu**: üç zorluk seviyesinde yapay zekâya karşı (Kolay / Orta / Zor). Yapay zekâ pakın yolunu tahmin eder, bant vuruşu yapar ve karşı atağa geçer.

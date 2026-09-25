@@ -16,9 +16,11 @@
   const MAX_PUCK = 2300;             // birim / saniye
   const MAX_MALLET_V = 4200;
   const DAMPING = 0.3;               // hava yastığı sürtünmesi
-  const WALL_E = 0.88, MALLET_E = 0.9;
+  const WALL_E = 0.88, MALLET_E = 0.9, PUCK_E = 0.92;
   const SUBSTEPS = 10;
   const TAU = Math.PI * 2;
+  const MATCH_TIME = 60;              // maç süresi (sn)
+  const SECOND_PUCK_AT = 45;         // ikinci topun girdiği saniye
   const POSTS = [[GOAL_L, 0], [GOAL_R, 0], [GOAL_L, H], [GOAL_R, H]];
 
   const COLORS = [
@@ -53,7 +55,6 @@
   const settings = {
     mode: store.get('mode', 'ai'),
     difficulty: store.get('difficulty', 'medium'),
-    target: store.get('target', 7),
     sound: store.get('sound', true),
   };
 
@@ -146,6 +147,27 @@
       if (!this.ok(hi ? 'beepHi' : 'beep', 0.1)) return;
       this.tone(hi ? 1046.5 : 659.25, 0, hi ? 0.32 : 0.13, 'sine', 0.3);
       if (hi) this.tone(1567.98, 0, 0.32, 'triangle', 0.12);
+    },
+    clack(k) {
+      if (!this.ok('clack', 0.05)) return;
+      this.tone(900 + k * 500, 500, 0.05, 'square', 0.08 + k * 0.15);
+      this.noise(0.03, 0.15 + k * 0.25, 4200, 2);
+    },
+    tick(urgent) {
+      if (!this.ok('tick', 0.3)) return;
+      this.tone(urgent ? 1318.5 : 988, 0, 0.07, 'square', urgent ? 0.14 : 0.08);
+    },
+    frenzy() {
+      if (!this.ok('frenzy', 1)) return;
+      this.tone(220, 1760, 0.6, 'sawtooth', 0.08);
+      this.tone(330, 2640, 0.6, 'square', 0.05);
+      [659.25, 830.61, 987.77, 1318.5].forEach((n, i) => this.tone(n, 0, 0.22, 'triangle', 0.14, 0.45 + i * 0.07));
+      this.noise(0.6, 0.2, 2000, 0.5, 0, 'highpass');
+    },
+    buzzer() {
+      if (!this.ok('buzzer', 1)) return;
+      this.tone(155.56, 0, 0.9, 'sawtooth', 0.16);
+      this.tone(233.08, 0, 0.9, 'square', 0.08);
     },
     finale(win) {
       if (!this.ctx || !settings.sound) return;
@@ -552,14 +574,29 @@
     timer: 0,
     count: 0,
     time: 0,
+    clock: MATCH_TIME,      // kalan süre (sn); yalnızca oyun akarken azalır
+    frenzy: false,          // ikinci top oyunda mı
     shake: 0,
     flash: 0,
     flashRgb: '255,255,255',
     banner: null,
-    stuck: 0,
   };
 
-  const puck = { x: W / 2, y: H / 2, vx: 0, vy: 0, active: false, trail: [] };
+  function makePuck() {
+    return {
+      x: W / 2, y: H / 2, vx: 0, vy: 0,
+      active: false,        // fizikte yer alıyor mu
+      visible: true,        // çiziliyor mu (pasifken yanıp söner)
+      blink: 0,             // > 0: yanıp sönerek oyuna girmeyi bekliyor
+      respawn: 0,           // > 0: gol sonrası gizli bekleme
+      respawnSide: -1,
+      launch: null,         // oyuna girerken verilecek hız
+      trail: [],
+      stuck: 0,
+    };
+  }
+
+  const pucks = [makePuck()];
 
   function makeMallet(i) {
     return {
@@ -593,13 +630,22 @@
     m.charge = false;
   }
 
-  function placePuck(side) {
+  function placePuck(p, side) {
     // side: 0 = alt yarı, 1 = üst yarı, -1 = orta
-    puck.x = W / 2;
-    puck.y = side === 0 ? H * 0.7 : side === 1 ? H * 0.3 : H / 2;
-    puck.vx = puck.vy = 0;
-    puck.trail.length = 0;
-    game.stuck = 0;
+    p.x = W / 2;
+    p.y = side === 0 ? H * 0.7 : side === 1 ? H * 0.3 : H / 2;
+    // Aynı noktada başka bir pak varsa yana kaydır
+    for (const o of pucks) {
+      if (o !== p && o.visible && Math.hypot(o.x - p.x, o.y - p.y) < PUCK_R * 2 + 16) {
+        p.x += o.x < W / 2 ? 90 : -90;
+      }
+    }
+    p.vx = p.vy = 0;
+    p.trail.length = 0;
+    p.stuck = 0;
+    p.blink = 0;
+    p.respawn = 0;
+    p.launch = null;
   }
 
   // ---------------------------------------------------------------------------
@@ -659,33 +705,35 @@
     }
 
     // İz
-    if (puck.active) {
-      puck.trail.push(puck.x, puck.y);
-      if (puck.trail.length > 36) puck.trail.splice(0, 2);
-      const sp = Math.hypot(puck.vx, puck.vy);
-      if (sp > 1300 && Math.random() < 0.7) {
-        spawn(puck.x, puck.y, sp > 1800 ? '255,140,70' : PUCK_RGB, 1, 120, 0.35, 2.6);
+    for (const p of pucks) {
+      if (p.active) {
+        p.trail.push(p.x, p.y);
+        if (p.trail.length > 36) p.trail.splice(0, 2);
+        const sp = Math.hypot(p.vx, p.vy);
+        if (sp > 1300 && Math.random() < 0.7) {
+          spawn(p.x, p.y, sp > 1800 ? '255,140,70' : PUCK_RGB, 1, 120, 0.35, 2.6);
+        }
+      } else if (p.trail.length) {
+        p.trail.splice(0, 2);
       }
-    } else if (puck.trail.length) {
-      puck.trail.splice(0, 2);
     }
   }
 
   // ---------------------------------------------------------------------------
   // Fizik
   // ---------------------------------------------------------------------------
-  function collideMallet(m) {
-    const dx = puck.x - m.x, dy = puck.y - m.y;
+  function collideMallet(p, m) {
+    const dx = p.x - m.x, dy = p.y - m.y;
     const d2 = dx * dx + dy * dy;
     if (d2 >= MIN_D * MIN_D) return 0;
     let d = Math.sqrt(d2), nx, ny;
     if (d < 1e-6) { nx = 0; ny = m.bottom ? -1 : 1; d = 0; } else { nx = dx / d; ny = dy / d; }
-    puck.x = m.x + nx * MIN_D;
-    puck.y = m.y + ny * MIN_D;
-    const vn = (puck.vx - m.vx) * nx + (puck.vy - m.vy) * ny;
+    p.x = m.x + nx * MIN_D;
+    p.y = m.y + ny * MIN_D;
+    const vn = (p.vx - m.vx) * nx + (p.vy - m.vy) * ny;
     if (vn < 0) {
-      puck.vx -= (1 + MALLET_E) * vn * nx;
-      puck.vy -= (1 + MALLET_E) * vn * ny;
+      p.vx -= (1 + MALLET_E) * vn * nx;
+      p.vy -= (1 + MALLET_E) * vn * ny;
       m.hx = m.x + nx * MALLET_R;
       m.hy = m.y + ny * MALLET_R;
       return -vn;
@@ -693,8 +741,7 @@
     return 0;
   }
 
-  function collideWalls() {
-    const p = puck;
+  function collideWalls(p) {
     let imp = 0;
     if (p.x < PUCK_R) {
       p.x = PUCK_R;
@@ -730,9 +777,30 @@
     return imp;
   }
 
+  // İki pak arasında eşit kütleli esnek çarpışma.
+  function collidePucks(a, b) {
+    const dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy, md = PUCK_R * 2;
+    if (d2 >= md * md || d2 < 1e-9) return 0;
+    const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, ov = (md - d) / 2;
+    a.x -= nx * ov;
+    a.y -= ny * ov;
+    b.x += nx * ov;
+    b.y += ny * ov;
+    const vn = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+    if (vn < 0) {
+      const j = (-(1 + PUCK_E) * vn) / 2;
+      a.vx -= j * nx;
+      a.vy -= j * ny;
+      b.vx += j * nx;
+      b.vy += j * ny;
+      return -vn;
+    }
+    return 0;
+  }
+
   // Pak duvara sıkıştıysa raketi geri it (içinden geçmesin).
-  function resolvePin(m) {
-    const dx = puck.x - m.x, dy = puck.y - m.y, d = Math.hypot(dx, dy);
+  function resolvePin(p, m) {
+    const dx = p.x - m.x, dy = p.y - m.y, d = Math.hypot(dx, dy);
     if (d < MIN_D - 0.5 && d > 1e-6) {
       const push = MIN_D - d;
       m.x -= (dx / d) * push;
@@ -767,47 +835,69 @@
 
     const h = dt / SUBSTEPS;
     const hits = [0, 0];
-    let wallImp = 0, wx = 0, wy = 0, scored = -1;
+    let wallImp = 0, wx = 0, wy = 0;
+    let puckImp = 0, cx = 0, cy = 0;
+    const goals = [];
 
     for (let s = 1; s <= SUBSTEPS; s++) {
       const f = s / SUBSTEPS;
       for (let k = 0; k < 2; k++) {
-        const m = mallets[k], p = plan[k];
-        m.x = lerp(p.sx, p.ex, f);
-        m.y = lerp(p.sy, p.ey, f);
+        const m = mallets[k], pl = plan[k];
+        m.x = lerp(pl.sx, pl.ex, f);
+        m.y = lerp(pl.sy, pl.ey, f);
       }
-      if (!puck.active) continue;
 
-      puck.x += puck.vx * h;
-      puck.y += puck.vy * h;
-      for (let k = 0; k < 2; k++) {
-        const imp = collideMallet(mallets[k]);
-        if (imp > hits[k]) hits[k] = imp;
+      for (const p of pucks) {
+        if (!p.active) continue;
+        p.x += p.vx * h;
+        p.y += p.vy * h;
+        for (let k = 0; k < 2; k++) {
+          const imp = collideMallet(p, mallets[k]);
+          if (imp > hits[k]) hits[k] = imp;
+        }
       }
-      const w = collideWalls();
-      if (w > wallImp) { wallImp = w; wx = puck.x; wy = puck.y; }
-      resolvePin(mallets[0]);
-      resolvePin(mallets[1]);
 
-      const sp = Math.hypot(puck.vx, puck.vy);
-      if (sp > MAX_PUCK) { puck.vx *= MAX_PUCK / sp; puck.vy *= MAX_PUCK / sp; }
+      for (let i = 0; i < pucks.length; i++) {
+        for (let j = i + 1; j < pucks.length; j++) {
+          if (!pucks[i].active || !pucks[j].active) continue;
+          const imp = collidePucks(pucks[i], pucks[j]);
+          if (imp > puckImp) {
+            puckImp = imp;
+            cx = (pucks[i].x + pucks[j].x) / 2;
+            cy = (pucks[i].y + pucks[j].y) / 2;
+          }
+        }
+      }
 
-      if (puck.y < 0) { scored = 0; break; }
-      if (puck.y > H) { scored = 1; break; }
+      for (const p of pucks) {
+        if (!p.active) continue;
+        const w = collideWalls(p);
+        if (w > wallImp) { wallImp = w; wx = p.x; wy = p.y; }
+        resolvePin(p, mallets[0]);
+        resolvePin(p, mallets[1]);
+
+        const sp = Math.hypot(p.vx, p.vy);
+        if (sp > MAX_PUCK) { p.vx *= MAX_PUCK / sp; p.vy *= MAX_PUCK / sp; }
+
+        if (p.y < 0 || p.y > H) {
+          p.active = false;
+          goals.push([p.y < 0 ? 0 : 1, p]);
+        }
+      }
     }
 
-    if (puck.active) {
-      const k = Math.exp(-DAMPING * dt);
-      puck.vx *= k;
-      puck.vy *= k;
-      if (!Number.isFinite(puck.x + puck.y + puck.vx + puck.vy)) {
-        placePuck(-1);
-      }
+    const k = Math.exp(-DAMPING * dt);
+    for (const p of pucks) {
+      if (!p.active) continue;
+      p.vx *= k;
+      p.vy *= k;
+      if (!Number.isFinite(p.x + p.y + p.vx + p.vy)) placePuck(p, -1);
     }
 
-    for (let k = 0; k < 2; k++) if (hits[k] > 50) onMalletHit(mallets[k], hits[k]);
+    for (let i = 0; i < 2; i++) if (hits[i] > 50) onMalletHit(mallets[i], hits[i]);
     if (wallImp > 90) onWallHit(wx, wy, wallImp);
-    if (scored >= 0) onGoal(scored);
+    if (puckImp > 90) onPuckHit(cx, cy, puckImp);
+    for (const [scorer, p] of goals) onGoal(scorer, p);
   }
 
   function onMalletHit(m, imp) {
@@ -832,11 +922,20 @@
     Sound.wall(k);
   }
 
-  function onGoal(scorer) {
+  function onPuckHit(x, y, imp) {
+    const k = clamp(imp / 1800, 0, 1);
+    ripple(x, y, '255,255,255', 8, 40 + k * 40, 0.35, 3);
+    spawn(x, y, '255,255,255', Math.round(4 + k * 10), 200 + k * 400, 0.35, 2.4, { spark: true });
+    spawn(x, y, PUCK_RGB, Math.round(3 + k * 8), 150 + k * 300, 0.4, 2.4, { spark: true });
+    Sound.clack(k);
+  }
+
+  function onGoal(scorer, p) {
     const col = COLORS[scorer];
-    const gx = clamp(puck.x, GOAL_L + 10, GOAL_R - 10);
+    const gx = clamp(p.x, GOAL_L + 10, GOAL_R - 10);
     const gy = scorer === 0 ? 0 : H;
-    puck.active = false;
+    p.active = false;
+    p.visible = false;
 
     const dir = scorer === 0 ? Math.PI / 2 : -Math.PI / 2;
     spawn(gx, gy, col.rgb, 70, 1100, 1.1, 4, { dir, spread: 1.25, spark: true });
@@ -858,6 +957,15 @@
     game.lastScorer = scorer;
     Sound.goal(settings.mode === 'pvp' || scorer === 0);
     vibrate([40, 40, 80]);
+
+    if (game.frenzy) {
+      // İki toplu bölümde oyun durmaz: yenen pak kısa süre sonra geri gelir.
+      banner('GOL!', col.rgb, 1.1, 150);
+      p.respawn = 0.8;
+      p.respawnSide = 1 - scorer;
+      return;
+    }
+
     banner('GOL!', col.rgb, 1.5, 150);
     game.state = 'goal';
     game.timer = 1.6;
@@ -873,13 +981,27 @@
     return t <= span ? lo + t : lo + 2 * span - t;
   }
 
+  // İki top varken kalemize en çok tehdit oluşturan paka odaklan.
+  function aiTarget(m) {
+    let best = null, bestScore = Infinity;
+    for (const p of pucks) {
+      if (!p.active) continue;
+      const ly = m.bottom ? H - p.y : p.y;
+      const lvy = m.bottom ? -p.vy : p.vy;
+      const score = ly + (lvy < 0 ? lvy * 0.3 : 0);
+      if (score < bestScore) { bestScore = score; best = p; }
+    }
+    return best;
+  }
+
   // Hesaplar raketin kendi yarısı üstteymiş gibi yapılır; alttaki AI için y aynalanır.
   function aiThink(m) {
     const L = m.level;
     const flip = m.bottom;
     const Y = (v) => (flip ? H - v : v);
-    const px = puck.x, py = Y(puck.y);
-    const pvx = puck.vx, pvy = flip ? -puck.vy : puck.vy;
+    const P = aiTarget(m);
+    const px = P ? P.x : W / 2, py = P ? Y(P.y) : H / 2;
+    const pvx = P ? P.vx : 0, pvy = P ? (flip ? -P.vy : P.vy) : 0;
     const mx = m.x, my = Y(m.y);
     const guardY = 92;
     const limitY = H / 2 - CENTER_GAP;
@@ -888,7 +1010,7 @@
     const noise = rand(-1, 1) * L.noise;
     const inOurHalf = py < H / 2 + PUCK_R * 0.5;
 
-    if (!puck.active) {
+    if (!P) {
       mode = 'idle';
       tx = W / 2;
       ty = guardY;
@@ -909,7 +1031,7 @@
       const qx = foldX(px + pvx * lead);
       const qy = clamp(py + pvy * lead, PUCK_R, H / 2 + PUCK_R);
 
-      if (game.stuck > 1.4) {
+      if (P.stuck > 1.4) {
         // Pak uzun süredir yavaş: doğrudan üzerine git
         mode = 'poke';
         tx = qx;
@@ -1100,11 +1222,20 @@
   const menuEl = $('menu'), pauseEl = $('pauseMenu'), overEl = $('overMenu');
   const pauseBtn = $('pauseBtn'), soundBtn = $('soundBtn'), fsBtn = $('fsBtn');
 
+  const clockEl = $('clock'), clockTime = $('clockTime'), clockTag = $('clockTag');
+  let clockShown = '';
+
   function showOverlay(el) {
     [menuEl, pauseEl, overEl].forEach((o) => o.classList.toggle('show', o === el));
     const inGame = !el;
     pauseBtn.classList.toggle('hidden', !inGame);
     document.body.classList.toggle('playing', inGame);
+  }
+
+  function launchPuck(p, speed) {
+    const a = rand(0.35, Math.PI - 0.35) * (Math.random() < 0.5 ? 1 : -1);
+    p.vx = Math.cos(a) * speed;
+    p.vy = Math.sin(a) * speed;
   }
 
   function startDemo() {
@@ -1114,13 +1245,15 @@
       m.level = AI_LEVELS.medium;
       resetMallet(m);
     });
-    placePuck(-1);
-    puck.active = true;
-    const a = rand(0, TAU);
-    puck.vx = Math.cos(a) * 600;
-    puck.vy = Math.sin(a) * 600;
+    pucks.length = 1;
+    const p = pucks[0];
+    placePuck(p, -1);
+    p.active = true;
+    p.visible = true;
+    launchPuck(p, 600);
     game.score = [0, 0];
     game.banner = null;
+    clockEl.classList.add('hidden');
     showOverlay(menuEl);
   }
 
@@ -1128,6 +1261,9 @@
     Sound.init();
     game.score = [0, 0];
     game.pulse = [0, 0];
+    game.clock = MATCH_TIME;
+    game.frenzy = false;
+    pucks.length = 1;
     mallets.forEach(resetMallet);
     mallets[0].ai = false;
     mallets[1].ai = settings.mode === 'ai';
@@ -1135,18 +1271,80 @@
     pointerOwner.clear();
     particles.length = 0;
     ripples.length = 0;
+    clockEl.classList.remove('hidden');
+    updateClock();
     showOverlay(null);
     serve(Math.random() < 0.5 ? 0 : 1);
   }
 
   function serve(side) {
-    placePuck(side);
-    puck.active = false;
+    const p = pucks[0];
+    placePuck(p, side);
+    p.active = false;
+    p.visible = true;
     game.state = 'countdown';
     game.count = 3;
     game.timer = 0.55;
     banner('3', '155,107,255', 0.55, 160);
     Sound.beep(false);
+  }
+
+  // 45. saniye: ikinci top ortadan oyuna girer.
+  function startFrenzy() {
+    game.frenzy = true;
+    const p = makePuck();
+    pucks.push(p);
+    placePuck(p, -1);
+    p.visible = true;
+    p.blink = 1.0;
+    p.launch = 450;
+    banner('2. TOP!', PUCK_RGB, 1.6, 120);
+    ripple(p.x, p.y, PUCK_RGB, 20, 260, 0.9, 7);
+    ripple(p.x, p.y, '255,255,255', 10, 160, 0.6, 3);
+    spawn(p.x, p.y, PUCK_RGB, 40, 800, 0.9, 3.5, { spark: true });
+    game.flash = 0.7;
+    game.flashRgb = PUCK_RGB;
+    game.shake = 8;
+    Sound.frenzy();
+    vibrate([30, 30, 30, 30, 60]);
+  }
+
+  function updateClock() {
+    const left = Math.max(0, Math.ceil(game.clock));
+    const elapsed = MATCH_TIME - game.clock;
+    const soon = !game.frenzy && elapsed >= SECOND_PUCK_AT - 5;
+    const key = left + (game.frenzy ? 'f' : soon ? 's' : '');
+    if (key === clockShown) return;
+    clockShown = key;
+    clockTime.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+    clockEl.classList.toggle('frenzy', game.frenzy);
+    clockEl.classList.toggle('soon', soon);
+    clockEl.classList.toggle('final', left <= 10);
+    clockTag.textContent = game.frenzy ? '2 TOP' : soon ? '2. TOP GELİYOR' : '';
+  }
+
+  function updatePucks(dt) {
+    for (const p of pucks) {
+      if (p.respawn > 0) {
+        p.respawn -= dt;
+        if (p.respawn <= 0) {
+          placePuck(p, p.respawnSide);
+          p.visible = true;
+          p.blink = 0.9;
+        }
+      } else if (p.blink > 0) {
+        p.blink -= dt;
+        if (p.blink <= 0) {
+          p.active = true;
+          if (p.launch) launchPuck(p, p.launch);
+          p.launch = null;
+          Sound.beep(true);
+        }
+      }
+      // Takılı pak algılama (AI için)
+      if (p.active && Math.hypot(p.vx, p.vy) < 40) p.stuck += dt;
+      else p.stuck = 0;
+    }
   }
 
   function update(dt) {
@@ -1165,65 +1363,87 @@
           Sound.beep(false);
         } else {
           game.state = 'play';
-          puck.active = true;
+          pucks[0].active = true;
           banner('BAŞLA!', PUCK_RGB, 0.7, 96);
           Sound.beep(true);
         }
       }
     } else if (st === 'goal') {
       game.timer -= dt;
-      if (game.timer <= 0) {
-        if (game.score[0] >= settings.target || game.score[1] >= settings.target) {
-          endMatch();
-          return;
+      if (game.timer <= 0) serve(1 - game.lastScorer);
+    } else if (st === 'play') {
+      // Süre yalnızca oyun akarken işler
+      const before = Math.ceil(game.clock);
+      game.clock -= dt;
+      const now = Math.ceil(game.clock);
+      if (!game.frenzy && MATCH_TIME - game.clock >= SECOND_PUCK_AT) startFrenzy();
+      if (now !== before && now <= 10 && now > 0) Sound.tick(now <= 3);
+      if (game.clock <= 0) {
+        game.clock = 0;
+        updateClock();
+        endMatch();
+        return;
+      }
+      updatePucks(dt);
+    } else if (st === 'demo') {
+      const p = pucks[0];
+      if (!p.active) {
+        game.timer -= dt;
+        if (game.timer <= 0) {
+          placePuck(p, -1);
+          p.active = true;
+          p.visible = true;
+          launchPuck(p, 500);
         }
-        serve(1 - game.lastScorer);
       }
-    } else if (st === 'demo' && !puck.active) {
-      game.timer -= dt;
-      if (game.timer <= 0) {
-        placePuck(-1);
-        puck.active = true;
-        const a = rand(0.3, Math.PI - 0.3) * (Math.random() < 0.5 ? 1 : -1);
-        puck.vx = Math.cos(a) * 500;
-        puck.vy = Math.sin(a) * 500;
-      }
+      updatePucks(dt);
     }
 
-    // Takılı pak algılama (AI için)
-    if (puck.active && Math.hypot(puck.vx, puck.vy) < 40) game.stuck += dt;
-    else game.stuck = 0;
-
+    if (st !== 'demo') updateClock();
     stepPhysics(dt);
   }
 
   function endMatch() {
     game.state = 'over';
-    const w = game.score[0] >= settings.target ? 0 : 1;
+    pucks.forEach((p) => { p.active = false; });
+    const [a, b] = game.score;
+    const draw = a === b;
+    const w = a > b ? 0 : 1;
     const pvp = settings.mode === 'pvp';
-    const win = pvp || w === 0;
+    const win = !draw && (pvp || w === 0);
     const title = $('resultTitle');
-    title.className = 'title ' + (pvp ? (w === 0 ? 'win' : 'pink') : win ? 'win' : 'lose');
-    title.textContent = pvp ? `${COLORS[w].name} KAZANDI!` : win ? 'KAZANDIN!' : 'KAYBETTİN';
-    $('resultIcon').textContent = win ? '🏆' : '💔';
-    $('finalP1').textContent = game.score[0];
-    $('finalP2').textContent = game.score[1];
+    if (draw) {
+      title.className = 'title';
+      title.textContent = 'BERABERE';
+      $('resultIcon').textContent = '🤝';
+    } else {
+      title.className = 'title ' + (pvp ? (w === 0 ? 'win' : 'pink') : win ? 'win' : 'lose');
+      title.textContent = pvp ? `${COLORS[w].name} KAZANDI!` : win ? 'KAZANDIN!' : 'KAYBETTİN';
+      $('resultIcon').textContent = win ? '🏆' : '💔';
+    }
+    $('finalP1').textContent = a;
+    $('finalP2').textContent = b;
     const diffName = { easy: 'Kolay', medium: 'Orta', hard: 'Zor' }[settings.difficulty];
-    $('resultSub').textContent = pvp
-      ? 'Rövanş?'
-      : win
-        ? (settings.difficulty === 'hard' ? 'Efsane! Zor yapay zekâyı yendin.' : `${diffName} seviyeyi geçtin. Bir üst seviyeyi dene!`)
-        : 'Bir dahaki sefere! Tekrar dene.';
+    $('resultSub').textContent = draw
+      ? 'Süre bitti, kimse üstün gelemedi. Rövanş?'
+      : pvp
+        ? 'Rövanş?'
+        : win
+          ? (settings.difficulty === 'hard' ? 'Efsane! Zor yapay zekâyı yendin.' : `${diffName} seviyeyi geçtin. Bir üst seviyeyi dene!`)
+          : 'Bir dahaki sefere! Tekrar dene.';
+
+    banner('SÜRE BİTTİ!', '255,255,255', 1.3, 84);
+    Sound.buzzer();
     // Konfeti
-    const rgb = COLORS[w].rgb;
+    const rgb = draw ? '155,107,255' : COLORS[w].rgb;
     for (let i = 0; i < 6; i++) {
       spawn(rand(40, W - 40), rand(H * 0.2, H * 0.8), i % 2 ? rgb : PUCK_RGB, 22, 700, 1.8, 4, { gravity: 500 });
     }
     game.flash = 0.8;
     game.flashRgb = rgb;
-    Sound.finale(win);
+    setTimeout(() => Sound.finale(win || draw), 500);
     vibrate(win ? [60, 50, 60, 50, 140] : 200);
-    setTimeout(() => showOverlay(overEl), 700);
+    setTimeout(() => showOverlay(overEl), 1300);
   }
 
   function togglePause() {
@@ -1275,7 +1495,7 @@
       const b = e.target.closest('button');
       if (!b) return;
       const key = seg.dataset.group;
-      settings[key] = key === 'target' ? Number(b.dataset.value) : b.dataset.value;
+      settings[key] = b.dataset.value;
       store.set(key, settings[key]);
       syncMenu();
     });
@@ -1327,7 +1547,7 @@
 
     drawScores();
     drawRipples();
-    drawPuck();
+    drawPucks();
     drawMallets();
     drawParticles();
 
@@ -1378,11 +1598,15 @@
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  function drawPuck() {
-    const tr = puck.trail;
+  function drawPucks() {
+    for (const p of pucks) drawPuck(p);
+  }
+
+  function drawPuck(p) {
+    const tr = p.trail;
     const n = tr.length / 2;
     if (n > 1) {
-      const sp = Math.hypot(puck.vx, puck.vy);
+      const sp = Math.hypot(p.vx, p.vy);
       const heat = clamp((sp - 600) / 1500, 0, 1);
       const rgb = `${255},${Math.round(lerp(226, 110, heat))},${Math.round(lerp(110, 60, heat))}`;
       ctx.globalCompositeOperation = 'lighter';
@@ -1395,13 +1619,14 @@
       }
       ctx.globalCompositeOperation = 'source-over';
     }
-    if (game.state === 'countdown') {
-      // Servis öncesi yanıp sönen pak
-      ctx.globalAlpha = 0.55 + 0.45 * Math.sin(game.time * 12);
-      ctx.drawImage(puckSprite, puck.x - PS / 2, puck.y - PS / 2, PS, PS);
+    if (!p.visible) return;
+    if (!p.active && game.state !== 'over') {
+      // Oyuna girmeyi bekleyen pak yanıp söner
+      ctx.globalAlpha = 0.5 + 0.5 * Math.sin(game.time * 14);
+      ctx.drawImage(puckSprite, p.x - PS / 2, p.y - PS / 2, PS, PS);
       ctx.globalAlpha = 1;
-    } else if (puck.active) {
-      ctx.drawImage(puckSprite, puck.x - PS / 2, puck.y - PS / 2, PS, PS);
+    } else {
+      ctx.drawImage(puckSprite, p.x - PS / 2, p.y - PS / 2, PS, PS);
     }
   }
 
@@ -1508,5 +1733,5 @@
   }
 
   // Test ve hata ayıklama için
-  window.__airHockey = { game, puck, mallets, settings, AI_LEVELS, step: update };
+  window.__airHockey = { game, pucks, mallets, settings, AI_LEVELS, step: update };
 })();
