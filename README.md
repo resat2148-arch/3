@@ -50,6 +50,10 @@ Menüdeki **Tema** seçiminden değiştirilir; seçim cihazda saklanır.
   - **Görüntü**: derin, yarı saydam turkuaz bir buzul gölü; buzun içinde farklı derinliklerde donmuş kabarcık kümeleri ve eski silik çatlaklar, buzun altında süzülen ışık ve yükselen kabarcıklar, bantların dibinde kar, buz altına boyanmış saha çizgileri. Disk klasik siyah kauçuk hokey diskidir.
   - **Etkileşim**: kayan disk buzda ince paralel çizikler, raketler hafif sürtme izi bırakır. Sert şut, duvara şiddetli çarpma, gol ya da skill kullanımı çarpma noktasından dallanarak yayılan çatlaklar oluşturur (güçlü darbede örümcek ağı gibi halka çatlaklar) ve etrafa buz kristalleri sıçrar. İzler zamanla yavaşça "yeniden donar"; her maç temiz buzla başlar.
   - **Ses**: tok vuruşun ardından cam kırılmasını andıran çıtırtılar; güçlü çatlakta donmuş göllere özgü, perdesi hızla inen çınlama. Diskin buzda kayma sesi hızına göre değişir, arkada hafif bir arena uğultusu vardır.
+- **Lav Stadyumu**: kırılan bazalt kabuk ve altından akan lav.
+  - **Görüntü**: düzensiz çokgen bazalt plakalar; aralarındaki dikişlerden nabız gibi parlayan lav sızar. Kıvılcımlar uçuşur, dikişlerde arada bir lav kabarcığı patlar. Disk, kenarı kızgın bir obsidyen taşıdır.
+  - **Etkileşim**: kayan disk kabuğu kızdırır; ardındaki iz soğudukça turuncudan koyu kırmızıya döner ve is lekesi bırakır. Sert şut, şiddetli duvar çarpması, gol ya da skill kabuğu kırar: çarpma noktasından çatlaklar yayılır, altından lav fışkırır ve birkaç saniyede soğuyup yeniden kabuk bağlar. Gol büyük bir lav patlamasıyla kutlanır.
+  - **Ses**: vuruşlarda buhar tıslaması, kabuk kırılınca kaya çatırtısı ve boğuk patlama, lav kabarcıklarının "blop" sesi, arkada yerin derinlerinden gelen gürleme.
 
 ## Özellikler
 

@@ -60,7 +60,7 @@
     difficulty: store.get('difficulty', 'medium'),
     sound: store.get('sound', true),
     volume: clamp(Number(store.get('volume', 1)) || 0, 0, 1),
-    theme: ['water', 'ice'].includes(store.get('theme', 'neon')) ? store.get('theme', 'neon') : 'neon',
+    theme: ['water', 'ice', 'lava'].includes(store.get('theme', 'neon')) ? store.get('theme', 'neon') : 'neon',
   };
 
   const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -138,7 +138,7 @@
         this.scrapeNode = null;
       }
       this.ambTheme = theme;
-      if (theme !== 'water' && theme !== 'ice') return;
+      if (theme !== 'water' && theme !== 'ice' && theme !== 'lava') return;
       const loop = () => {
         const src = c.createBufferSource();
         src.buffer = this.noiseBuf;
@@ -176,6 +176,27 @@
         src.start();
         lfo.start();
         stop.push(src, lfo);
+      } else if (theme === 'lava') {
+        // Yerin derinlerinden gelen gürleme, yavaşça kabarıp inen
+        const rum = loop();
+        const rg = c.createGain();
+        rg.gain.value = 0.09;
+        const lfo = c.createOscillator();
+        lfo.frequency.value = 0.13;
+        const lg = c.createGain();
+        lg.gain.value = 0.04;
+        lfo.connect(lg);
+        lg.connect(rg.gain);
+        chain(rum, filt('lowpass', 95, 0.8), filt('peaking', 55, 1.2, 6), rg, out);
+        // Uzaktan gelen ateş hışırtısı
+        const fire = loop();
+        const fg = c.createGain();
+        fg.gain.value = 0.012;
+        chain(fire, filt('bandpass', 2400, 0.5), fg, out);
+        rum.start();
+        fire.start();
+        lfo.start();
+        stop.push(rum, fire, lfo);
       } else {
         // Soğuk arena uğultusu
         const hum = loop();
@@ -196,6 +217,34 @@
     },
     setScrape(level) {
       if (this.scrapeNode) this.scrapeNode.gain.setTargetAtTime(level, this.ctx.currentTime, 0.06);
+    },
+    // Buhar tıslaması: sıcak kabuğa değen darbe
+    sizzle(k, x) {
+      if (!this.ok('sizzle', 0.05)) return;
+      const pan = this.panOf(x);
+      this.noise({ dur: 0.18 + k * 0.4, vol: 0.12 + k * 0.3, type: 'highpass', freq: 3800, attack: 0.01, pan, rev: 0.2 });
+      this.noise({ dur: 0.1 + k * 0.2, vol: 0.06 + k * 0.15, freq: 7000, freqTo: 4000, q: 0.8, pan });
+    },
+    // Kabuk kırılıp lav fışkırır: kaya çatırtısı + boğuk patlama + buhar
+    eruption(e, x) {
+      if (!this.ok('eruption', 0.08)) return;
+      e = clamp(e, 0, 1.3);
+      const pan = this.panOf(x);
+      this.tone({ f0: 110 + e * 30, f1: 36, dur: 0.45 + e * 0.35, vol: 0.5 + e * 0.4, pan: pan * 0.5, rev: 0.3 });
+      this.noise({ dur: 0.5 + e * 0.5, vol: 0.3 + e * 0.35, type: 'lowpass', freq: 1400, freqTo: 120, q: 0.7, pan, rev: 0.35 });
+      const n = 5 + Math.round(e * 10);
+      for (let i = 0; i < n; i++) {
+        const t = 0.01 + Math.pow(Math.random(), 1.6) * (0.15 + e * 0.25);
+        this.noise({ dur: 0.008 + Math.random() * 0.02, vol: 0.15 + e * 0.3 * Math.random(), freq: 700 + Math.random() * 1500, q: 1.5, delay: t, pan });
+      }
+      this.noise({ dur: 0.5 + e * 0.6, vol: 0.1 + e * 0.18, type: 'highpass', freq: 4200, delay: 0.08, attack: 0.08, pan, rev: 0.3 });
+    },
+    // Lav kabarcığı patlaması
+    bloop(x) {
+      if (!this.ok('bloop', 0.3)) return;
+      const f = 90 + Math.random() * 70;
+      this.tone({ f0: f * 1.6, f1: f, dur: 0.14, vol: 0.12, pan: this.panOf(x) * 0.6, rev: 0.2 });
+      this.noise({ dur: 0.06, vol: 0.05, type: 'lowpass', freq: 500, delay: 0.1 });
     },
     // Buz çatlaması: tok vuruşun ardından cam kırılmasını andıran ince çıtırtılar; güçlü
     // çatlakta donmuş göllere özgü, perdesi hızla inen yayılım çınlaması ("pıuv")
@@ -494,6 +543,7 @@
   const waterCanvas = document.getElementById('water');
   const isWater = () => settings.theme === 'water';
   const isIce = () => settings.theme === 'ice';
+  const isLava = () => settings.theme === 'lava';
   const stage = document.getElementById('stage');
   let S = 1; // mantıksal birim başına cihaz pikseli
   let cssScale = 1, boardShaken = false;
@@ -579,6 +629,122 @@
     g.arcTo(x, y + h, x, y, r);
     g.arcTo(x, y, x + w, y, r);
     g.closePath();
+  }
+
+  // Lav teması: volkanik kaya kenar, kararmış bazalt kabuk, kabuğun çatlak ağı (sabit hafif
+  // parıltı dahil) ve ısıya dayanıklı soluk saha çizgileri.
+  function buildLavaTable(g) {
+    rr(g, 0, 0, LW, LH, 44);
+    const rock = g.createLinearGradient(0, 0, LW, LH);
+    rock.addColorStop(0, '#3a302b');
+    rock.addColorStop(0.5, '#1c1714');
+    rock.addColorStop(1, '#2e2520');
+    g.fillStyle = rock;
+    g.fill();
+    let seed = 23;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    g.save();
+    rr(g, 0, 0, LW, LH, 44);
+    g.clip();
+    for (let i = 0; i < 700; i++) {
+      g.fillStyle = rnd() < 0.5 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.25)';
+      g.fillRect(rnd() * LW, rnd() * LH, 1.4, 1.4);
+    }
+    g.restore();
+    [[COLORS[1], 4], [COLORS[0], LH - 8]].forEach(([col, y]) => {
+      g.fillStyle = `rgba(${col.rgb}, 0.6)`;
+      rr(g, LW / 2 - 150, y, 300, 4, 2);
+      g.fill();
+    });
+    // Kenardan sızan kor
+    g.save();
+    g.shadowColor = 'rgba(255, 90, 20, 0.9)';
+    g.shadowBlur = 14 * S;
+    rr(g, B - 2, B - 2, W + 4, H + 4, 28);
+    g.lineWidth = 3;
+    g.strokeStyle = 'rgba(255, 110, 30, 0.75)';
+    g.stroke();
+    g.restore();
+
+    g.save();
+    g.translate(B, B);
+    rr(g, 0, 0, W, H, 26);
+    g.clip();
+    // Bazalt kabuk plakaları ve dikişleri
+    g.drawImage(Lava.crust, 0, 0, W, H);
+    // Isıya dayanıklı soluk saha çizgileri
+    g.lineCap = 'round';
+    const paint = (color, width, alpha, fn) => {
+      g.globalAlpha = alpha;
+      g.strokeStyle = color;
+      g.lineWidth = width;
+      g.beginPath();
+      fn();
+      g.stroke();
+      g.globalAlpha = 1;
+    };
+    paint('#e8d8c8', 5, 0.5, () => { g.moveTo(0, H / 2); g.lineTo(W, H / 2); });
+    paint('#e8d8c8', 4, 0.45, () => g.arc(W / 2, H / 2, 80, 0, TAU));
+    [['#ff6aa6', 0, 0, Math.PI], ['#4cc8f5', H, Math.PI, TAU]].forEach(([colr, y, a0, a1]) => {
+      paint(colr, 5, 0.6, () => g.arc(W / 2, y, 118, a0, a1));
+    });
+    // Sabit hafif lav parıltısı (hafif modda tek parıltı budur)
+    g.globalCompositeOperation = 'lighter';
+    g.globalAlpha = 0.3;
+    g.drawImage(Lava.glow, 0, 0, W, H);
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
+    // Kenarlarda koyu kabuk
+    const E = 26;
+    const edge = (x0, y0, x1, y1) => {
+      const gr = g.createLinearGradient(x0, y0, x1, y1);
+      gr.addColorStop(0, 'rgba(0, 0, 0, 0.5)');
+      gr.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      return gr;
+    };
+    g.fillStyle = edge(0, 0, E, 0); g.fillRect(0, 0, E, H);
+    g.fillStyle = edge(W, 0, W - E, 0); g.fillRect(W - E, 0, E, H);
+    g.fillStyle = edge(0, 0, 0, E); g.fillRect(0, 0, W, E);
+    g.fillStyle = edge(0, H, 0, H - E); g.fillRect(0, H - E, W, E);
+    g.restore();
+  }
+
+  // Lav teması pakı: içi kızgın, kenarı parlayan obsidyen disk (koyu kabuk üzerinde seçilir)
+  function buildLavaPuck(c, g, r) {
+    const halo = g.createRadialGradient(0, 0, r * 0.8, 0, 0, r + PS_PAD * 0.7);
+    halo.addColorStop(0, 'rgba(255, 140, 40, 0.5)');
+    halo.addColorStop(1, 'rgba(255, 90, 20, 0)');
+    g.fillStyle = halo;
+    g.beginPath();
+    g.arc(0, 0, r + PS_PAD * 0.7, 0, TAU);
+    g.fill();
+    const body = g.createRadialGradient(-r * 0.3, -r * 0.35, 1, 0, 0, r);
+    body.addColorStop(0, '#4a3a34');
+    body.addColorStop(1, '#0c0706');
+    g.fillStyle = body;
+    g.beginPath();
+    g.arc(0, 0, r, 0, TAU);
+    g.fill();
+    g.shadowColor = 'rgba(255, 120, 30, 1)';
+    g.shadowBlur = 10 * S;
+    g.strokeStyle = '#ffb347';
+    g.lineWidth = 3;
+    g.beginPath();
+    g.arc(0, 0, r - 2, 0, TAU);
+    g.stroke();
+    // Yüzeydeki kızgın damarlar
+    g.lineWidth = 1.4;
+    g.strokeStyle = 'rgba(255, 170, 60, 0.9)';
+    g.beginPath();
+    g.moveTo(-r * 0.5, -r * 0.1); g.lineTo(-r * 0.1, r * 0.05); g.lineTo(r * 0.15, -r * 0.3);
+    g.moveTo(-r * 0.1, r * 0.05); g.lineTo(r * 0.2, r * 0.45);
+    g.stroke();
+    g.shadowBlur = 0;
+    g.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    g.beginPath();
+    g.ellipse(-r * 0.35, -r * 0.45, r * 0.3, r * 0.11, -0.6, 0, TAU);
+    g.fill();
+    return c;
   }
 
   // Buz teması: saha kenarı (beyaz bant + sarı tekme şeridi), derin buzul gölü, buzun içinde
@@ -915,6 +1081,11 @@
       Ice.attach(c, g);
       return;
     }
+    if (isLava()) {
+      buildLavaTable(g);
+      Lava.attach(c, g);
+      return;
+    }
 
     // Dış çerçeve
     rr(g, 0, 0, LW, LH, 44);
@@ -1182,6 +1353,7 @@
 
     if (style === 'water') return buildWaterPuck(c, g, r);
     if (style === 'ice') return buildIcePuck(c, g, r);
+    if (style === 'lava') return buildLavaPuck(c, g, r);
 
     g.save();
     g.shadowColor = 'rgba(0,0,0,0.7)';
@@ -2086,7 +2258,410 @@
       }
     }
 
-    return { init, reset, attach, crack, update, drawUnder, staticFractures, bruise: (x, y, r, a) => { init(); bruise(x, y, r, a); } };
+    return { init, reset, attach, crack, update, drawUnder, staticFractures, genSegs, bruise: (x, y, r, a) => { init(); bruise(x, y, r, a); } };
+  })();
+
+  // ---------------------------------------------------------------------------
+  // Lav Stadyumu: kırılan bazalt kabuk ve altından akan lav
+  // - Kalıcı katman (masa katmanı + izler): kabuk, is lekeleri, yeni kırıkların koyu kenarları.
+  // - Parıltı katmanı: kabuğun çatlak ağından sızan lav, nabız gibi parlar ve titreşir.
+  // - Isı katmanı: kayan diskin kızdırdığı iz ve yeni kırıklardan fışkıran lav; soğudukça
+  //   turuncudan koyu kırmızıya döner ve kabuk yeniden bağlar.
+  // ---------------------------------------------------------------------------
+  const Lava = (() => {
+    const MK = 1.5;   // kalıcı iz katmanı (piksel / birim)
+    const GK = 0.5;   // parıltı ve ısı katmanları: düşük çözünürlük (büyütülünce doğal bulanıklık)
+    let marks = null, mg = null, glow = null, heat = null, hg = null, tg = null, base = null;
+    const targets = [];
+    let crustImg = null, seamPts = null;
+    const hot = [];      // soğumakta olan yeni kırıklar
+    const growing = [];  // büyüyen kırıklar
+    const embers = [];
+    const trails = new Map();
+    let time = 0, coolT = 0, fadeT = 0, bubbleT = 1, hotT = 0;
+    // Isı katmanında son birkaç saniyede boyanan bölge (hafif modda yalnızca burası çizilir)
+    const hb = { x0: 1e9, y0: 1e9, x1: -1e9, y1: -1e9, t: 0 };
+    function touch(x0, y0, x1, y1, pad) {
+      hb.x0 = Math.min(hb.x0, Math.min(x0, x1) - pad);
+      hb.y0 = Math.min(hb.y0, Math.min(y0, y1) - pad);
+      hb.x1 = Math.max(hb.x1, Math.max(x0, x1) + pad);
+      hb.y1 = Math.max(hb.y1, Math.max(y0, y1) + pad);
+      hb.t = 3.5;
+    }
+
+    function newEmber() {
+      return { x: rand(10, W - 10), y: rand(10, H - 10), vx: rand(-14, 14), vy: rand(-22, -6), life: rand(2, 5), age: 0, s: rand(1, 2.4), ph: rand(0, TAU) };
+    }
+
+    function init() {
+      if (marks) return;
+      const mk = (k) => {
+        const c = document.createElement('canvas');
+        c.width = Math.round(W * k);
+        c.height = Math.round(H * k);
+        const g = c.getContext('2d');
+        g.setTransform(k, 0, 0, k, 0, 0);
+        g.lineCap = 'round';
+        g.lineJoin = 'round';
+        return [c, g];
+      };
+      [marks, mg] = mk(MK);
+      let gg;
+      [glow, gg] = mk(GK);
+      [heat, hg] = mk(GK);
+      targets.length = 0;
+      targets.push(mg);
+
+      buildCrust(gg);
+      for (let i = 0; i < 24; i++) embers.push(newEmber());
+    }
+
+    // Kabuk: düzensiz çokgen plakalar (bükülmüş Voronoi hücreleri); plakalar arasındaki
+    // dikişlerden lav görünür. Piksel piksel bir kez hesaplanır.
+    function buildCrust(gg) {
+      const cols = 6, rows = 10, cw = W / cols, ch = H / rows;
+      const seeds = [];
+      for (let j = 0; j < rows; j++) {
+        for (let i = 0; i < cols; i++) {
+          seeds.push([(i + 0.15 + Math.random() * 0.7) * cw, (j + 0.15 + Math.random() * 0.7) * ch, Math.random()]);
+        }
+      }
+      // (x, y) için en yakın iki plaka merkezine uzaklık farkı: dikişe olan mesafenin ölçüsü
+      const cell = (x, y) => {
+        // Kenarları düzensizleştiren bükme
+        const wx = x + Math.sin(y * 0.045) * 7 + Math.sin(y * 0.13 + x * 0.05) * 3;
+        const wy = y + Math.sin(x * 0.05) * 7 + Math.cos(x * 0.12 - y * 0.04) * 3;
+        const ci = clamp(Math.floor(wx / cw), 0, cols - 1), cj = clamp(Math.floor(wy / ch), 0, rows - 1);
+        let d1 = 1e9, d2 = 1e9, k1 = 0;
+        for (let j = Math.max(0, cj - 1); j <= Math.min(rows - 1, cj + 1); j++) {
+          for (let i = Math.max(0, ci - 1); i <= Math.min(cols - 1, ci + 1); i++) {
+            const sd = seeds[j * cols + i];
+            const d = Math.hypot(wx - sd[0], wy - sd[1]);
+            if (d < d1) { d2 = d1; d1 = d; k1 = j * cols + i; } else if (d < d2) d2 = d;
+          }
+        }
+        return [d2 - d1, seeds[k1][2]];
+      };
+
+      // Kabuk dokusu (1 piksel / birim)
+      const cc = document.createElement('canvas');
+      cc.width = W;
+      cc.height = H;
+      const cx = cc.getContext('2d');
+      const img = cx.createImageData(W, H);
+      const d = img.data;
+      seamPts = [];
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          const [m, tone] = cell(x, y);
+          const n = Math.random();
+          let r, gC, b;
+          if (m < 2.2) {
+            // Dikişin kızgın özü
+            const k = 1 - m / 2.2;
+            r = 140 + 85 * k; gC = 36 + 50 * k * k; b = 10;
+            if (m < 0.8 && Math.random() < 0.004) seamPts.push([x, y]);
+          } else if (m < 6) {
+            // Dikişin kararmış kenarı
+            const k = (m - 2.2) / 3.8;
+            r = 40 + 30 * k; gC = 14 + 14 * k; b = 8 + 8 * k;
+          } else {
+            // Plaka: kendi tonu, kenara doğru koyulaşan kabartma, pürüzlü yüzey
+            const lift = Math.min(1, (m - 6) / 30);
+            const base = 34 + tone * 18 + lift * 16;
+            r = base + 8 + n * 10; gC = base * 0.72 + n * 7; b = base * 0.6 + n * 6;
+          }
+          const i = (y * W + x) * 4;
+          d[i] = r; d[i + 1] = gC; d[i + 2] = b; d[i + 3] = 255;
+        }
+      }
+      cx.putImageData(img, 0, 0);
+      crustImg = cc;
+
+      // Parıltı katmanı: dikişlerden sızan lav (düşük çözünürlük, doğal bulanık)
+      const gw = glow.width, gh = glow.height;
+      const gi = gg.createImageData(gw, gh);
+      const gd = gi.data;
+      for (let y = 0; y < gh; y++) {
+        for (let x = 0; x < gw; x++) {
+          const [m] = cell(x / GK, y / GK);
+          const a = Math.max(0, 1 - m / 9);
+          const i = (y * gw + x) * 4;
+          gd[i] = 255; gd[i + 1] = 90 + 110 * a * a; gd[i + 2] = 20 + 40 * a * a * a; gd[i + 3] = 255 * a * a;
+        }
+      }
+      gg.putImageData(gi, 0, 0);
+    }
+
+    function segLine(g, s) {
+      g.beginPath();
+      g.moveTo(s.x0, s.y0);
+      g.lineTo(s.x1, s.y1);
+      g.stroke();
+    }
+
+    // Kabuk çatlağı: masa katmanında koyu kızıl yarık + ince turuncu öz
+    function crustSeg(g, s, a = 1) {
+      g.strokeStyle = `rgba(28, 6, 2, ${0.9 * a})`;
+      g.lineWidth = s.w + 3;
+      segLine(g, s);
+      g.strokeStyle = `rgba(122, 28, 6, ${a})`;
+      g.lineWidth = s.w + 1;
+      segLine(g, s);
+      g.strokeStyle = `rgba(170, 45, 10, ${0.45 * a})`;
+      g.lineWidth = s.w * 0.5;
+      segLine(g, s);
+    }
+
+    // Yeni kırıktan fışkıran sıcak lav (ısı katmanına)
+    function lavaSeg(s, a) {
+      touch(s.x0, s.y0, s.x1, s.y1, s.w * 3 + 6);
+      hg.strokeStyle = `rgba(255, 110, 20, ${a})`;
+      hg.lineWidth = s.w * 4 + 4;
+      segLine(hg, s);
+      hg.strokeStyle = `rgba(255, 235, 150, ${a})`;
+      hg.lineWidth = s.w * 1.4 + 1;
+      segLine(hg, s);
+    }
+
+    function pool(x, y, r, a) {
+      touch(x, y, x, y, r + 2);
+      const gr = hg.createRadialGradient(x, y, 0, x, y, r);
+      gr.addColorStop(0, `rgba(255, 245, 190, ${a})`);
+      gr.addColorStop(0.35, `rgba(255, 150, 40, ${a * 0.8})`);
+      gr.addColorStop(1, 'rgba(255, 60, 0, 0)');
+      hg.fillStyle = gr;
+      hg.beginPath();
+      hg.arc(x, y, r, 0, TAU);
+      hg.fill();
+    }
+
+    function attach(layer, g) {
+      init();
+      base = document.createElement('canvas');
+      base.width = layer.width;
+      base.height = layer.height;
+      base.getContext('2d').drawImage(layer, 0, 0);
+      tg = g;
+      tg.setTransform(S, 0, 0, S, B * S, B * S);
+      tg.lineCap = 'round';
+      tg.lineJoin = 'round';
+      targets.length = 0;
+      targets.push(mg, tg);
+      compose();
+    }
+
+    function compose() {
+      if (!tg || !base) return;
+      tg.save();
+      tg.setTransform(1, 0, 0, 1, 0, 0);
+      tg.globalCompositeOperation = 'copy';
+      tg.drawImage(base, 0, 0);
+      tg.restore();
+      tg.drawImage(marks, 0, 0, W, H);
+    }
+
+    function clear(g, c) {
+      g.save();
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.clearRect(0, 0, c.width, c.height);
+      g.restore();
+    }
+
+    function reset() {
+      init();
+      clear(mg, marks);
+      clear(hg, heat);
+      hot.length = 0;
+      growing.length = 0;
+      trails.clear();
+      compose();
+    }
+
+    // Kabuk kırılır: çatlak büyür, altından lav fışkırır
+    function breakCrust(x, y, e, dir = 0, spread = TAU) {
+      init();
+      e = clamp(e, 0.1, 1.2);
+      x = clamp(x, 4, W - 4);
+      y = clamp(y, 4, H - 4);
+      const segs = Ice.genSegs(x, y, e * 0.7, dir, spread);
+      const maxT = segs.length ? segs[segs.length - 1].t : 1;
+      const c = { segs, i: 0, age: 0, dur: 0.14 + e * 0.2, maxT, heatAge: 0, life: 4 + e * 4 };
+      growing.push(c);
+      hot.push(c);
+      if (hot.length > 8) hot.shift();
+      pool(x, y, 12 + e * 26, 0.9);
+      for (const g of targets) {
+        g.fillStyle = `rgba(20, 6, 2, ${0.4 + e * 0.3})`;
+        g.beginPath();
+        g.arc(x, y, 5 + e * 9, 0, TAU);
+        g.fill();
+      }
+    }
+
+    // Kayan disk kabuğu kızdırır ve is bırakır
+    function slide(id, x, y, r, speed, puck) {
+      let tr = trails.get(id);
+      if (!tr) {
+        trails.set(id, { x, y });
+        return;
+      }
+      const d = Math.hypot(x - tr.x, y - tr.y);
+      if (d > 160) { tr.x = x; tr.y = y; return; }
+      if (d < 0.6) return;
+      if (puck && speed > 150) {
+        touch(tr.x, tr.y, x, y, r + 2);
+        const a = Math.min(0.55, speed / 3600);
+        hg.strokeStyle = `rgba(255, 110, 25, ${a.toFixed(3)})`;
+        hg.lineWidth = r * 1.15;
+        hg.beginPath(); hg.moveTo(tr.x, tr.y); hg.lineTo(x, y); hg.stroke();
+        hg.strokeStyle = `rgba(255, 225, 130, ${(a * 0.7).toFixed(3)})`;
+        hg.lineWidth = r * 0.4;
+        hg.beginPath(); hg.moveTo(tr.x, tr.y); hg.lineTo(x, y); hg.stroke();
+        const soot = `rgba(8, 3, 2, ${Math.min(0.06, speed / 30000).toFixed(3)})`;
+        for (const g of targets) {
+          g.strokeStyle = soot;
+          g.lineWidth = r * 1.2;
+          g.beginPath(); g.moveTo(tr.x, tr.y); g.lineTo(x, y); g.stroke();
+        }
+      } else if (!puck && speed > 400 && !quality.lite) {
+        touch(tr.x, tr.y, x, y, r + 2);
+        hg.strokeStyle = `rgba(255, 90, 20, ${Math.min(0.08, speed / 30000).toFixed(3)})`;
+        hg.lineWidth = r * 0.9;
+        hg.beginPath(); hg.moveTo(tr.x, tr.y); hg.lineTo(x, y); hg.stroke();
+      }
+      tr.x = x;
+      tr.y = y;
+    }
+
+    function update(dt) {
+      if (!marks) return;
+      time += dt;
+
+      // Büyüyen kırıklar
+      for (let k = growing.length - 1; k >= 0; k--) {
+        const c = growing[k];
+        c.age += dt;
+        const upto = Math.min(1, c.age / c.dur) * c.maxT;
+        let n = 0;
+        while (c.i < c.segs.length && c.segs[c.i].t <= upto) {
+          const s = c.segs[c.i++];
+          for (const g of targets) crustSeg(g, s);
+          lavaSeg(s, 0.9);
+          if (++n % 10 === 0 && Math.random() < 0.7) spawn(s.x1, s.y1, '255,170,60', 1, 120, 0.5, 2, { keep: true });
+        }
+        if (c.i >= c.segs.length) growing.splice(k, 1);
+      }
+
+      // Yeni kırıklar birkaç saniye sıcak kalır, sonra kabuk bağlar
+      hotT += dt;
+      if (hotT > 0.25) {
+        hotT = 0;
+        for (let k = hot.length - 1; k >= 0; k--) {
+          const c = hot[k];
+          c.heatAge += 0.25;
+          const a = 0.3 * (1 - c.heatAge / c.life);
+          if (a <= 0) { hot.splice(k, 1); continue; }
+          for (let i = 0; i < c.i; i++) lavaSeg(c.segs[i], a);
+        }
+      }
+
+      // Kızgın izler
+      for (let i = 0; i < pucks.length; i++) {
+        const p = pucks[i];
+        if (!p.active) { trails.delete('p' + i); continue; }
+        slide('p' + i, p.x, p.y, PUCK_R, Math.hypot(p.vx, p.vy), true);
+      }
+      for (let i = 0; i < 2; i++) {
+        const m = mallets[i];
+        slide('m' + i, m.x, m.y, MALLET_R, Math.hypot(m.vx, m.vy), false);
+      }
+
+      // Soğuma: ısı katmanı hızla, kalıcı izler yavaşça söner
+      hb.t -= dt;
+      if (hb.t <= 0) { hb.x0 = hb.y0 = 1e9; hb.x1 = hb.y1 = -1e9; }
+      coolT += dt;
+      if (coolT > 0.08) {
+        coolT = 0;
+        hg.save();
+        hg.setTransform(1, 0, 0, 1, 0, 0);
+        hg.globalCompositeOperation = 'destination-out';
+        hg.fillStyle = 'rgba(0, 0, 0, 0.08)';
+        hg.fillRect(0, 0, heat.width, heat.height);
+        // Dikişlerden sızan lavın nabzı ısı katmanına işlenir: her karede ayrı bir katman
+        // çizmek gerekmez (denge düzeyi = eklenen / sönen oran)
+        if (!quality.lite) {
+          hg.globalCompositeOperation = 'source-over';
+          hg.globalAlpha = 0.08 * (0.3 + 0.16 * Math.sin(time * 1.3) + 0.06 * Math.sin(time * 5.3));
+          hg.drawImage(glow, 0, 0);
+        }
+        hg.restore();
+      }
+      fadeT += dt;
+      if (fadeT > 1.5) {
+        fadeT = 0;
+        mg.save();
+        mg.setTransform(1, 0, 0, 1, 0, 0);
+        mg.globalCompositeOperation = 'destination-out';
+        mg.fillStyle = 'rgba(0, 0, 0, 0.03)';
+        mg.fillRect(0, 0, marks.width, marks.height);
+        mg.restore();
+        compose();
+      }
+
+      // Çatlaklarda arada bir patlayan lav kabarcığı
+      bubbleT -= dt;
+      if (bubbleT <= 0 && seamPts.length) {
+        bubbleT = rand(0.6, 1.8);
+        const [bx, by] = seamPts[(Math.random() * seamPts.length) | 0];
+        pool(bx, by, rand(6, 12), 0.7);
+        spawn(bx, by, '255,160,50', 3, 60, 0.6, 1.8, { keep: true });
+        if (game.state === 'play') Sound.bloop(bx);
+      }
+
+      // Kıvılcımlar: sıcak havada yükselip sönen közler
+      for (let i = 0; i < embers.length; i++) {
+        const e = embers[i];
+        e.age += dt;
+        e.x += (e.vx + Math.sin(time * 1.3 + e.ph) * 10) * dt;
+        e.y += e.vy * dt;
+        if (e.age > e.life || e.x < 4 || e.x > W - 4 || e.y < 4) embers[i] = newEmber();
+      }
+    }
+
+    function drawOver(c) {
+      if (!marks) return;
+      c.globalCompositeOperation = 'lighter';
+      // Isı katmanı: kızgın izler, yeni kırıklar ve dikişlerin nabzı tek çizimde.
+      // Hafif modda nabız yok: yalnızca son ısınan bölge çizilir.
+      if (!quality.lite) {
+        c.drawImage(heat, 0, 0, W, H);
+      } else if (hb.x1 > hb.x0) {
+        const x0 = clamp(Math.floor(hb.x0), 0, W), y0 = clamp(Math.floor(hb.y0), 0, H);
+        const x1 = clamp(Math.ceil(hb.x1), 0, W), y1 = clamp(Math.ceil(hb.y1), 0, H);
+        if (x1 - x0 > 2 && y1 - y0 > 2) {
+          c.drawImage(heat, x0 * GK, y0 * GK, (x1 - x0) * GK, (y1 - y0) * GK, x0, y0, x1 - x0, y1 - y0);
+        }
+      }
+      // Közler
+      const n = quality.lite ? 10 : embers.length;
+      c.fillStyle = 'rgb(255, 170, 70)';
+      for (let i = 0; i < n; i++) {
+        const e = embers[i];
+        const f = Math.min(1, e.age / 0.5, (e.life - e.age) / 0.8);
+        c.globalAlpha = Math.max(0, f * (0.55 + 0.45 * Math.sin(time * 9 + e.ph)));
+        c.fillRect(e.x - e.s / 2, e.y - e.s / 2, e.s, e.s);
+      }
+      c.globalAlpha = 1;
+      c.globalCompositeOperation = 'source-over';
+    }
+
+    return {
+      init, reset, attach, update, drawOver, breakCrust,
+      get crust() { init(); return crustImg; },
+      get glow() { init(); return glow; },
+      pool: (x, y, r, a) => { init(); pool(x, y, r, a); },
+    };
   })();
 
   // ---------------------------------------------------------------------------
@@ -2193,6 +2768,7 @@
     const max = quality.lite ? 180 : 360;
     if (isWater() && !opts.keep) rgb = '215,240,255'; // suda kıvılcım yerine su damlası
     else if (isIce() && !opts.keep) rgb = '232,248,255'; // buzda kıvılcım yerine buz kristali
+    else if (isLava() && !opts.keep) rgb = '255,150,50'; // lavda kor parçaları
     const col = `rgb(${rgb})`;
     for (let i = 0; i < count; i++) {
       if (particles.length >= max) break;
@@ -2470,6 +3046,16 @@
         Sound.crackle(e, m.hx);
         game.shake = Math.max(game.shake, 3 + e * 6);
       }
+    } else if (isLava()) {
+      Sound.sizzle(k * 0.6, m.hx);
+      if (k > 0.5) {
+        const e = (k - 0.45) / 0.55;
+        Lava.breakCrust(m.hx, m.hy, e);
+        spawn(m.hx, m.hy, '255,190,80', 12 + Math.round(e * 26), 300 + e * 600, 0.8, 3, { keep: true });
+        spawn(m.hx, m.hy, '255,110,30', 8 + Math.round(e * 12), 200 + e * 400, 1.1, 2.4, { keep: true, spark: true });
+        Sound.eruption(e, m.hx);
+        game.shake = Math.max(game.shake, 4 + e * 7);
+      }
     }
     if (!m.ai) vibrate(Math.round(6 + k * 18));
   }
@@ -2496,6 +3082,20 @@
         spawn(wx, wy, '', 8 + Math.round(e * 16), 250 + e * 450, 0.55, 2.4, { dir, spread: 1.2 });
         Sound.crackle(e * 0.9, x);
       }
+    } else if (isLava()) {
+      let wx = x, wy = y, dir;
+      if (x <= PUCK_R + 1) { wx = 2; dir = 0; }
+      else if (x >= W - PUCK_R - 1) { wx = W - 2; dir = Math.PI; }
+      else if (y <= PUCK_R + 1) { wy = 2; dir = Math.PI / 2; }
+      else { wy = H - 2; dir = -Math.PI / 2; }
+      Lava.pool(wx, wy, 6 + k * 10, 0.3 + k * 0.4);
+      Sound.sizzle(k * 0.5, x);
+      if (k > 0.45) {
+        const e = (k - 0.4) / 0.6;
+        Lava.breakCrust(wx, wy, e, dir, Math.PI * 0.95);
+        spawn(wx, wy, '255,180,70', 10 + Math.round(e * 18), 260 + e * 480, 0.8, 2.6, { dir, spread: 1.2, keep: true });
+        Sound.eruption(e * 0.8, x);
+      }
     }
   }
 
@@ -2509,6 +3109,9 @@
     else if (isIce() && k > 0.6) {
       Ice.crack(x, y, (k - 0.55) * 1.2);
       Sound.crackle((k - 0.55) * 1.4, x);
+    } else if (isLava() && k > 0.6) {
+      Lava.breakCrust(x, y, (k - 0.55) * 1.2);
+      Sound.eruption((k - 0.55) * 1.2, x);
     }
   }
 
@@ -2529,6 +3132,14 @@
     if (isIce()) {
       Ice.crack(gx, scorer === 0 ? 3 : H - 3, 1.1, scorer === 0 ? Math.PI / 2 : -Math.PI / 2, Math.PI * 0.9);
       Sound.crackle(1, gx);
+    } else if (isLava()) {
+      // Lav patlaması
+      const ly = scorer === 0 ? 6 : H - 6;
+      Lava.breakCrust(gx, ly, 1.15, scorer === 0 ? Math.PI / 2 : -Math.PI / 2, Math.PI * 0.95);
+      Lava.pool(gx, ly, 70, 1);
+      spawn(gx, ly, '255,200,90', 50, 900, 1.3, 3.5, { dir, spread: 1.4, keep: true });
+      spawn(gx, ly, '255,90,20', 30, 600, 1.6, 2.6, { dir, spread: 1.5, keep: true, spark: true });
+      Sound.eruption(1.2, gx);
     }
     spawn(gx, gy, PUCK_RGB, 30, 700, 0.9, 3.5, { dir, spread: 1.4 });
     spawn(gx, gy, '255,255,255', 20, 500, 0.6, 2.5, { dir, spread: 1.5, spark: true });
@@ -2636,6 +3247,9 @@
     if (isIce()) {
       Ice.crack(W / 2, gi === 1 ? 3 : H - 3, 0.6, gi === 1 ? Math.PI / 2 : -Math.PI / 2, Math.PI * 0.8);
       Sound.crackle(0.5, W / 2);
+    } else if (isLava()) {
+      Lava.breakCrust(W / 2, gi === 1 ? 4 : H - 4, 0.6, gi === 1 ? Math.PI / 2 : -Math.PI / 2, Math.PI * 0.8);
+      Sound.eruption(0.5, W / 2);
     }
     Sound.skill(key);
     if (human) vibrate(25);
@@ -3017,6 +3631,7 @@
     pucks.length = 1;
     resetSkills();
     if (isIce()) Ice.reset();
+    if (isLava()) Lava.reset();
     mallets.forEach(resetMallet);
     mallets[0].ai = false;
     mallets[1].ai = settings.mode === 'ai';
@@ -3169,6 +3784,7 @@
     for (let i = 0; i < n; i++) stepPhysics(dt / n, n - 1 - i);
     if (isWater()) updateWater(dt);
     else if (isIce()) Ice.update(dt);
+    else if (isLava()) Lava.update(dt);
   }
 
   // Suda yüzen nesneler: raketler daha derin oturur (daha çok su iter), paklar daha sığ
@@ -3928,9 +4544,11 @@
     }
     document.body.classList.toggle('theme-water', t === 'water');
     document.body.classList.toggle('theme-ice', t === 'ice');
+    document.body.classList.toggle('theme-lava', t === 'lava');
     goalSprites[0] = goalSprites[1] = null;
     if (t === 'water') Water.reset();
     if (t === 'ice') Ice.reset();
+    if (t === 'lava') Lava.reset();
     resize();
     Sound.ambient(t);
   }
@@ -4206,6 +4824,7 @@
     ctx.translate(B, B);
 
     if (isIce()) Ice.drawUnder(ctx); // izler masa katmanının içinde
+    else if (isLava()) Lava.drawOver(ctx);
     drawGoals();
     drawScores();
     drawRipples();
@@ -4248,7 +4867,7 @@
   }
 
   function drawRipples() {
-    if (!ripples.length || isWater() || isIce()) return; // suda dalgalar, buzda çatlaklar var
+    if (!ripples.length || settings.theme !== 'neon') return; // diğer temalarda zemin kendi tepkisini verir
     ctx.globalCompositeOperation = 'lighter';
     for (const r of ripples) {
       const t = r.t / r.dur;
@@ -4413,5 +5032,5 @@
   }
 
   // Test ve hata ayıklama için
-  window.__airHockey = { Water, Ice, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update };
+  window.__airHockey = { Water, Ice, Lava, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update };
 })();
