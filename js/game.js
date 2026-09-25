@@ -60,7 +60,7 @@
     difficulty: store.get('difficulty', 'medium'),
     sound: store.get('sound', true),
     volume: clamp(Number(store.get('volume', 1)) || 0, 0, 1),
-    theme: ['water', 'ice', 'lava'].includes(store.get('theme', 'neon')) ? store.get('theme', 'neon') : 'neon',
+    theme: ['water', 'ice', 'lava', 'sand'].includes(store.get('theme', 'neon')) ? store.get('theme', 'neon') : 'neon',
   };
 
   const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -138,7 +138,7 @@
         this.scrapeNode = null;
       }
       this.ambTheme = theme;
-      if (theme !== 'water' && theme !== 'ice' && theme !== 'lava') return;
+      if (theme !== 'water' && theme !== 'ice' && theme !== 'lava' && theme !== 'sand') return;
       const loop = () => {
         const src = c.createBufferSource();
         src.buffer = this.noiseBuf;
@@ -197,6 +197,42 @@
         fire.start();
         lfo.start();
         stop.push(rum, fire, lfo);
+      } else if (theme === 'sand') {
+        // Çölde esen rüzgâr: yavaşça kabarıp dinen, perdesi hafifçe kayan uğultu
+        const wind = loop();
+        const wf = filt('bandpass', 420, 0.9);
+        const wg = c.createGain();
+        wg.gain.value = 0.05;
+        const lfo = c.createOscillator();
+        lfo.frequency.value = 0.09;
+        const lg = c.createGain();
+        lg.gain.value = 0.03;
+        lfo.connect(lg);
+        lg.connect(wg.gain);
+        const lfo2 = c.createOscillator();
+        lfo2.frequency.value = 0.17;
+        const lg2 = c.createGain();
+        lg2.gain.value = 160;
+        lfo2.connect(lg2);
+        lg2.connect(wf.frequency);
+        chain(wind, filt('lowpass', 1400, 0.5), wf, wg, out);
+        // Uzaktan savrulan ince kum
+        const dust = loop();
+        const dg = c.createGain();
+        dg.gain.value = 0.008;
+        chain(dust, filt('highpass', 5000, 0.5), dg, out);
+        // Raket ve disklerin kumu sürme hışırtısı: kazancı setScrape ile değişir
+        const sc = loop();
+        const sg = c.createGain();
+        sg.gain.value = 0;
+        chain(sc, filt('bandpass', 1800, 0.6), filt('lowpass', 4200, 0.7), sg, out);
+        wind.start();
+        dust.start();
+        sc.start();
+        lfo.start();
+        lfo2.start();
+        this.scrapeNode = sg;
+        stop.push(wind, dust, sc, lfo, lfo2);
       } else {
         // Soğuk arena uğultusu
         const hum = loop();
@@ -238,6 +274,29 @@
         this.noise({ dur: 0.008 + Math.random() * 0.02, vol: 0.15 + e * 0.3 * Math.random(), freq: 700 + Math.random() * 1500, q: 1.5, delay: t, pan });
       }
       this.noise({ dur: 0.5 + e * 0.6, vol: 0.1 + e * 0.18, type: 'highpass', freq: 4200, delay: 0.08, attack: 0.08, pan, rev: 0.3 });
+    },
+    // Kuma gömülü, boğuk "tok" vuruş + kısa kum hışırtısı
+    sandHit(k, x) {
+      if (!this.ok('hit', 0.04)) return;
+      const pan = this.panOf(x);
+      this.tone({ f0: 210 + k * 90, f1: 62, dur: 0.13, vol: 0.9 + k * 0.6, pan, lp: 900 });
+      this.tone({ f0: 520 + k * 200, f1: 240, dur: 0.05, type: 'triangle', vol: 0.18 + k * 0.2, pan, lp: 1400 });
+      this.noise({ dur: 0.07 + k * 0.08, vol: 0.35 + k * 0.4, type: 'lowpass', freq: 800, freqTo: 180, q: 0.8, pan });
+      this.noise({ dur: 0.12 + k * 0.25, vol: 0.06 + k * 0.16, freq: 1900, q: 0.7, attack: 0.01, pan });
+      if (k > 0.55) this.tone({ f0: 100, f1: 40, dur: 0.22, vol: 0.7 * k, pan: pan * 0.5 });
+    },
+    // Savrulan kum: yağmur gibi dökülen taneler + genişleyen hışırtı
+    sandBlast(e, x) {
+      if (!this.ok('sandBlast', 0.08)) return;
+      e = clamp(e, 0, 1.3);
+      const pan = this.panOf(x);
+      this.tone({ f0: 95 + e * 20, f1: 45, dur: 0.18 + e * 0.15, vol: 0.25 + e * 0.3, pan: pan * 0.5 });
+      this.noise({ dur: 0.35 + e * 0.6, vol: 0.12 + e * 0.22, freq: 2200, freqTo: 900, q: 0.6, attack: 0.02, pan, rev: 0.15 });
+      const n = 6 + Math.round(e * 14);
+      for (let i = 0; i < n; i++) {
+        const t = 0.1 + Math.random() * (0.3 + e * 0.5);
+        this.noise({ dur: 0.01 + Math.random() * 0.02, vol: 0.03 + e * 0.06 * Math.random(), type: 'highpass', freq: 3000 + Math.random() * 4000, delay: t, pan: clamp(pan + (Math.random() - 0.5) * 0.5, -1, 1) });
+      }
     },
     // Lav kabarcığı patlaması
     bloop(x) {
@@ -544,6 +603,7 @@
   const isWater = () => settings.theme === 'water';
   const isIce = () => settings.theme === 'ice';
   const isLava = () => settings.theme === 'lava';
+  const isSand = () => settings.theme === 'sand';
   const stage = document.getElementById('stage');
   let S = 1; // mantıksal birim başına cihaz pikseli
   let cssScale = 1, boardShaken = false;
@@ -741,6 +801,138 @@
     g.stroke();
     g.shadowBlur = 0;
     g.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    g.beginPath();
+    g.ellipse(-r * 0.35, -r * 0.45, r * 0.3, r * 0.11, -0.6, 0, TAU);
+    g.fill();
+    return c;
+  }
+
+  // Kum teması: güneşte ağarmış ahşap kenar, ince taneli kum zemin, kuma çakılmış ip/bant
+  // saha çizgileri, bantların kuma düşen gölgesi. Kumun kabartısı Sand katmanıyla üstten gelir.
+  function buildSandTable(g) {
+    rr(g, 0, 0, LW, LH, 44);
+    const wood = g.createLinearGradient(0, 0, LW, LH);
+    wood.addColorStop(0, '#9a7450');
+    wood.addColorStop(0.5, '#7a5738');
+    wood.addColorStop(1, '#8e6a47');
+    g.fillStyle = wood;
+    g.fill();
+    let seed = 41;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    // Tahta damarları
+    g.save();
+    rr(g, 0, 0, LW, LH, 44);
+    g.clip();
+    g.lineWidth = 1;
+    for (let i = 0; i < 70; i++) {
+      const vert = rnd() < 0.5;
+      const p = rnd() * (vert ? LW : LH);
+      g.strokeStyle = rnd() < 0.5 ? 'rgba(60, 36, 18, 0.25)' : 'rgba(255, 230, 190, 0.08)';
+      g.beginPath();
+      if (vert) { g.moveTo(p, 0); g.bezierCurveTo(p + rnd() * 6 - 3, LH * 0.3, p + rnd() * 6 - 3, LH * 0.7, p, LH); }
+      else { g.moveTo(0, p); g.bezierCurveTo(LW * 0.3, p + rnd() * 6 - 3, LW * 0.7, p + rnd() * 6 - 3, LW, p); }
+      g.stroke();
+    }
+    g.restore();
+    [[COLORS[1], 4], [COLORS[0], LH - 8]].forEach(([col, y]) => {
+      g.fillStyle = `rgba(${col.rgb}, 0.75)`;
+      rr(g, LW / 2 - 150, y, 300, 4, 2);
+      g.fill();
+    });
+    rr(g, B - 3, B - 3, W + 6, H + 6, 29);
+    g.lineWidth = 3;
+    g.strokeStyle = 'rgba(40, 24, 10, 0.55)';
+    g.stroke();
+
+    g.save();
+    g.translate(B, B);
+    rr(g, 0, 0, W, H, 26);
+    g.clip();
+    // Kum: sıcak temel renk + yumuşak lekeler + ince taneler
+    const base = g.createLinearGradient(0, 0, W, H);
+    base.addColorStop(0, '#e9cf9c');
+    base.addColorStop(0.5, '#dcbc85');
+    base.addColorStop(1, '#cfa870');
+    g.fillStyle = base;
+    g.fillRect(0, 0, W, H);
+    for (let i = 0; i < 26; i++) {
+      const x = rnd() * W, y = rnd() * H, r = 60 + rnd() * 140;
+      const blob = g.createRadialGradient(x, y, 0, x, y, r);
+      const c = rnd() < 0.5 ? '245, 222, 176' : '190, 150, 96';
+      blob.addColorStop(0, `rgba(${c}, 0.22)`);
+      blob.addColorStop(1, `rgba(${c}, 0)`);
+      g.fillStyle = blob;
+      g.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    const grains = [['rgba(120, 82, 44, 0.35)', 0.9], ['rgba(255, 248, 228, 0.45)', 0.8], ['rgba(160, 110, 70, 0.4)', 1.2], ['rgba(90, 80, 72, 0.35)', 1]];
+    for (let i = 0; i < 5200; i++) {
+      const [c, s] = grains[(rnd() * grains.length) | 0];
+      g.fillStyle = c;
+      g.fillRect(rnd() * W, rnd() * H, s, s);
+    }
+    // Kuma gömülü saha çizgileri (soluk, kum rengine karışmış)
+    g.lineCap = 'round';
+    const paint = (color, width, alpha, fn) => {
+      g.globalAlpha = alpha;
+      g.strokeStyle = color;
+      g.lineWidth = width;
+      g.beginPath();
+      fn();
+      g.stroke();
+      g.globalAlpha = 1;
+    };
+    paint('#fffaf0', 5, 0.55, () => { g.moveTo(0, H / 2); g.lineTo(W, H / 2); });
+    paint('#fffaf0', 4, 0.5, () => g.arc(W / 2, H / 2, 80, 0, TAU));
+    [['#e2487e', 0, 0, Math.PI], ['#2a8fc4', H, Math.PI, TAU]].forEach(([colr, y, a0, a1]) => {
+      paint(colr, 5, 0.55, () => g.arc(W / 2, y, 118, a0, a1));
+    });
+    // Bantların kuma düşen gölgesi: güneş sol üstte, gölge üst ve sol iç kenarda
+    const edge = (x0, y0, x1, y1, a) => {
+      const gr = g.createLinearGradient(x0, y0, x1, y1);
+      gr.addColorStop(0, `rgba(80, 48, 18, ${a})`);
+      gr.addColorStop(1, 'rgba(80, 48, 18, 0)');
+      return gr;
+    };
+    g.fillStyle = edge(0, 0, 22, 0, 0.42); g.fillRect(0, 0, 22, H);
+    g.fillStyle = edge(0, 0, 0, 18, 0.36); g.fillRect(0, 0, W, 18);
+    g.fillStyle = edge(W, 0, W - 8, 0, 0.14); g.fillRect(W - 8, 0, 8, H);
+    g.fillStyle = edge(0, H, 0, H - 8, 0.14); g.fillRect(0, H - 8, W, 8);
+    g.restore();
+  }
+
+  // Kum teması pakı: kırmızı kauçuk disk, üstünde kum tozu
+  function buildSandPuck(c, g, r) {
+    g.save();
+    g.shadowColor = 'rgba(70, 40, 10, 0.55)';
+    g.shadowBlur = 6 * S;
+    g.shadowOffsetX = 4 * S;
+    g.shadowOffsetY = -3 * S;
+    const body = g.createRadialGradient(-r * 0.3, -r * 0.35, 1, 0, 0, r);
+    body.addColorStop(0, '#e2553f');
+    body.addColorStop(1, '#8e1f14');
+    g.fillStyle = body;
+    g.beginPath();
+    g.arc(0, 0, r, 0, TAU);
+    g.fill();
+    g.restore();
+    g.lineWidth = 3;
+    g.strokeStyle = '#5e140c';
+    g.beginPath();
+    g.arc(0, 0, r - 1.5, 0, TAU);
+    g.stroke();
+    g.lineWidth = 1.5;
+    g.strokeStyle = 'rgba(255, 190, 160, 0.45)';
+    g.beginPath();
+    g.arc(0, 0, r * 0.55, 0, TAU);
+    g.stroke();
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    g.fillStyle = 'rgba(240, 214, 160, 0.7)';
+    for (let i = 0; i < 40; i++) {
+      const a = rnd() * TAU, d = Math.sqrt(rnd()) * (r - 3);
+      g.fillRect(Math.cos(a) * d, Math.sin(a) * d, 1.1, 1.1);
+    }
+    g.fillStyle = 'rgba(255, 255, 255, 0.22)';
     g.beginPath();
     g.ellipse(-r * 0.35, -r * 0.45, r * 0.3, r * 0.11, -0.6, 0, TAU);
     g.fill();
@@ -1086,6 +1278,10 @@
       Lava.attach(c, g);
       return;
     }
+    if (isSand()) {
+      buildSandTable(g);
+      return;
+    }
 
     // Dış çerçeve
     rr(g, 0, 0, LW, LH, 44);
@@ -1354,6 +1550,7 @@
     if (style === 'water') return buildWaterPuck(c, g, r);
     if (style === 'ice') return buildIcePuck(c, g, r);
     if (style === 'lava') return buildLavaPuck(c, g, r);
+    if (style === 'sand') return buildSandPuck(c, g, r);
 
     g.save();
     g.shadowColor = 'rgba(0,0,0,0.7)';
@@ -2665,6 +2862,248 @@
   })();
 
   // ---------------------------------------------------------------------------
+  // Kum Stadyumu: itilen, yığılan ve çığ gibi kayan kum
+  // Fizik: kum yükseklik alanı. Raket ve disk altındaki kumu kazır, aynı hacmi önüne ve
+  // yanlarına yığar (hacim korunur). Yığın, yığılma açısını aşınca komşusuna kayar (çığ);
+  // rüzgâr oluklar zamanla doldurur, dalgacıkları geri getirir.
+  // Görüntü: alçak açılı güneşle her hücrenin eğimine göre ışık/gölge; kazılan yerler nemli
+  // (koyu) kum gösterir; rüzgârla sürüklenen kum taneleri.
+  // ---------------------------------------------------------------------------
+  const Sand = (() => {
+    const CELL = 4, NX = Math.round(W / CELL), NY = Math.round(H / CELL), N = NX * NY;
+    const h = new Float32Array(N), h0 = new Float32Array(N);
+    const REPOSE = 2.4;      // komşu hücreler arası en büyük yükseklik farkı (~31° yığılma açısı)
+    const CREEP = 0.0016;    // rüzgârın oluğu doldurma hızı (kare başına)
+    // Güneş: sol üstten, alçak açı
+    const LL = Math.hypot(-0.62, 0.42, -0.66);
+    const LX = -0.62 / LL, LY = 0.42 / LL, LZ = -0.66 / LL;
+    let shade = null, sg = null, img = null;
+    const bodies = new Map();
+    const streaks = [];
+    let time = 0, flip = 0, scrapeLevel = 0;
+
+    function newStreak() {
+      return { x: rand(-40, W), y: rand(0, H), v: rand(45, 90), l: rand(5, 12), life: rand(1.5, 4), age: 0 };
+    }
+
+    function init() {
+      if (shade) return;
+      // Başlangıç zemini: büyük hafif tepeler + rüzgâra dik, asimetrik dalgacıklar
+      for (let y = 0; y < NY; y++) {
+        for (let x = 0; x < NX; x++) {
+          const px = (x + 0.5) * CELL, py = (y + 0.5) * CELL;
+          const u = px * 0.8 + py * 0.6;
+          const wob = Math.sin(py * 0.021 + px * 0.013) * 6 + Math.sin(px * 0.047 - py * 0.031) * 3;
+          let rip = Math.sin(((u + wob) * TAU) / 17);
+          rip = rip > 0 ? rip : rip * 0.55; // rüzgâr tarafı yumuşak, rüzgâraltı dik
+          const dunes = Math.sin(px * 0.009 + 1) * Math.cos(py * 0.006) * 2.2 + Math.sin((px + py) * 0.004) * 1.5;
+          h0[y * NX + x] = dunes + rip * 0.55 + (Math.random() - 0.5) * 0.12;
+        }
+      }
+      h.set(h0);
+      shade = document.createElement('canvas');
+      shade.width = NX;
+      shade.height = NY;
+      sg = shade.getContext('2d');
+      img = sg.createImageData(NX, NY);
+      for (let i = 0; i < 18; i++) streaks.push(newStreak());
+    }
+
+    function reset() {
+      init();
+      h.set(h0);
+      bodies.clear();
+      computeShade();
+    }
+
+    // Pulluk: dairenin içindeki kum kazınır, hacim önde/yanlarda halkaya yığılır
+    function plow(x, y, r, depth, dx, dy) {
+      const gx = x / CELL - 0.5, gy = y / CELL - 0.5, gr = r / CELL, gr2 = gr * 1.55;
+      const x0 = Math.max(0, Math.floor(gx - gr2)), x1 = Math.min(NX - 1, Math.ceil(gx + gr2));
+      const y0 = Math.max(0, Math.floor(gy - gr2)), y1 = Math.min(NY - 1, Math.ceil(gy + gr2));
+      let V = 0;
+      for (let yy = y0; yy <= y1; yy++) {
+        for (let xx = x0; xx <= x1; xx++) {
+          const d = Math.hypot(xx - gx, yy - gy);
+          if (d >= gr) continue;
+          const i = yy * NX + xx, t = d / gr;
+          const target = h0[i] - depth * (1 - t * t);
+          if (h[i] > target) {
+            const m = (h[i] - target) * 0.6;
+            h[i] -= m;
+            V += m;
+          }
+        }
+      }
+      if (V <= 0) return;
+      let ws = 0;
+      const ring = [];
+      for (let yy = y0; yy <= y1; yy++) {
+        for (let xx = x0; xx <= x1; xx++) {
+          const ox = xx - gx, oy = yy - gy, d = Math.hypot(ox, oy);
+          if (d < gr || d >= gr2) continue;
+          const front = (ox * dx + oy * dy) / d; // hareket yönünde daha çok yığılır
+          const w = (1 - (d - gr) / (gr2 - gr)) * (0.3 + Math.max(0, front));
+          ring.push(yy * NX + xx, w);
+          ws += w;
+        }
+      }
+      if (ws <= 0) return;
+      for (let k = 0; k < ring.length; k += 2) h[ring[k]] += (V * ring[k + 1]) / ws;
+    }
+
+    // Patlama: krater açılır, kum çevreye rastgele savrulur
+    function blast(x, y, e) {
+      init();
+      e = clamp(e, 0.1, 1.4);
+      const r = 12 + e * 22, depth = 3 + e * 7;
+      const gx = x / CELL - 0.5, gy = y / CELL - 0.5, gr = r / CELL, gr2 = gr * 2;
+      const x0 = Math.max(0, Math.floor(gx - gr2)), x1 = Math.min(NX - 1, Math.ceil(gx + gr2));
+      const y0 = Math.max(0, Math.floor(gy - gr2)), y1 = Math.min(NY - 1, Math.ceil(gy + gr2));
+      let V = 0;
+      for (let yy = y0; yy <= y1; yy++) {
+        for (let xx = x0; xx <= x1; xx++) {
+          const d = Math.hypot(xx - gx, yy - gy);
+          if (d >= gr) continue;
+          const i = yy * NX + xx, t = d / gr;
+          const target = h0[i] - depth * (1 - t * t);
+          if (h[i] > target) { V += h[i] - target; h[i] = target; }
+        }
+      }
+      let ws = 0;
+      const ring = [];
+      for (let yy = y0; yy <= y1; yy++) {
+        for (let xx = x0; xx <= x1; xx++) {
+          const d = Math.hypot(xx - gx, yy - gy);
+          if (d < gr || d >= gr2) continue;
+          // Çoğu kum kraterin dudağına, bir kısmı öbek öbek daha uzağa düşer
+          const t = (d - gr) / (gr2 - gr);
+          const w = Math.pow(1 - t, 2.2) * 1.6 + (Math.random() < 0.18 ? Math.random() : 0);
+          ring.push(yy * NX + xx, w);
+          ws += w;
+        }
+      }
+      if (ws > 0) for (let k = 0; k < ring.length; k += 2) h[ring[k]] += (V * ring[k + 1]) / ws;
+    }
+
+    // Çığ: eğim yığılma açısını aşınca fazlalık komşuya kayar
+    function relax() {
+      for (let y = 0; y < NY; y++) {
+        const row = y * NX;
+        for (let x = 0; x < NX; x++) {
+          const i = row + x;
+          if (x < NX - 1) {
+            const d = h[i] - h[i + 1];
+            if (d > REPOSE) { const m = (d - REPOSE) * 0.25; h[i] -= m; h[i + 1] += m; }
+            else if (d < -REPOSE) { const m = (-d - REPOSE) * 0.25; h[i + 1] -= m; h[i] += m; }
+          }
+          if (y < NY - 1) {
+            const j = i + NX;
+            const d = h[i] - h[j];
+            if (d > REPOSE) { const m = (d - REPOSE) * 0.25; h[i] -= m; h[j] += m; }
+            else if (d < -REPOSE) { const m = (-d - REPOSE) * 0.25; h[j] -= m; h[i] += m; }
+          }
+        }
+      }
+    }
+
+    // Güneş ışığı: eğime göre aydınlık/gölge + kazılmış (nemli) kum
+    function computeShade() {
+      const d = img.data;
+      const flat = LY;
+      const inv = 1 / (2 * CELL);
+      for (let y = 0; y < NY; y++) {
+        const row = y * NX;
+        const up = y > 0 ? row - NX : row, dn = y < NY - 1 ? row + NX : row;
+        for (let x = 0; x < NX; x++) {
+          const i = row + x;
+          const gx = ((x < NX - 1 ? h[i + 1] : h[i]) - (x > 0 ? h[i - 1] : h[i])) * inv;
+          const gz = (h[dn + x] - h[up + x]) * inv;
+          const len = Math.sqrt(gx * gx + 1 + gz * gz);
+          const s = (-gx * LX + LY - gz * LZ) / len - flat;
+          // Kazılan (alttaki nemli) kum biraz koyu; eğim ışığı üstüne eklenir
+          const dig = h0[i] - h[i];
+          const L = (s < 0 ? s * 560 : s * 360) - (dig > 0.3 ? Math.min(dig, 7) * 11 : 0);
+          const j = i * 4;
+          if (L < 0) {
+            d[j] = 96; d[j + 1] = 58; d[j + 2] = 26;
+            d[j + 3] = Math.min(210, -L);
+          } else {
+            d[j] = 255; d[j + 1] = 246; d[j + 2] = 224;
+            d[j + 3] = Math.min(150, L);
+          }
+        }
+      }
+      sg.putImageData(img, 0, 0);
+    }
+
+    function update(dt) {
+      if (!shade) return;
+      time += dt;
+      let noise = 0;
+      const move = (id, x, y, r, depth) => {
+        const b = bodies.get(id);
+        if (!b) { bodies.set(id, { x, y }); return 0; }
+        const dx = x - b.x, dy = y - b.y, dist = Math.hypot(dx, dy);
+        if (dist < 0.4) return 0;
+        if (dist > 160) { b.x = x; b.y = y; return 0; }
+        const steps = Math.min(14, Math.ceil(dist / (r * 0.35)));
+        const ux = dx / dist, uy = dy / dist;
+        for (let s = 1; s <= steps; s++) plow(b.x + (dx * s) / steps, b.y + (dy * s) / steps, r, depth, ux, uy);
+        b.x = x;
+        b.y = y;
+        return dist / dt;
+      };
+      for (let i = 0; i < 2; i++) noise += Math.min(1500, move('m' + i, mallets[i].x, mallets[i].y, MALLET_R * 0.9, 2.6)) * 0.4;
+      for (let i = 0; i < pucks.length; i++) {
+        const p = pucks[i];
+        if (!p.active) { bodies.delete('p' + i); continue; }
+        noise += Math.min(2000, move('p' + i, p.x, p.y, PUCK_R, 1.4));
+      }
+      relax();
+      if (!quality.lite) relax();
+      for (let i = 0; i < N; i++) h[i] += (h0[i] - h[i]) * CREEP;
+      // Hafif modda gölgelendirme iki karede bir
+      flip ^= 1;
+      if (!quality.lite || flip) computeShade();
+
+      // Kum hışırtısı: hareket eden raket ve disklerin hızına göre
+      const lvl = game.state === 'play' ? Math.min(0.08, (noise / 2500) * 0.06) : 0;
+      if (Math.abs(lvl - scrapeLevel) > 0.003) {
+        scrapeLevel = lvl;
+        Sound.setScrape(lvl);
+      }
+      for (let i = 0; i < streaks.length; i++) {
+        const s = streaks[i];
+        s.age += dt;
+        s.x += s.v * 0.8 * dt;
+        s.y += s.v * 0.6 * dt;
+        if (s.age > s.life || s.x > W + 10 || s.y > H + 10) streaks[i] = newStreak();
+      }
+    }
+
+    function drawOver(c) {
+      if (!shade) return;
+      c.drawImage(shade, 0, 0, W, H);
+      // Rüzgârla sürüklenen kum taneleri
+      const n = quality.lite ? 8 : streaks.length;
+      c.strokeStyle = 'rgb(248, 230, 190)';
+      c.lineWidth = 0.9;
+      for (let i = 0; i < n; i++) {
+        const s = streaks[i];
+        c.globalAlpha = 0.3 * Math.min(1, s.age / 0.4, (s.life - s.age) / 0.6);
+        c.beginPath();
+        c.moveTo(s.x, s.y);
+        c.lineTo(s.x - s.l * 0.8, s.y - s.l * 0.6);
+        c.stroke();
+      }
+      c.globalAlpha = 1;
+    }
+
+    return { init, reset, update, drawOver, blast };
+  })();
+
+  // ---------------------------------------------------------------------------
   // Oyun durumu
   // ---------------------------------------------------------------------------
   const game = {
@@ -2769,6 +3208,7 @@
     if (isWater() && !opts.keep) rgb = '215,240,255'; // suda kıvılcım yerine su damlası
     else if (isIce() && !opts.keep) rgb = '232,248,255'; // buzda kıvılcım yerine buz kristali
     else if (isLava() && !opts.keep) rgb = '255,150,50'; // lavda kor parçaları
+    else if (isSand() && !opts.keep) rgb = '225,195,145'; // kumda savrulan kum
     const col = `rgb(${rgb})`;
     for (let i = 0; i < count; i++) {
       if (particles.length >= max) break;
@@ -3033,7 +3473,8 @@
     spawn(m.hx, m.hy, '255,255,255', 3 + Math.round(k * 6), 200 + k * 300, 0.3, 2.2, { dir, spread: 0.8, spark: true });
     if (k > 0.35) ripple(m.hx, m.hy, col.rgb, 10, 50 + k * 50, 0.35, 3);
     game.shake = Math.max(game.shake, k * 5);
-    Sound.hit(k, m.hx);
+    if (isSand()) Sound.sandHit(k, m.hx);
+    else Sound.hit(k, m.hx);
     if (isWater()) {
       Water.splash(m.hx, m.hy, k * 0.9);
       Sound.splash(k * 0.8, m.hx);
@@ -3055,6 +3496,14 @@
         spawn(m.hx, m.hy, '255,110,30', 8 + Math.round(e * 12), 200 + e * 400, 1.1, 2.4, { keep: true, spark: true });
         Sound.eruption(e, m.hx);
         game.shake = Math.max(game.shake, 4 + e * 7);
+      }
+    } else if (isSand()) {
+      spawn(m.hx, m.hy, '', 4 + Math.round(k * 8), 100 + k * 220, 0.5, 2);
+      if (k > 0.5) {
+        const e = (k - 0.45) / 0.55;
+        Sand.blast(m.hx, m.hy, e * 0.8);
+        spawn(m.hx, m.hy, '205,170,115', 14 + Math.round(e * 24), 220 + e * 480, 0.7, 2.4, { dir, spread: 1.3, keep: true });
+        Sound.sandBlast(e, m.hx);
       }
     }
     if (!m.ai) vibrate(Math.round(6 + k * 18));
@@ -3096,6 +3545,18 @@
         spawn(wx, wy, '255,180,70', 10 + Math.round(e * 18), 260 + e * 480, 0.8, 2.6, { dir, spread: 1.2, keep: true });
         Sound.eruption(e * 0.8, x);
       }
+    } else if (isSand()) {
+      let wx = x, wy = y, dir;
+      if (x <= PUCK_R + 1) { wx = PUCK_R; dir = 0; }
+      else if (x >= W - PUCK_R - 1) { wx = W - PUCK_R; dir = Math.PI; }
+      else if (y <= PUCK_R + 1) { wy = PUCK_R; dir = Math.PI / 2; }
+      else { wy = H - PUCK_R; dir = -Math.PI / 2; }
+      if (k > 0.35) {
+        const e = (k - 0.3) / 0.7;
+        Sand.blast(wx, wy, e * 0.7);
+        spawn(wx, wy, '215,182,130', 6 + Math.round(e * 14), 180 + e * 380, 0.6, 2.2, { dir, spread: 1.1, keep: true });
+        Sound.sandBlast(e * 0.7, x);
+      }
     }
   }
 
@@ -3112,6 +3573,9 @@
     } else if (isLava() && k > 0.6) {
       Lava.breakCrust(x, y, (k - 0.55) * 1.2);
       Sound.eruption((k - 0.55) * 1.2, x);
+    } else if (isSand() && k > 0.5) {
+      Sand.blast(x, y, (k - 0.45) * 1.1);
+      Sound.sandBlast((k - 0.45) * 1.2, x);
     }
   }
 
@@ -3140,6 +3604,13 @@
       spawn(gx, ly, '255,200,90', 50, 900, 1.3, 3.5, { dir, spread: 1.4, keep: true });
       spawn(gx, ly, '255,90,20', 30, 600, 1.6, 2.6, { dir, spread: 1.5, keep: true, spark: true });
       Sound.eruption(1.2, gx);
+    } else if (isSand()) {
+      // Kale ağzında kum fırtınası
+      const sy = scorer === 0 ? 10 : H - 10;
+      Sand.blast(gx, sy, 1.3);
+      spawn(gx, sy, '215,180,125', 60, 850, 1.2, 3, { dir, spread: 1.4, keep: true });
+      spawn(gx, sy, '240,220,180', 30, 500, 1.6, 2, { dir, spread: 1.6, keep: true });
+      Sound.sandBlast(1.2, gx);
     }
     spawn(gx, gy, PUCK_RGB, 30, 700, 0.9, 3.5, { dir, spread: 1.4 });
     spawn(gx, gy, '255,255,255', 20, 500, 0.6, 2.5, { dir, spread: 1.5, spark: true });
@@ -3250,6 +3721,9 @@
     } else if (isLava()) {
       Lava.breakCrust(W / 2, gi === 1 ? 4 : H - 4, 0.6, gi === 1 ? Math.PI / 2 : -Math.PI / 2, Math.PI * 0.8);
       Sound.eruption(0.5, W / 2);
+    } else if (isSand()) {
+      Sand.blast(W / 2, gi === 1 ? 12 : H - 12, 0.7);
+      Sound.sandBlast(0.5, W / 2);
     }
     Sound.skill(key);
     if (human) vibrate(25);
@@ -3632,6 +4106,7 @@
     resetSkills();
     if (isIce()) Ice.reset();
     if (isLava()) Lava.reset();
+    if (isSand()) Sand.reset();
     mallets.forEach(resetMallet);
     mallets[0].ai = false;
     mallets[1].ai = settings.mode === 'ai';
@@ -3785,6 +4260,7 @@
     if (isWater()) updateWater(dt);
     else if (isIce()) Ice.update(dt);
     else if (isLava()) Lava.update(dt);
+    else if (isSand()) Sand.update(dt);
   }
 
   // Suda yüzen nesneler: raketler daha derin oturur (daha çok su iter), paklar daha sığ
@@ -4545,10 +5021,12 @@
     document.body.classList.toggle('theme-water', t === 'water');
     document.body.classList.toggle('theme-ice', t === 'ice');
     document.body.classList.toggle('theme-lava', t === 'lava');
+    document.body.classList.toggle('theme-sand', t === 'sand');
     goalSprites[0] = goalSprites[1] = null;
     if (t === 'water') Water.reset();
     if (t === 'ice') Ice.reset();
     if (t === 'lava') Lava.reset();
+    if (t === 'sand') Sand.reset();
     resize();
     Sound.ambient(t);
   }
@@ -4825,6 +5303,7 @@
 
     if (isIce()) Ice.drawUnder(ctx); // izler masa katmanının içinde
     else if (isLava()) Lava.drawOver(ctx);
+    else if (isSand()) Sand.drawOver(ctx);
     drawGoals();
     drawScores();
     drawRipples();
@@ -5032,5 +5511,5 @@
   }
 
   // Test ve hata ayıklama için
-  window.__airHockey = { Water, Ice, Lava, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update };
+  window.__airHockey = { Water, Ice, Lava, Sand, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update };
 })();

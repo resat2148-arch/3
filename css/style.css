@@ -182,8 +182,26 @@ body.theme-water .bg-grid,
 body.theme-ice .blob,
 body.theme-ice .bg-grid,
 body.theme-lava .blob,
-body.theme-lava .bg-grid {
+body.theme-lava .bg-grid,
+body.theme-sand .blob,
+body.theme-sand .bg-grid {
   display: none;
+}
+
+/* Kum Stadyumu teması: çölde gün batımı, ufukta sıcak ışık ve kum pusu */
+body.theme-sand .bg {
+  background:
+    radial-gradient(60% 34% at 18% -4%, rgba(255, 214, 140, 0.4), transparent 70%),
+    radial-gradient(90% 40% at 50% 104%, rgba(214, 150, 80, 0.3), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 50% 50%, rgba(120, 72, 40, 0.5), transparent 75%),
+    linear-gradient(#2a1b2c, #5a3426 45%, #8a5a34 80%, #3e2618);
+}
+
+body.theme-sand #game {
+  box-shadow:
+    0 0 0 1px rgba(255, 220, 170, 0.14),
+    0 0 80px rgba(255, 180, 90, 0.2),
+    0 30px 80px rgba(40, 20, 5, 0.8);
 }
 
 /* Lav Stadyumu teması: volkanik gece, alttan yükselen kızıl ışık ve duman */
@@ -220,7 +238,7 @@ body.theme-ice #game {
     0 30px 80px rgba(0, 0, 0, 0.8);
 }
 
-/* Üç tema düğmesi dar ekrana sığsın */
+/* Tema düğmeleri dar ekrana sığsın (tek kalan son düğme tam satır) */
 .seg[data-group="theme"] {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -230,6 +248,10 @@ body.theme-ice #game {
   padding: 10px 4px;
   font-size: 13.5px;
   line-height: 1.15;
+}
+
+.seg[data-group="theme"] button:last-child:nth-child(odd) {
+  grid-column: span 2;
 }
 
 body.theme-water #game {

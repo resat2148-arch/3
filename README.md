@@ -54,6 +54,11 @@ Menüdeki **Tema** seçiminden değiştirilir; seçim cihazda saklanır.
   - **Görüntü**: düzensiz çokgen bazalt plakalar; aralarındaki dikişlerden nabız gibi parlayan lav sızar. Kıvılcımlar uçuşur, dikişlerde arada bir lav kabarcığı patlar. Disk, kenarı kızgın bir obsidyen taşıdır.
   - **Etkileşim**: kayan disk kabuğu kızdırır; ardındaki iz soğudukça turuncudan koyu kırmızıya döner ve is lekesi bırakır. Sert şut, şiddetli duvar çarpması, gol ya da skill kabuğu kırar: çarpma noktasından çatlaklar yayılır, altından lav fışkırır ve birkaç saniyede soğuyup yeniden kabuk bağlar. Gol büyük bir lav patlamasıyla kutlanır.
   - **Ses**: vuruşlarda buhar tıslaması, kabuk kırılınca kaya çatırtısı ve boğuk patlama, lav kabarcıklarının "blop" sesi, arkada yerin derinlerinden gelen gürleme.
+- **Kum Stadyumu**: ahşap çerçeveli, ince taneli bir kum havuzu.
+  - **Görüntü**: rüzgârın oluşturduğu kum dalgacıkları ve alçak tepeler, alçak açılı güneşle her tümseğin eğimine göre ışık ve gölge alması, bantların kuma düşen gölgesi, rüzgârla sürüklenen kum taneleri. Disk kırmızı kauçuktur.
+  - **Fizik**: kum bir yükseklik alanı olarak simüle edilir. Raketler ve disk kumu gerçekten iter: önlerinde yığın, arkalarında oluk oluşur (kum hacmi korunur). Yığın yığılma açısını aşınca yanlara kayar (çığ); oluklar zamanla dolar ve düzleşir, dalgacıklar geri gelir. Kazılan yerlerde alttaki koyu kum görünür.
+  - **Etkileşim**: sert şut, şiddetli duvar çarpması, gol ya da skill kumda krater açar, kum etrafa savrulur; gol kale ağzında kum fırtınası kaldırır. Her maç düzgün kumla başlar.
+  - **Ses**: kuma gömülü boğuk "tok" vuruşlar, raket ve diskin hızına göre kum hışırtısı, savrulan kumun tane tane düşme sesi, arkada esen çöl rüzgârı.
 
 ## Özellikler
 
