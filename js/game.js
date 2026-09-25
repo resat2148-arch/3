@@ -64,26 +64,56 @@
   // Ses (Web Audio ile sentezlenir, dosya gerekmez)
   // ---------------------------------------------------------------------------
   const Sound = {
-    ctx: null, out: null, noiseBuf: null, last: {},
+    ctx: null, bus: null, rev: null, noiseBuf: null, last: {},
     init() {
       if (this.ctx) {
-        if (this.ctx.state === 'suspended') this.ctx.resume();
+        if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {});
         return;
       }
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
       const c = this.ctx = new AC();
+
+      // Ana hat: sesler → bus → sıkıştırıcı → kazanç → sınırlayıcı → hoparlör
+      this.bus = c.createGain();
+      this.bus.gain.value = 0.9;
       const comp = c.createDynamicsCompressor();
-      comp.threshold.value = -16;
-      comp.ratio.value = 6;
-      this.out = c.createGain();
-      this.out.gain.value = 0.75;
-      this.out.connect(comp);
-      comp.connect(c.destination);
-      const len = Math.floor(c.sampleRate * 0.6);
-      const buf = c.createBuffer(1, len, c.sampleRate);
+      comp.threshold.value = -20;
+      comp.knee.value = 12;
+      comp.ratio.value = 5;
+      comp.attack.value = 0.003;
+      comp.release.value = 0.2;
+      const makeup = c.createGain();
+      makeup.gain.value = 1.6;
+      const limiter = c.createDynamicsCompressor();
+      limiter.threshold.value = -3;
+      limiter.knee.value = 0;
+      limiter.ratio.value = 20;
+      limiter.attack.value = 0.001;
+      limiter.release.value = 0.1;
+      this.bus.connect(comp);
+      comp.connect(makeup);
+      makeup.connect(limiter);
+      limiter.connect(c.destination);
+
+      // Yankı (oda hissi): üretilmiş dürtü yanıtıyla evrişim
+      const len = Math.floor(c.sampleRate * 1.3);
+      const ir = c.createBuffer(2, len, c.sampleRate);
+      for (let ch = 0; ch < 2; ch++) {
+        const d = ir.getChannelData(ch);
+        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2);
+      }
+      const conv = c.createConvolver();
+      conv.buffer = ir;
+      this.rev = c.createGain();
+      this.rev.gain.value = 0.5;
+      this.rev.connect(conv);
+      conv.connect(this.bus);
+
+      const nlen = Math.floor(c.sampleRate * 1.5);
+      const buf = c.createBuffer(1, nlen, c.sampleRate);
       const d = buf.getChannelData(0);
-      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      for (let i = 0; i < nlen; i++) d[i] = Math.random() * 2 - 1;
       this.noiseBuf = buf;
     },
     ok(name, gap) {
@@ -93,81 +123,173 @@
       this.last[name] = t;
       return true;
     },
-    tone(f0, f1, dur, type, vol, delay = 0) {
+    // Masadaki x konumuna göre sağ/sol (stereo) yerleşim
+    route(node, pan, rev) {
+      const c = this.ctx;
+      let out = node;
+      if (pan && c.createStereoPanner) {
+        const p = c.createStereoPanner();
+        p.pan.value = clamp(pan, -1, 1);
+        node.connect(p);
+        out = p;
+      }
+      out.connect(this.bus);
+      if (rev) {
+        const s = c.createGain();
+        s.gain.value = rev;
+        out.connect(s);
+        s.connect(this.rev);
+      }
+    },
+    env(g, t, vol, attack, dur) {
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(Math.max(vol, 0.0002), t + attack);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    },
+    tone({ f0, f1 = 0, dur, type = 'sine', vol, delay = 0, attack = 0.004, pan = 0, rev = 0, lp = 0, detune = 0 }) {
       const c = this.ctx, t = c.currentTime + delay;
       const o = c.createOscillator(), g = c.createGain();
       o.type = type;
+      o.detune.value = detune;
       o.frequency.setValueAtTime(f0, t);
       if (f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(vol, t + 0.006);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      o.connect(g);
-      g.connect(this.out);
+      this.env(g, t, vol, attack, dur);
+      let node = o;
+      if (lp) {
+        const f = c.createBiquadFilter();
+        f.type = 'lowpass';
+        f.frequency.value = lp;
+        o.connect(f);
+        node = f;
+      }
+      node.connect(g);
+      this.route(g, pan, rev);
       o.start(t);
-      o.stop(t + dur + 0.03);
+      o.stop(t + dur + 0.05);
     },
-    noise(dur, vol, freq, q = 1, delay = 0, type = 'bandpass') {
+    noise({ dur, vol, type = 'bandpass', freq, freqTo = 0, q = 1, delay = 0, attack = 0.002, pan = 0, rev = 0 }) {
       const c = this.ctx, t = c.currentTime + delay;
       const s = c.createBufferSource();
       s.buffer = this.noiseBuf;
       const f = c.createBiquadFilter();
       f.type = type;
-      f.frequency.value = freq;
+      f.frequency.setValueAtTime(freq, t);
+      if (freqTo) f.frequency.exponentialRampToValueAtTime(freqTo, t + dur);
       f.Q.value = q;
       const g = c.createGain();
-      g.gain.setValueAtTime(vol, t);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      this.env(g, t, vol, attack, dur);
       s.connect(f);
       f.connect(g);
-      g.connect(this.out);
-      s.start(t);
-      s.stop(t + dur + 0.03);
+      this.route(g, pan, rev);
+      s.start(t, Math.random() * 0.5);
+      s.stop(t + dur + 0.05);
     },
-    hit(k) {
-      if (!this.ok('hit', 0.045)) return;
-      this.tone(380 + k * 420, 160 + k * 140, 0.09, 'triangle', 0.22 + k * 0.4);
-      this.noise(0.05, 0.18 + k * 0.35, 2600 + k * 2400, 1.3);
+    panOf(x) {
+      return x === undefined ? 0 : ((x / W) * 2 - 1) * 0.75;
     },
-    wall(k) {
-      if (!this.ok('wall', 0.045)) return;
-      this.tone(180 + k * 110, 110, 0.08, 'sine', 0.18 + k * 0.32);
-      this.noise(0.04, 0.08 + k * 0.2, 1300, 1);
+
+    // Raket vuruşu: gövde "tok" + tınılı çarpma + keskin tık; sert vuruşta alt bas ve yankı
+    hit(k, x) {
+      if (!this.ok('hit', 0.04)) return;
+      const pan = this.panOf(x);
+      this.tone({ f0: 240 + k * 140, f1: 70, dur: 0.14, vol: 0.85 + k * 0.6, pan });
+      this.tone({ f0: 760 + k * 520, f1: 320, dur: 0.08, type: 'triangle', vol: 0.42 + k * 0.45, pan });
+      this.noise({ dur: 0.035, vol: 0.55 + k * 0.6, type: 'highpass', freq: 2800, q: 0.7, pan });
+      if (k > 0.55) {
+        this.tone({ f0: 110, f1: 42, dur: 0.24, vol: 0.8 * k, pan: pan * 0.5, rev: 0.25 });
+        this.noise({ dur: 0.12, vol: 0.25 * k, freq: 1600, freqTo: 400, q: 0.8, pan, rev: 0.3 });
+      }
     },
-    goal(good) {
+    // Duvar sekmesi: kısa bas vuruşu + tahta tıkırtısı
+    wall(k, x) {
+      if (!this.ok('wall', 0.04)) return;
+      const pan = this.panOf(x);
+      this.tone({ f0: 170 + k * 80, f1: 65, dur: 0.11, vol: 0.6 + k * 0.55, pan });
+      this.noise({ dur: 0.06, vol: 0.35 + k * 0.5, freq: 950, q: 1.2, pan });
+      this.tone({ f0: 1250 + k * 400, f1: 700, dur: 0.035, type: 'square', vol: 0.05 + k * 0.08, pan, lp: 3500 });
+    },
+    // İki pakın çarpışması: metalik "çak"
+    clack(k, x) {
+      if (!this.ok('clack', 0.04)) return;
+      const pan = this.panOf(x);
+      this.tone({ f0: 1850, f1: 1300, dur: 0.06, type: 'triangle', vol: 0.4 + k * 0.45, pan });
+      this.tone({ f0: 2630, f1: 1900, dur: 0.05, type: 'triangle', vol: 0.25 + k * 0.3, pan });
+      this.noise({ dur: 0.035, vol: 0.45 + k * 0.45, type: 'highpass', freq: 4500, pan });
+    },
+    // Gol: bas patlaması + süpürülen patlama gürültüsü + tezahürat + arpej (yankılı)
+    goal(good, x) {
       if (!this.ok('goal', 0.3)) return;
-      const notes = good ? [523.25, 659.25, 783.99, 1046.5] : [440, 349.23, 293.66, 220];
-      notes.forEach((n, i) => {
-        this.tone(n, 0, 0.26, 'square', 0.09, i * 0.085);
-        this.tone(n * 2, 0, 0.2, 'triangle', 0.07, i * 0.085);
-      });
-      this.noise(0.7, 0.28, 900, 0.7, 0, 'lowpass');
+      const pan = this.panOf(x) * 0.6;
+      this.tone({ f0: 140, f1: 32, dur: 0.75, vol: 1, pan });
+      this.noise({ dur: 1.0, vol: 0.7, type: 'lowpass', freq: 5000, freqTo: 180, q: 0.8, pan, rev: 0.35 });
+      if (good) {
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((n, i) => {
+          const last = i === notes.length - 1;
+          const d = last ? 0.7 : 0.26;
+          this.tone({ f0: n, dur: d, type: 'sawtooth', vol: 0.13, delay: 0.05 + i * 0.085, lp: 3200, detune: -8, rev: 0.4 });
+          this.tone({ f0: n, dur: d, type: 'sawtooth', vol: 0.13, delay: 0.05 + i * 0.085, lp: 3200, detune: 8, rev: 0.4 });
+          this.tone({ f0: n * 2, dur: d * 0.8, type: 'triangle', vol: 0.09, delay: 0.05 + i * 0.085, rev: 0.4 });
+        });
+        // Tezahürat: yükselip sönen kalabalık uğultusu
+        this.noise({ dur: 1.6, vol: 0.32, freq: 1100, q: 0.6, delay: 0.1, attack: 0.25, rev: 0.5 });
+        this.noise({ dur: 1.4, vol: 0.18, freq: 2600, q: 0.9, delay: 0.15, attack: 0.3, rev: 0.5 });
+      } else {
+        [392, 369.99, 349.23, 293.66].forEach((n, i) => {
+          const last = i === 3;
+          this.tone({ f0: n, f1: last ? n * 0.94 : 0, dur: last ? 0.6 : 0.2, type: 'sawtooth', vol: 0.14, delay: 0.1 + i * 0.16, lp: 1400, rev: 0.3 });
+        });
+      }
     },
     beep(hi) {
       if (!this.ok(hi ? 'beepHi' : 'beep', 0.1)) return;
-      this.tone(hi ? 1046.5 : 659.25, 0, hi ? 0.32 : 0.13, 'sine', 0.3);
-      if (hi) this.tone(1567.98, 0, 0.32, 'triangle', 0.12);
-    },
-    clack(k) {
-      if (!this.ok('clack', 0.05)) return;
-      this.tone(900 + k * 500, 500, 0.05, 'square', 0.08 + k * 0.15);
-      this.noise(0.03, 0.15 + k * 0.25, 4200, 2);
+      if (hi) {
+        this.tone({ f0: 1046.5, dur: 0.4, vol: 0.4, rev: 0.3 });
+        this.tone({ f0: 1567.98, dur: 0.4, type: 'triangle', vol: 0.2, rev: 0.3 });
+        this.tone({ f0: 523.25, dur: 0.3, type: 'square', vol: 0.1, lp: 2000 });
+        this.noise({ dur: 0.25, vol: 0.2, type: 'highpass', freq: 3000, freqTo: 8000 });
+      } else {
+        this.tone({ f0: 659.25, dur: 0.16, vol: 0.65 });
+        this.tone({ f0: 1318.5, dur: 0.1, type: 'triangle', vol: 0.22 });
+        this.tone({ f0: 329.63, dur: 0.12, type: 'square', vol: 0.08, lp: 1500 });
+      }
     },
     tick(urgent) {
       if (!this.ok('tick', 0.3)) return;
-      this.tone(urgent ? 1318.5 : 988, 0, 0.07, 'square', urgent ? 0.14 : 0.08);
+      this.tone({ f0: urgent ? 1400 : 1000, dur: 0.08, type: 'square', vol: urgent ? 0.32 : 0.2, lp: 4000 });
+      if (urgent) this.tone({ f0: 180, f1: 90, dur: 0.12, vol: 0.6 });
     },
+    // İkinci top: siren + yükselen süpürme + vuruş + akor
     frenzy() {
       if (!this.ok('frenzy', 1)) return;
-      this.tone(220, 1760, 0.6, 'sawtooth', 0.08);
-      this.tone(330, 2640, 0.6, 'square', 0.05);
-      [659.25, 830.61, 987.77, 1318.5].forEach((n, i) => this.tone(n, 0, 0.22, 'triangle', 0.14, 0.45 + i * 0.07));
-      this.noise(0.6, 0.2, 2000, 0.5, 0, 'highpass');
+      const c = this.ctx, t = c.currentTime;
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(300, t);
+      o.frequency.exponentialRampToValueAtTime(1100, t + 0.25);
+      o.frequency.exponentialRampToValueAtTime(500, t + 0.5);
+      o.frequency.exponentialRampToValueAtTime(1400, t + 0.75);
+      this.env(g, t, 0.14, 0.02, 0.8);
+      const f = c.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.value = 2600;
+      o.connect(f);
+      f.connect(g);
+      this.route(g, 0, 0.3);
+      o.start(t);
+      o.stop(t + 0.85);
+      this.noise({ dur: 0.75, vol: 0.35, type: 'highpass', freq: 400, freqTo: 7000, attack: 0.6 });
+      this.tone({ f0: 150, f1: 38, dur: 0.6, vol: 0.9, delay: 0.72 });
+      this.noise({ dur: 0.6, vol: 0.45, type: 'lowpass', freq: 4000, freqTo: 200, delay: 0.72, rev: 0.4 });
+      [659.25, 830.61, 987.77, 1318.5].forEach((n, i) => {
+        this.tone({ f0: n, dur: 0.5, type: 'sawtooth', vol: 0.09, delay: 0.72 + i * 0.03, lp: 3500, rev: 0.45 });
+      });
     },
     buzzer() {
       if (!this.ok('buzzer', 1)) return;
-      this.tone(155.56, 0, 0.9, 'sawtooth', 0.16);
-      this.tone(233.08, 0, 0.9, 'square', 0.08);
+      this.tone({ f0: 155.56, dur: 1.1, type: 'sawtooth', vol: 0.3, attack: 0.02, lp: 1800, rev: 0.3 });
+      this.tone({ f0: 233.08, dur: 1.1, type: 'square', vol: 0.14, attack: 0.02, lp: 1600, rev: 0.3 });
+      this.tone({ f0: 77.78, dur: 1.1, vol: 0.5, attack: 0.02 });
     },
     finale(win) {
       if (!this.ctx || !settings.sound) return;
@@ -176,9 +298,19 @@
         : [392, 369.99, 349.23, 329.63, 261.63];
       seq.forEach((n, i) => {
         const long = i === seq.length - 1;
-        this.tone(n, 0, long ? 0.7 : 0.18, win ? 'square' : 'sawtooth', win ? 0.09 : 0.06, i * 0.13);
-        this.tone(n / 2, 0, long ? 0.7 : 0.18, 'triangle', 0.1, i * 0.13);
+        const d = long ? 1.1 : 0.2;
+        const at = i * 0.13;
+        this.tone({ f0: n, dur: d, type: win ? 'square' : 'sawtooth', vol: win ? 0.11 : 0.09, delay: at, lp: win ? 4000 : 1500, rev: 0.45 });
+        this.tone({ f0: n / 2, dur: d, type: 'triangle', vol: 0.16, delay: at, rev: 0.3 });
       });
+      const end = (seq.length - 1) * 0.13;
+      if (win) {
+        this.tone({ f0: 130, f1: 40, dur: 0.8, vol: 0.9, delay: end });
+        this.noise({ dur: 2.2, vol: 0.35, freq: 1200, q: 0.6, delay: end, attack: 0.3, rev: 0.5 });
+        [1318.5, 1567.98, 2093].forEach((n, i) => this.tone({ f0: n, dur: 1.0, type: 'triangle', vol: 0.08, delay: end + 0.05 + i * 0.04, rev: 0.6 }));
+      } else {
+        this.tone({ f0: 98, f1: 60, dur: 1.2, type: 'sawtooth', vol: 0.18, delay: end, lp: 600, rev: 0.3 });
+      }
     },
   };
 
@@ -958,7 +1090,7 @@
     spawn(m.hx, m.hy, '255,255,255', 3 + Math.round(k * 6), 200 + k * 300, 0.3, 2.2, { dir, spread: 0.8, spark: true });
     if (k > 0.35) ripple(m.hx, m.hy, col.rgb, 10, 50 + k * 50, 0.35, 3);
     game.shake = Math.max(game.shake, k * 5);
-    Sound.hit(k);
+    Sound.hit(k, m.hx);
     if (!m.ai) vibrate(Math.round(6 + k * 18));
   }
 
@@ -966,7 +1098,7 @@
     const k = clamp(imp / 1800, 0, 1);
     ripple(x, y, PUCK_RGB, 6, 30 + k * 40, 0.4, 2.5);
     if (k > 0.2) spawn(x, y, PUCK_RGB, Math.round(3 + k * 8), 150 + k * 350, 0.35, 2.4, { spark: true });
-    Sound.wall(k);
+    Sound.wall(k, x);
   }
 
   function onPuckHit(x, y, imp) {
@@ -974,7 +1106,7 @@
     ripple(x, y, '255,255,255', 8, 40 + k * 40, 0.35, 3);
     spawn(x, y, '255,255,255', Math.round(4 + k * 10), 200 + k * 400, 0.35, 2.4, { spark: true });
     spawn(x, y, PUCK_RGB, Math.round(3 + k * 8), 150 + k * 300, 0.4, 2.4, { spark: true });
-    Sound.clack(k);
+    Sound.clack(k, x);
   }
 
   function onGoal(scorer, p) {
@@ -1002,7 +1134,7 @@
     game.score[scorer]++;
     game.pulse[scorer] = 1;
     game.lastScorer = scorer;
-    Sound.goal(settings.mode === 'pvp' || scorer === 0);
+    Sound.goal(settings.mode === 'pvp' || scorer === 0, gx);
     vibrate([40, 40, 80]);
 
     if (game.frenzy) {
@@ -2192,5 +2324,5 @@
   }
 
   // Test ve hata ayıklama için
-  window.__airHockey = { game, pucks, mallets, settings, AI_LEVELS, quality, step: update };
+  window.__airHockey = { game, pucks, mallets, settings, AI_LEVELS, quality, Sound, step: update };
 })();
