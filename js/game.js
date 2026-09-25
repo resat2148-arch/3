@@ -192,9 +192,44 @@
   // Tuval ve ölçekleme
   // ---------------------------------------------------------------------------
   const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
+  // Opak tuval: tarayıcı saydamlık karışımı yapmak zorunda kalmaz (köşeleri CSS yuvarlatır).
+  const ctx = canvas.getContext('2d', { alpha: false });
   const stage = document.getElementById('stage');
   let S = 1; // mantıksal birim başına cihaz pikseli
+  const textCache = new Map();
+
+  // Uyarlanabilir kalite: kareler yetişmiyorsa çözünürlüğü kademeli düşür.
+  const deviceDpr = window.devicePixelRatio || 1;
+  const quality = {
+    levels: [Math.min(deviceDpr, 2), 1.5, 1.25, 1].filter((v, i, a) => i === 0 || (v < a[0] && v < a[i - 1])),
+    level: 0,
+    lite: false,          // en düşük çözünürlükte de yetişmiyorsa efektleri azalt
+    acc: 0,
+    n: 0,
+    cooldown: 0,
+  };
+
+  function trackFrame(ms) {
+    if (!(game.state === 'play' || game.state === 'countdown' || game.state === 'goal')) {
+      quality.acc = quality.n = 0;
+      return;
+    }
+    if (ms > 250) return; // sekme değişimi vb.
+    if (quality.cooldown > 0) { quality.cooldown--; return; }
+    quality.acc += ms;
+    quality.n++;
+    if (quality.n < 90) return;
+    const avg = quality.acc / quality.n;
+    quality.acc = quality.n = 0;
+    if (avg <= 22) return;
+    if (quality.level < quality.levels.length - 1 && (quality.levels[quality.level + 1] >= 1.25 || avg > 40)) {
+      quality.level++;
+      quality.cooldown = 60;
+      resize();
+    } else if (!quality.lite) {
+      quality.lite = true;
+    }
+  }
   let tableLayer = null, puckSprite = null;
   let malletSprites = [], glowSprites = [];
 
@@ -213,13 +248,14 @@
     const ah = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
     const scale = Math.max(0.1, Math.min(aw / LW, ah / LH));
     const cssW = Math.floor(LW * scale), cssH = Math.floor(LH * scale);
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = quality.levels[quality.level];
     canvas.style.width = cssW + 'px';
     canvas.style.height = cssH + 'px';
     canvas.style.borderRadius = Math.round(44 * scale) + 'px';
     canvas.width = Math.round(cssW * dpr);
     canvas.height = Math.round(cssH * dpr);
     S = canvas.width / LW;
+    textCache.clear();
     buildTable();
     buildSprites();
   }
@@ -238,6 +274,8 @@
   function buildTable() {
     const [c, g] = makeLayer(LW, LH);
     tableLayer = c;
+    g.fillStyle = '#05060f'; // opak tuvalin köşeleri (CSS ile yuvarlatılır)
+    g.fillRect(0, 0, LW, LH);
 
     // Dış çerçeve
     rr(g, 0, 0, LW, LH, 44);
@@ -655,8 +693,11 @@
   const ripples = [];
 
   function spawn(x, y, rgb, count, speed, life, size, opts = {}) {
+    if (quality.lite) count = Math.ceil(count * 0.5);
+    const max = quality.lite ? 180 : 360;
+    const col = `rgb(${rgb})`;
     for (let i = 0; i < count; i++) {
-      if (particles.length > 500) particles.shift();
+      if (particles.length >= max) break;
       const a = opts.dir !== undefined ? opts.dir + rand(-opts.spread, opts.spread) : rand(0, TAU);
       const sp = speed * rand(0.25, 1);
       particles.push({
@@ -664,13 +705,13 @@
         vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
         life: life * rand(0.6, 1), max: life,
         size: size * rand(0.5, 1),
-        rgb, spark: !!opts.spark, g: opts.gravity || 0,
+        col, spark: !!opts.spark, g: opts.gravity || 0,
       });
     }
   }
 
   function ripple(x, y, rgb, r0, r1, dur, w) {
-    ripples.push({ x, y, rgb, r0, r1, dur, w, t: 0 });
+    ripples.push({ x, y, col: `rgb(${rgb})`, r0, r1, dur, w, t: 0 });
   }
 
   function banner(text, rgb, dur, size) {
@@ -678,11 +719,16 @@
   }
 
   function updateEffects(dt) {
+    const k = Math.exp(-2.6 * dt);
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.life -= dt;
-      if (p.life <= 0) { particles.splice(i, 1); continue; }
-      const k = Math.exp(-2.6 * dt);
+      if (p.life <= 0) {
+        // Sırayı korumaya gerek yok: sondakiyle yer değiştirip çıkar (splice'tan çok daha ucuz)
+        particles[i] = particles[particles.length - 1];
+        particles.pop();
+        continue;
+      }
       p.vx *= k;
       p.vy = p.vy * k + p.g * dt;
       p.x += p.vx * dt;
@@ -710,7 +756,7 @@
         p.trail.push(p.x, p.y);
         if (p.trail.length > 36) p.trail.splice(0, 2);
         const sp = Math.hypot(p.vx, p.vy);
-        if (sp > 1300 && Math.random() < 0.7) {
+        if (sp > 1300 && !quality.lite && Math.random() < 0.7) {
           spawn(p.x, p.y, sp > 1800 ? '255,140,70' : PUCK_RGB, 1, 120, 0.35, 2.6);
         }
       } else if (p.trail.length) {
@@ -808,7 +854,8 @@
     }
   }
 
-  function stepPhysics(dt) {
+  // `remaining`: bu karede bundan sonra kalan fizik adımı sayısı (insan raketi hedefe eşit adımlarla gider).
+  function stepPhysics(dt, remaining = 0) {
     const plan = mallets.map((m) => {
       let ex, ey;
       if (m.ai) {
@@ -820,8 +867,8 @@
         [ex, ey] = aiMove(m, dt);
       } else {
         applyKeyboard(m, dt);
-        ex = m.tx;
-        ey = m.ty;
+        ex = m.x + (m.tx - m.x) / (remaining + 1);
+        ey = m.y + (m.ty - m.y) / (remaining + 1);
       }
       [ex, ey] = clampPos(m, ex, ey);
       let vx = (ex - m.x) / dt, vy = (ey - m.y) / dt;
@@ -1400,7 +1447,9 @@
     }
 
     if (st !== 'demo') updateClock();
-    stepPhysics(dt);
+    // Kare hızı düşse de oyun gerçek zamanlı aksın: fiziği en fazla 1/60 sn'lik adımlarla çalıştır.
+    const n = Math.max(1, Math.ceil(dt * 60 - 1e-6));
+    for (let i = 0; i < n; i++) stepPhysics(dt / n, n - 1 - i);
   }
 
   function endMatch() {
@@ -1895,13 +1944,49 @@
   // ---------------------------------------------------------------------------
   // Çizim
   // ---------------------------------------------------------------------------
+  // Yazılar bir kez (parıltısıyla) ayrı bir tuvale çizilir, her karede yalnızca kopyalanır.
+  function textSprite(text, font, size, rgb, glow) {
+    const key = `${text}|${font}|${rgb}|${glow ? 1 : 0}`;
+    let sp = textCache.get(key);
+    if (sp) return sp;
+    if (textCache.size > 60) textCache.clear();
+    const m = document.createElement('canvas').getContext('2d');
+    m.font = font;
+    const pad = glow ? size * 0.55 : size * 0.12;
+    const w = m.measureText(text).width + pad * 2, h = size * 1.25 + pad * 2;
+    const [c, g] = makeLayer(w, h);
+    g.font = font;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    if (glow) {
+      g.shadowColor = `rgba(${rgb},1)`;
+      g.shadowBlur = size * 0.35 * S;
+      g.fillStyle = `rgba(${rgb},1)`;
+      g.fillText(text, w / 2, h / 2);
+      g.shadowBlur = size * 0.12 * S;
+      g.fillStyle = 'rgba(255,255,255,0.92)';
+    } else {
+      g.fillStyle = `rgb(${rgb})`;
+    }
+    g.fillText(text, w / 2, h / 2);
+    sp = { c, w, h };
+    textCache.set(key, sp);
+    return sp;
+  }
+
+  function drawSprite(sp, x, y) {
+    ctx.drawImage(sp.c, x - sp.w / 2, y - sp.h / 2, sp.w, sp.h);
+  }
+
   function render() {
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
     let ox = 0, oy = 0;
     if (game.shake > 0.3 && !reduceMotion) {
       ox = rand(-1, 1) * game.shake;
       oy = rand(-1, 1) * game.shake;
+      // Sarsıntıda kenarlarda eski kare kalmasın
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = '#05060f';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
     ctx.setTransform(S, 0, 0, S, ox * S, oy * S);
     ctx.drawImage(tableLayer, 0, 0, LW, LH);
@@ -1915,8 +2000,10 @@
 
     if (game.flash > 0.02) {
       ctx.globalCompositeOperation = 'lighter';
-      ctx.fillStyle = `rgba(${game.flashRgb},${game.flash * 0.28})`;
+      ctx.globalAlpha = game.flash * 0.28;
+      ctx.fillStyle = `rgb(${game.flashRgb})`;
       ctx.fillRect(-B, -B, LW, LH);
+      ctx.globalAlpha = 1;
       ctx.globalCompositeOperation = 'source-over';
     }
     drawBanner();
@@ -1926,37 +2013,38 @@
     if (game.state === 'demo') return;
     const pvp = settings.mode === 'pvp';
     const labels = pvp ? [COLORS[0].name, COLORS[1].name] : ['SEN', 'CPU'];
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
     for (let i = 0; i < 2; i++) {
       const p = game.pulse[i];
       const col = COLORS[i];
+      const num = textSprite(String(game.score[i]), `italic 900 170px ${FONT}`, 170, col.rgb, false);
+      const lab = textSprite(labels[i], `800 18px ${FONT}`, 18, col.rgb, false);
       ctx.save();
       ctx.translate(W / 2, i === 0 ? H * 0.75 : H * 0.25);
       if (i === 1 && pvp) ctx.rotate(Math.PI);
       const sc = 1 + p * p * 0.35;
       ctx.scale(sc, sc);
-      ctx.font = `italic 900 170px ${FONT}`;
-      ctx.fillStyle = `rgba(${col.rgb},${0.1 + p * 0.55})`;
-      ctx.fillText(String(game.score[i]), 0, 0);
-      ctx.font = `800 18px ${FONT}`;
-      ctx.fillStyle = `rgba(${col.rgb},${0.28 + p * 0.5})`;
-      ctx.fillText(labels[i], 0, 100);
+      ctx.globalAlpha = 0.1 + p * 0.55;
+      drawSprite(num, 0, 0);
+      ctx.globalAlpha = 0.28 + p * 0.5;
+      drawSprite(lab, 0, 100);
       ctx.restore();
     }
   }
 
   function drawRipples() {
+    if (!ripples.length) return;
     ctx.globalCompositeOperation = 'lighter';
     for (const r of ripples) {
       const t = r.t / r.dur;
       const e = 1 - (1 - t) * (1 - t);
-      ctx.strokeStyle = `rgba(${r.rgb},${(1 - t) * 0.8})`;
+      ctx.globalAlpha = (1 - t) * 0.8;
+      ctx.strokeStyle = r.col;
       ctx.lineWidth = r.w * (1 - t) + 0.5;
       ctx.beginPath();
       ctx.arc(r.x, r.y, lerp(r.r0, r.r1, e), 0, TAU);
       ctx.stroke();
     }
+    ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
   }
 
@@ -1970,15 +2058,17 @@
     if (n > 1) {
       const sp = Math.hypot(p.vx, p.vy);
       const heat = clamp((sp - 600) / 1500, 0, 1);
-      const rgb = `${255},${Math.round(lerp(226, 110, heat))},${Math.round(lerp(110, 60, heat))}`;
       ctx.globalCompositeOperation = 'lighter';
-      for (let i = 0; i < n; i++) {
+      ctx.fillStyle = `rgb(255,${Math.round(lerp(226, 110, heat))},${Math.round(lerp(110, 60, heat))})`;
+      // Her ikinci noktayı çiz: aynı görünüm, yarı maliyet
+      for (let i = n % 2; i < n; i += 2) {
         const t = (i + 1) / n;
-        ctx.fillStyle = `rgba(${rgb},${t * t * 0.28})`;
+        ctx.globalAlpha = t * t * 0.3;
         ctx.beginPath();
         ctx.arc(tr[i * 2], tr[i * 2 + 1], PUCK_R * (0.35 + 0.65 * t), 0, TAU);
         ctx.fill();
       }
+      ctx.globalAlpha = 1;
       ctx.globalCompositeOperation = 'source-over';
     }
     if (!p.visible) return;
@@ -2010,22 +2100,28 @@
     if (!particles.length) return;
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round';
-    for (const p of particles) {
+    let cur = '';
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
       const a = clamp(p.life / p.max, 0, 1);
+      ctx.globalAlpha = a;
+      if (p.col !== cur) {
+        cur = p.col;
+        ctx.fillStyle = cur;
+        ctx.strokeStyle = cur;
+      }
       if (p.spark) {
-        ctx.strokeStyle = `rgba(${p.rgb},${a})`;
         ctx.lineWidth = p.size * (0.4 + 0.6 * a);
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);
         ctx.lineTo(p.x - p.vx * 0.025, p.y - p.vy * 0.025);
         ctx.stroke();
       } else {
-        ctx.fillStyle = `rgba(${p.rgb},${a})`;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * (0.4 + 0.6 * a), 0, TAU);
-        ctx.fill();
+        const r = p.size * (0.4 + 0.6 * a);
+        ctx.fillRect(p.x - r, p.y - r, r * 2, r * 2);
       }
     }
+    ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
   }
 
@@ -2044,21 +2140,13 @@
   }
 
   function textGlow(text, x, y, size, rgb, alpha, scale, flip) {
+    const sp = textSprite(text, `italic 900 ${size}px ${FONT}`, size, rgb, true);
     ctx.save();
     ctx.translate(x, y);
     if (flip) ctx.rotate(Math.PI);
     ctx.scale(scale, scale);
     ctx.globalAlpha = clamp(alpha, 0, 1);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `italic 900 ${size}px ${FONT}`;
-    ctx.shadowColor = `rgba(${rgb},1)`;
-    ctx.shadowBlur = size * 0.35 * S;
-    ctx.fillStyle = `rgba(${rgb},1)`;
-    ctx.fillText(text, 0, 0);
-    ctx.shadowBlur = size * 0.12 * S;
-    ctx.fillStyle = 'rgba(255,255,255,0.92)';
-    ctx.fillText(text, 0, 0);
+    drawSprite(sp, 0, 0);
     ctx.restore();
   }
 
@@ -2067,10 +2155,13 @@
   // ---------------------------------------------------------------------------
   let last = performance.now();
   function frame(now) {
-    const dt = Math.min(Math.max((now - last) / 1000, 0), 1 / 30);
+    const raw = now - last;
+    const dt = Math.min(Math.max(raw / 1000, 0), 0.1);
     last = now;
+    trackFrame(raw);
     if (dt > 0) update(dt);
-    render();
+    // Duraklatılmışken ekranda değişen bir şey yok: çizme (pil ve ısınma için)
+    if (game.state !== 'paused') render();
     requestAnimationFrame(frame);
   }
 
@@ -2082,6 +2173,12 @@
   window.addEventListener('resize', onResize);
   window.addEventListener('orientationchange', onResize);
   if (window.visualViewport) window.visualViewport.addEventListener('resize', onResize);
+
+  // Yazı tipi geç yüklenirse önbellekteki yazıları yeni yazı tipiyle yeniden üret
+  if (document.fonts) {
+    if (document.fonts.ready) document.fonts.ready.then(() => textCache.clear());
+    if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => textCache.clear());
+  }
 
   syncMenu();
   resize();
@@ -2095,5 +2192,5 @@
   }
 
   // Test ve hata ayıklama için
-  window.__airHockey = { game, pucks, mallets, settings, AI_LEVELS, step: update };
+  window.__airHockey = { game, pucks, mallets, settings, AI_LEVELS, quality, step: update };
 })();

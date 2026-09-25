@@ -89,21 +89,39 @@ button {
   right: -50%;
   bottom: -5%;
   height: 55%;
-  background-image:
-    linear-gradient(rgba(155, 107, 255, 0.28) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(155, 107, 255, 0.28) 1px, transparent 1px);
-  background-size: 64px 64px;
+  overflow: hidden;
   transform: perspective(420px) rotateX(64deg);
   transform-origin: 50% 100%;
   -webkit-mask-image: linear-gradient(to top, #000 5%, transparent 85%);
   mask-image: linear-gradient(to top, #000 5%, transparent 85%);
+}
+
+/* Izgara, yeniden boyama gerektirmeyen transform ile kayar */
+.bg-grid::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -64px;
+  bottom: 0;
+  background-image:
+    linear-gradient(rgba(155, 107, 255, 0.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(155, 107, 255, 0.28) 1px, transparent 1px);
+  background-size: 64px 64px;
   animation: grid 5s linear infinite;
+  will-change: transform;
 }
 
 @keyframes grid {
   to {
-    background-position: 0 64px;
+    transform: translateY(64px);
   }
+}
+
+/* Maç sırasında arka plan durur: tüm güç oyuna kalsın */
+body.playing .blob,
+body.playing .bg-grid::before {
+  animation-play-state: paused;
 }
 
 /* ---------- Oyun alanı ---------- */
@@ -128,6 +146,14 @@ button {
 
 body.playing #game {
   cursor: none;
+}
+
+/* Maç sırasında arka plan bulanıklığı yerine opak zemin (her karede bulanıklık hesaplanmasın) */
+body.playing .hud-btn,
+body.playing .clock {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: rgba(16, 20, 46, 0.92);
 }
 
 /* ---------- HUD ---------- */
@@ -846,7 +872,7 @@ body.playing #game {
 
 @media (prefers-reduced-motion: reduce) {
   .blob,
-  .bg-grid,
+  .bg-grid::before,
   .logo .l1,
   .btn,
   .logo-rail i,
