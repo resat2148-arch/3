@@ -178,8 +178,34 @@ body.theme-water .bg {
 }
 
 body.theme-water .blob,
-body.theme-water .bg-grid {
+body.theme-water .bg-grid,
+body.theme-ice .blob,
+body.theme-ice .bg-grid {
   display: none;
+}
+
+/* Buz Stadyumu teması: kutup gecesi, ufukta soluk kutup ışığı */
+body.theme-ice .bg {
+  background:
+    radial-gradient(90% 38% at 50% -8%, rgba(90, 255, 200, 0.16), transparent 70%),
+    radial-gradient(55% 30% at 15% 0%, rgba(120, 160, 255, 0.16), transparent 70%),
+    radial-gradient(55% 30% at 85% 2%, rgba(80, 220, 255, 0.12), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 50% 55%, #0a3448, transparent 75%),
+    linear-gradient(#020a12, #04192a 55%, #020a12);
+}
+
+body.theme-ice #game {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 0 80px rgba(120, 220, 255, 0.22),
+    0 30px 80px rgba(0, 0, 0, 0.8);
+}
+
+/* Üç tema düğmesi dar ekrana sığsın */
+.seg[data-group="theme"] button {
+  padding: 10px 4px;
+  font-size: 13.5px;
+  line-height: 1.15;
 }
 
 body.theme-water #game {

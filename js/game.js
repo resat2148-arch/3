@@ -60,7 +60,7 @@
     difficulty: store.get('difficulty', 'medium'),
     sound: store.get('sound', true),
     volume: clamp(Number(store.get('volume', 1)) || 0, 0, 1),
-    theme: store.get('theme', 'neon') === 'water' ? 'water' : 'neon',
+    theme: ['water', 'ice'].includes(store.get('theme', 'neon')) ? store.get('theme', 'neon') : 'neon',
   };
 
   const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -124,24 +124,45 @@
       const d = buf.getChannelData(0);
       for (let i = 0; i < nlen; i++) d[i] = Math.random() * 2 - 1;
       this.noiseBuf = buf;
-      if (settings.theme === 'water') this.ambient(true);
+      this.ambient(settings.theme);
     },
-    // Su teması ambiyansı: havuz suyunun alçak, dalgalanan uğultusu (döngü)
-    ambient(on) {
-      if (!this.ctx) return;
-      if (on && !this.amb) {
-        const c = this.ctx;
+    // Temaya göre döngüsel ambiyans: su → havuz uğultusu; buz → arena uğultusu + diskin kayma sesi
+    ambient(theme) {
+      if (!this.ctx || this.ambTheme === theme) return;
+      const c = this.ctx, t = c.currentTime;
+      if (this.amb) {
+        for (const n of this.amb.stop) n.stop(t + 0.8);
+        this.amb.out.gain.cancelScheduledValues(t);
+        this.amb.out.gain.setTargetAtTime(0, t, 0.15);
+        this.amb = null;
+        this.scrapeNode = null;
+      }
+      this.ambTheme = theme;
+      if (theme !== 'water' && theme !== 'ice') return;
+      const loop = () => {
         const src = c.createBufferSource();
         src.buffer = this.noiseBuf;
         src.loop = true;
-        const lp = c.createBiquadFilter();
-        lp.type = 'lowpass';
-        lp.frequency.value = 520;
-        lp.Q.value = 0.4;
-        const bp = c.createBiquadFilter();
-        bp.type = 'peaking';
-        bp.frequency.value = 260;
-        bp.gain.value = 5;
+        return src;
+      };
+      // Eski Safari'de connect() zincirlenemez: düğümleri tek tek bağla
+      const chain = (...nodes) => {
+        for (let i = 0; i < nodes.length - 1; i++) nodes[i].connect(nodes[i + 1]);
+      };
+      const filt = (type, f, q, gain) => {
+        const n = c.createBiquadFilter();
+        n.type = type;
+        n.frequency.value = f;
+        n.Q.value = q;
+        if (gain !== undefined) n.gain.value = gain;
+        return n;
+      };
+      const out = c.createGain();
+      out.gain.value = 1;
+      out.connect(this.bus);
+      const stop = [];
+      if (theme === 'water') {
+        const src = loop();
         const g = c.createGain();
         g.gain.value = 0.07;
         // Yavaş dalgalanma (dalgaların kıyıya vurması hissi)
@@ -151,21 +172,53 @@
         lfoGain.gain.value = 0.03;
         lfo.connect(lfoGain);
         lfoGain.connect(g.gain);
-        src.connect(lp);
-        lp.connect(bp);
-        bp.connect(g);
-        g.connect(this.bus);
+        chain(src, filt('lowpass', 520, 0.4), filt('peaking', 260, 1, 5), g, out);
         src.start();
         lfo.start();
-        this.amb = { src, lfo, g };
-      } else if (!on && this.amb) {
-        const { src, lfo, g } = this.amb;
-        const t = this.ctx.currentTime;
-        g.gain.cancelScheduledValues(t);
-        g.gain.setTargetAtTime(0, t, 0.15);
-        src.stop(t + 0.8);
-        lfo.stop(t + 0.8);
-        this.amb = null;
+        stop.push(src, lfo);
+      } else {
+        // Soğuk arena uğultusu
+        const hum = loop();
+        const hg = c.createGain();
+        hg.gain.value = 0.045;
+        chain(hum, filt('lowpass', 170, 0.6), hg, out);
+        hum.start();
+        // Diskin buzda kayma sesi: kazancı hıza göre setScrape ile değişir
+        const sc = loop();
+        const sg = c.createGain();
+        sg.gain.value = 0;
+        chain(sc, filt('bandpass', 3400, 0.7), filt('highshelf', 6000, 0.7, -6), sg, out);
+        sc.start();
+        this.scrapeNode = sg;
+        stop.push(hum, sc);
+      }
+      this.amb = { out, stop };
+    },
+    setScrape(level) {
+      if (this.scrapeNode) this.scrapeNode.gain.setTargetAtTime(level, this.ctx.currentTime, 0.06);
+    },
+    // Buz çatlaması: tok vuruşun ardından cam kırılmasını andıran ince çıtırtılar; güçlü
+    // çatlakta donmuş göllere özgü, perdesi hızla inen yayılım çınlaması ("pıuv")
+    crackle(e, x) {
+      if (!this.ok('crackle', 0.06)) return;
+      e = clamp(e, 0, 1.2);
+      const pan = this.panOf(x);
+      const n = 8 + Math.round(e * 22);
+      for (let i = 0; i < n; i++) {
+        // Çatlak yayıldıkça önce sık, sonra seyrek çıtırtılar
+        const t = 0.025 + Math.pow(Math.random(), 1.8) * (0.18 + e * 0.35);
+        const p = clamp(pan + (Math.random() - 0.5) * 0.35, -1, 1);
+        this.noise({ dur: 0.004 + Math.random() * 0.01, vol: 0.12 + e * 0.32 * Math.random(), type: 'highpass', freq: 2500 + Math.random() * 4500, delay: t, pan: p });
+        if (Math.random() < 0.45) {
+          const f = 2200 + Math.random() * 4200;
+          this.tone({ f0: f, f1: f * 0.92, dur: 0.02 + Math.random() * 0.05, vol: 0.05 + e * 0.07, delay: t, pan: p, rev: 0.25 });
+        }
+      }
+      // Buz levhasının kırılma çatırtısı
+      this.noise({ dur: 0.06 + e * 0.08, vol: 0.22 + e * 0.35, freq: 1800, freqTo: 900, q: 1.4, delay: 0.02, pan });
+      if (e > 0.6) {
+        this.tone({ f0: 2600, f1: 260, dur: 0.35 + e * 0.2, vol: 0.09 + e * 0.06, delay: 0.05, pan, rev: 0.45 });
+        this.tone({ f0: 1900, f1: 190, dur: 0.4 + e * 0.2, type: 'triangle', vol: 0.05, delay: 0.09, pan, rev: 0.5 });
       }
     },
     // Su sıçraması: süpürülen gürültü + yükselen kabarcık sesleri (kabarcık yükseldikçe perdesi artar)
@@ -440,6 +493,7 @@
   const ctx = canvas.getContext('2d', { alpha: true });
   const waterCanvas = document.getElementById('water');
   const isWater = () => settings.theme === 'water';
+  const isIce = () => settings.theme === 'ice';
   const stage = document.getElementById('stage');
   let S = 1; // mantıksal birim başına cihaz pikseli
   let cssScale = 1, boardShaken = false;
@@ -525,6 +579,241 @@
     g.arcTo(x, y + h, x, y, r);
     g.arcTo(x, y, x + w, y, r);
     g.closePath();
+  }
+
+  // Buz teması: saha kenarı (beyaz bant + sarı tekme şeridi), derin buzul gölü, buzun içinde
+  // donmuş kabarcıklar ve eski çatlaklar, buz altı çizgileri, kırağı, kenarda kar, ışık parlaması.
+  function buildIceTable(g) {
+    // Kenar bantları
+    rr(g, 0, 0, LW, LH, 44);
+    const bd = g.createLinearGradient(0, 0, LW, LH);
+    bd.addColorStop(0, '#f4f8fb');
+    bd.addColorStop(0.5, '#cfdbe4');
+    bd.addColorStop(1, '#eaf1f6');
+    g.fillStyle = bd;
+    g.fill();
+    rr(g, 1.5, 1.5, LW - 3, LH - 3, 43);
+    g.lineWidth = 2;
+    g.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    g.stroke();
+    [[COLORS[1], 4], [COLORS[0], LH - 8]].forEach(([col, y]) => {
+      g.fillStyle = `rgba(${col.rgb}, 0.6)`;
+      rr(g, LW / 2 - 150, y, 300, 4, 2);
+      g.fill();
+    });
+    // Tekme şeridi
+    rr(g, B - 6, B - 6, W + 12, H + 12, 31);
+    g.fillStyle = '#e9b93c';
+    g.fill();
+    rr(g, B - 3, B - 3, W + 6, H + 6, 28);
+    g.fillStyle = '#2a5f86';
+    g.fill();
+
+    g.save();
+    g.translate(B, B);
+    rr(g, 0, 0, W, H, 26);
+    g.clip();
+
+    // Derin göl: ortada aydınlık turkuaz, kenarlara doğru koyu derinlik
+    const deep = g.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, H * 0.72);
+    deep.addColorStop(0, '#1b8aa6');
+    deep.addColorStop(0.45, '#0c5a77');
+    deep.addColorStop(1, '#03263c');
+    g.fillStyle = deep;
+    g.fillRect(0, 0, W, H);
+    let seed = 11;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    // Göl tabanı: koyu taş gölgeleri ve açık su lekeleri
+    for (let i = 0; i < 26; i++) {
+      const x = rnd() * W, y = rnd() * H, r = 30 + rnd() * 90;
+      const gr = g.createRadialGradient(x, y, 0, x, y, r);
+      const light = rnd() < 0.4;
+      gr.addColorStop(0, light ? 'rgba(90, 210, 230, 0.12)' : 'rgba(0, 20, 35, 0.16)');
+      gr.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      g.fillStyle = gr;
+      g.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+
+    // Derinde donmuş küçük kabarcıklar (bulanık, mavimsi)
+    g.shadowColor = 'rgba(180, 235, 255, 0.6)';
+    g.shadowBlur = 4 * S;
+    for (let i = 0; i < 70; i++) {
+      const x = rnd() * W, y = rnd() * H, r = 1 + rnd() * 3;
+      g.fillStyle = `rgba(190, 235, 250, ${0.08 + rnd() * 0.14})`;
+      g.beginPath();
+      g.arc(x, y, r, 0, TAU);
+      g.fill();
+    }
+    g.shadowBlur = 0;
+
+    // Buzun içinde kalmış eski çatlaklar
+    Ice.staticFractures(g);
+
+    // Buz altına boyanmış çizgiler (hafif bulanık, buzun içinden görünür)
+    g.lineCap = 'round';
+    g.shadowBlur = 5 * S;
+    const paint = (color, width, alpha, fn) => {
+      g.globalAlpha = alpha;
+      g.strokeStyle = color;
+      g.shadowColor = color;
+      g.lineWidth = width;
+      g.beginPath();
+      fn();
+      g.stroke();
+      g.globalAlpha = 1;
+    };
+    paint('#d8283e', 6, 0.6, () => { g.moveTo(0, H / 2); g.lineTo(W, H / 2); });
+    paint('#2a6fd6', 4, 0.55, () => g.arc(W / 2, H / 2, 80, 0, TAU));
+    paint('#2a6fd6', 3, 0.45, () => {
+      [[0, H / 4], [W, H / 4], [0, (H * 3) / 4], [W, (H * 3) / 4]].forEach(([x, y]) => { g.moveTo(x + 34, y); g.arc(x, y, 34, 0, TAU); });
+    });
+    g.globalAlpha = 0.7;
+    g.fillStyle = '#2a6fd6';
+    g.beginPath();
+    g.arc(W / 2, H / 2, 7, 0, TAU);
+    g.fill();
+    g.globalAlpha = 1;
+    [['#d6407c', 0, 0, Math.PI], ['#1f97d8', H, Math.PI, TAU]].forEach(([colr, y, a0, a1]) => {
+      g.globalAlpha = 0.1;
+      g.fillStyle = colr;
+      g.beginPath();
+      g.arc(W / 2, y, 118, a0, a1);
+      g.fill();
+      paint(colr, 4, 0.55, () => g.arc(W / 2, y, 118, a0, a1));
+    });
+    g.shadowBlur = 0;
+
+    // Yarı saydam buz gövdesi
+    g.fillStyle = 'rgba(170, 225, 240, 0.12)';
+    g.fillRect(0, 0, W, H);
+
+    // Buza hapsolmuş kabarcık kümeleri (farklı derinliklerde üst üste yassı diskler)
+    for (let s = 0; s < 11; s++) {
+      const bx = 30 + rnd() * (W - 60), by = 40 + rnd() * (H - 80);
+      const ang = rnd() * TAU, count = 3 + ((rnd() * 4) | 0);
+      for (let i = count - 1; i >= 0; i--) {
+        const x = bx + Math.cos(ang) * i * 4, y = by + Math.sin(ang) * i * 4;
+        const r = (5 + rnd() * 7) * (1 - i * 0.12);
+        const deepK = i / count;
+        g.fillStyle = `rgba(${Math.round(225 - deepK * 40)}, 248, 255, ${0.12 + (1 - deepK) * 0.16})`;
+        g.beginPath();
+        g.ellipse(x, y, r, r * 0.82, ang, 0, TAU);
+        g.fill();
+        g.lineWidth = 0.8;
+        g.strokeStyle = `rgba(255, 255, 255, ${0.2 + (1 - deepK) * 0.3})`;
+        g.stroke();
+        g.fillStyle = `rgba(255, 255, 255, ${0.25 + (1 - deepK) * 0.35})`;
+        g.beginPath();
+        g.ellipse(x - r * 0.35, y - r * 0.35, r * 0.28, r * 0.14, -0.7, 0, TAU);
+        g.fill();
+      }
+    }
+
+    // Yüzey kırağısı: ince tozlanma ve eski kullanım çizikleri
+    g.fillStyle = 'rgba(255, 255, 255, 0.09)';
+    for (let i = 0; i < 1600; i++) g.fillRect(rnd() * W, rnd() * H, 0.9, 0.9);
+    g.strokeStyle = 'rgba(255, 255, 255, 0.035)';
+    g.lineWidth = 0.6;
+    g.beginPath();
+    for (let i = 0; i < 260; i++) {
+      const x = rnd() * W, y = rnd() * H, a = rnd() * TAU, l = 20 + rnd() * 70;
+      g.moveTo(x, y);
+      g.quadraticCurveTo(x + Math.cos(a + 0.3) * l * 0.5, y + Math.sin(a + 0.3) * l * 0.5, x + Math.cos(a) * l, y + Math.sin(a) * l);
+    }
+    g.stroke();
+
+    // Bantların dibinde biriken kar
+    const E = 24;
+    const snow = (x0, y0, x1, y1) => {
+      const gr = g.createLinearGradient(x0, y0, x1, y1);
+      gr.addColorStop(0, 'rgba(245, 252, 255, 0.5)');
+      gr.addColorStop(0.35, 'rgba(235, 248, 255, 0.18)');
+      gr.addColorStop(1, 'rgba(235, 248, 255, 0)');
+      return gr;
+    };
+    g.fillStyle = snow(0, 0, E, 0); g.fillRect(0, 0, E, H);
+    g.fillStyle = snow(W, 0, W - E, 0); g.fillRect(W - E, 0, E, H);
+    g.fillStyle = snow(0, 0, 0, E); g.fillRect(0, 0, W, E);
+    g.fillStyle = snow(0, H, 0, H - E); g.fillRect(0, H - E, W, E);
+    g.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    for (let i = 0; i < 500; i++) {
+      const side = (rnd() * 4) | 0, d = Math.pow(rnd(), 2) * 16;
+      const t = rnd();
+      const x = side === 0 ? d : side === 1 ? W - d : t * W;
+      const y = side === 2 ? d : side === 3 ? H - d : t * H;
+      g.fillRect(x, y, 1.2, 1.2);
+    }
+
+    // Arena ışıklarının buzdaki parlaması
+    const sheen = g.createLinearGradient(0, 0, W, H);
+    sheen.addColorStop(0.2, 'rgba(255, 255, 255, 0)');
+    sheen.addColorStop(0.36, 'rgba(255, 255, 255, 0.07)');
+    sheen.addColorStop(0.46, 'rgba(255, 255, 255, 0)');
+    sheen.addColorStop(0.6, 'rgba(255, 255, 255, 0.05)');
+    sheen.addColorStop(0.7, 'rgba(255, 255, 255, 0)');
+    g.fillStyle = sheen;
+    g.fillRect(0, 0, W, H);
+    [[W * 0.26, H * 0.2], [W * 0.74, H * 0.8]].forEach(([x, y]) => {
+      g.save();
+      g.translate(x, y);
+      g.scale(1, 0.55);
+      const gr = g.createRadialGradient(0, 0, 0, 0, 0, 120);
+      gr.addColorStop(0, 'rgba(255, 255, 255, 0.12)');
+      gr.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      g.fillStyle = gr;
+      g.fillRect(-120, -120, 240, 240);
+      g.restore();
+    });
+    g.restore();
+
+    // Buz kenarı
+    g.save();
+    g.translate(B, B);
+    rr(g, 0, 0, W, H, 26);
+    g.lineWidth = 1.5;
+    g.strokeStyle = 'rgba(230, 250, 255, 0.7)';
+    g.stroke();
+    g.restore();
+  }
+
+  // Buz teması pakı: klasik siyah kauçuk hokey diski
+  function buildIcePuck(c, g, r) {
+    g.save();
+    g.shadowColor = 'rgba(0, 20, 40, 0.55)';
+    g.shadowBlur = 8 * S;
+    g.shadowOffsetX = 3 * S;
+    g.shadowOffsetY = 5 * S;
+    g.fillStyle = '#000';
+    g.beginPath();
+    g.arc(0, 0, r - 1, 0, TAU);
+    g.fill();
+    g.restore();
+    const body = g.createRadialGradient(-r * 0.3, -r * 0.35, 1, 0, 0, r);
+    body.addColorStop(0, '#4a4f5a');
+    body.addColorStop(0.6, '#1b1d22');
+    body.addColorStop(1, '#07080a');
+    g.fillStyle = body;
+    g.beginPath();
+    g.arc(0, 0, r, 0, TAU);
+    g.fill();
+    // Kenardaki tırtıklı doku
+    g.setLineDash([2, 2]);
+    g.lineWidth = 2;
+    g.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+    g.beginPath();
+    g.arc(0, 0, r - 1.5, 0, TAU);
+    g.stroke();
+    g.setLineDash([]);
+    g.lineWidth = 1.2;
+    g.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+    g.beginPath();
+    g.arc(0, 0, r * 0.62, 0, TAU);
+    g.stroke();
+    g.fillStyle = 'rgba(255, 255, 255, 0.22)';
+    g.beginPath();
+    g.ellipse(-r * 0.35, -r * 0.45, r * 0.34, r * 0.12, -0.6, 0, TAU);
+    g.fill();
+    return c;
   }
 
   // Su teması: havuz kenarı (taş kaplama + su hattı fayans bandı); oyun alanı saydam bırakılır,
@@ -619,6 +908,11 @@
     g.fillRect(0, 0, LW, LH);
     if (isWater()) {
       buildPoolTable(g);
+      return;
+    }
+    if (isIce()) {
+      buildIceTable(g);
+      Ice.attach(c, g);
       return;
     }
 
@@ -770,7 +1064,7 @@
   const PS_PAD = 28, PS = (PUCK_R + PS_PAD) * 2;
 
   function buildSprites() {
-    malletSprites = COLORS.map((col) => buildMallet(col, !isWater()));
+    malletSprites = COLORS.map((col) => buildMallet(col, settings.theme));
     glowSprites = COLORS.map((col) => {
       const [c, g] = makeLayer(MS, MS);
       const r = MS / 2;
@@ -782,16 +1076,16 @@
       g.fillRect(0, 0, MS, MS);
       return c;
     });
-    puckSprite = buildPuck(!isWater());
+    puckSprite = buildPuck(settings.theme);
   }
 
-  // neon: parlak hale + yüzeye düşen gölge; su: hale yok, suyla temas çizgisi (menisküs)
-  function buildMallet(col, neon = true) {
+  // neon: parlak hale + gölge; su: hale yok, suyla temas çizgisi (menisküs); buz: yalnızca gölge
+  function buildMallet(col, style = 'neon') {
     const [c, g] = makeLayer(MS, MS);
     const R = MALLET_R;
     g.translate(MS / 2, MS / 2);
 
-    if (!neon) {
+    if (style === 'water') {
       meniscus(g, R);
     } else {
     // Gölge
@@ -806,14 +1100,16 @@
     g.fill();
     g.restore();
 
-    // Hale
-    const halo = g.createRadialGradient(0, 0, R * 0.85, 0, 0, R + MS_PAD);
-    halo.addColorStop(0, `rgba(${col.rgb},0.5)`);
-    halo.addColorStop(1, `rgba(${col.rgb},0)`);
-    g.fillStyle = halo;
-    g.beginPath();
-    g.arc(0, 0, R + MS_PAD, 0, TAU);
-    g.fill();
+    if (style === 'neon') {
+      // Hale
+      const halo = g.createRadialGradient(0, 0, R * 0.85, 0, 0, R + MS_PAD);
+      halo.addColorStop(0, `rgba(${col.rgb},0.5)`);
+      halo.addColorStop(1, `rgba(${col.rgb},0)`);
+      g.fillStyle = halo;
+      g.beginPath();
+      g.arc(0, 0, R + MS_PAD, 0, TAU);
+      g.fill();
+    }
     }
 
     // Gövde
@@ -879,12 +1175,13 @@
     g.stroke();
   }
 
-  function buildPuck(neon = true) {
+  function buildPuck(style = 'neon') {
     const [c, g] = makeLayer(PS, PS);
     const r = PUCK_R;
     g.translate(PS / 2, PS / 2);
 
-    if (!neon) return buildWaterPuck(c, g, r);
+    if (style === 'water') return buildWaterPuck(c, g, r);
+    if (style === 'ice') return buildIcePuck(c, g, r);
 
     g.save();
     g.shadowColor = 'rgba(0,0,0,0.7)';
@@ -1440,6 +1737,359 @@
   })();
 
   // ---------------------------------------------------------------------------
+  // Buz Stadyumu: çatlayan dinamik buz
+  // - Kalıcı iz katmanı: kayan disk ince çizikler, raket keçesi hafif sürtme izi bırakır.
+  // - Sert şut / şiddetli duvar çarpması: çarpma noktasından dallanarak büyüyen çatlaklar
+  //   (güçlü darbede halka çatlaklar); izler zamanla yavaşça "yeniden donar".
+  // - Buzun altında süzülen ışık lekeleri ve yükselen silik kabarcıklar.
+  // ---------------------------------------------------------------------------
+  const Ice = (() => {
+    const MK = 1.5; // iz katmanı çözünürlüğü (piksel / oyun birimi)
+    let marks = null, mg = null, bubbleSprite = null, glowSprite = null;
+    // Masa katmanı: izler ayrıca doğrudan buraya da çizilir (her karede tek kopya yeterli olur);
+    // base = izsiz buz, yalnızca "yeniden donma" solmasında masa katmanını yeniden kurmak için.
+    let tg = null, base = null;
+    const targets = [];
+    const cracks = [];
+    const bubbles = [];
+    const trails = new Map();
+    let fadeT = 0, time = 0, scrapeLevel = 0;
+
+    // Köşeleri yuvarlatılmış oyun alanının içinde mi
+    function inField(x, y, pad = 3) {
+      const R = 26;
+      if (x < pad || y < pad || x > W - pad || y > H - pad) return false;
+      const cx = clamp(x, R, W - R), cy = clamp(y, R, H - R);
+      return Math.hypot(x - cx, y - cy) <= R - pad;
+    }
+
+    function newBubble(anyAge) {
+      return {
+        x: rand(24, W - 24), y: rand(24, H - 24), depth: rand(0.35, 1), r: rand(2.5, 7.5),
+        vx: rand(-5, 5), vy: rand(-5, 5), ph: rand(0, TAU), age: anyAge ? rand(0, 9) : 0, life: rand(7, 15),
+      };
+    }
+
+    function init() {
+      if (marks) return;
+      marks = document.createElement('canvas');
+      marks.width = Math.round(W * MK);
+      marks.height = Math.round(H * MK);
+      mg = marks.getContext('2d');
+      mg.setTransform(MK, 0, 0, MK, 0, 0);
+      mg.lineCap = 'round';
+      mg.lineJoin = 'round';
+      targets.length = 0;
+      targets.push(mg);
+
+      bubbleSprite = document.createElement('canvas');
+      bubbleSprite.width = bubbleSprite.height = 64;
+      const b = bubbleSprite.getContext('2d');
+      const gr = b.createRadialGradient(32, 32, 8, 32, 32, 30);
+      gr.addColorStop(0, 'rgba(200, 240, 255, 0.04)');
+      gr.addColorStop(0.72, 'rgba(210, 245, 255, 0.16)');
+      gr.addColorStop(0.9, 'rgba(235, 252, 255, 0.55)');
+      gr.addColorStop(1, 'rgba(235, 252, 255, 0)');
+      b.fillStyle = gr;
+      b.beginPath();
+      b.arc(32, 32, 30, 0, TAU);
+      b.fill();
+      b.fillStyle = 'rgba(255, 255, 255, 0.75)';
+      b.beginPath();
+      b.ellipse(23, 22, 7, 3.5, -0.7, 0, TAU);
+      b.fill();
+
+      glowSprite = document.createElement('canvas');
+      glowSprite.width = glowSprite.height = 128;
+      const g2 = glowSprite.getContext('2d');
+      const gg = g2.createRadialGradient(64, 64, 0, 64, 64, 64);
+      gg.addColorStop(0, 'rgba(120, 235, 255, 0.6)');
+      gg.addColorStop(1, 'rgba(120, 235, 255, 0)');
+      g2.fillStyle = gg;
+      g2.fillRect(0, 0, 128, 128);
+
+      for (let i = 0; i < 26; i++) bubbles.push(newBubble(true));
+    }
+
+    // Masa katmanını bağla: izsiz halini sakla, mevcut izleri üzerine işle
+    function attach(layer, g) {
+      init();
+      base = document.createElement('canvas');
+      base.width = layer.width;
+      base.height = layer.height;
+      base.getContext('2d').drawImage(layer, 0, 0);
+      tg = g;
+      tg.setTransform(S, 0, 0, S, B * S, B * S);
+      tg.lineCap = 'round';
+      tg.lineJoin = 'round';
+      targets.length = 0;
+      targets.push(mg, tg);
+      compose();
+    }
+
+    function compose() {
+      if (!tg || !base) return;
+      tg.save();
+      tg.setTransform(1, 0, 0, 1, 0, 0);
+      tg.globalCompositeOperation = 'copy';
+      tg.drawImage(base, 0, 0);
+      tg.restore();
+      tg.drawImage(marks, 0, 0, W, H);
+    }
+
+    function reset() {
+      init();
+      mg.save();
+      mg.setTransform(1, 0, 0, 1, 0, 0);
+      mg.clearRect(0, 0, marks.width, marks.height);
+      mg.restore();
+      cracks.length = 0;
+      trails.clear();
+      compose();
+    }
+
+    // Dallanan kırık çizgileri üretir; t = çatlağın o noktaya ulaştığı mesafe (büyüme animasyonu)
+    function genSegs(x, y, e, dir, spread) {
+      const segs = [];
+      const full = spread >= TAU - 0.01;
+      // Buz gevrek kırılır: düz parçalar, arada keskin kırılma açıları, seyrek dallanma
+      const n = Math.round(3 + e * 3 + Math.random());
+      const baseLen = 35 + e * 160, baseW = 0.8 + e * 1.0;
+      const grow = (sx, sy, a, len, w, dist, lvl) => {
+        let x0 = sx, y0 = sy, rem = len;
+        while (rem > 0 && segs.length < 700) {
+          const sl = 7 + Math.random() * 11;
+          a += (Math.random() - 0.5) * 0.28;
+          if (Math.random() < 0.18) a += (Math.random() < 0.5 ? -1 : 1) * (0.3 + Math.random() * 0.3);
+          const x1 = x0 + Math.cos(a) * sl, y1 = y0 + Math.sin(a) * sl;
+          if (!inField(x1, y1)) break;
+          dist += sl;
+          rem -= sl;
+          segs.push({ x0, y0, x1, y1, w: w * (0.3 + 0.7 * Math.max(0, rem / len)), t: dist });
+          x0 = x1;
+          y0 = y1;
+          if (lvl < 2 && rem > 20 && Math.random() < 0.08) {
+            grow(x0, y0, a + (Math.random() < 0.5 ? -1 : 1) * (0.45 + Math.random() * 0.55), rem * (0.3 + Math.random() * 0.3), w * 0.65, dist, lvl + 1);
+          }
+        }
+      };
+      for (let i = 0; i < n; i++) {
+        const a = full ? (i / n) * TAU + (Math.random() - 0.5) * 0.6 : dir + (Math.random() - 0.5) * spread;
+        grow(x, y, a, baseLen * (0.55 + Math.random() * 0.6), baseW, 0, 0);
+      }
+      // Güçlü darbede örümcek ağı gibi halka çatlaklar
+      if (e > 0.55) {
+        const rings = e > 0.9 ? 2 : 1;
+        for (let k = 0; k < rings; k++) {
+          const rr = (12 + e * 16) * (k + 1) * (0.85 + Math.random() * 0.3);
+          const a0 = full ? 0 : dir - spread / 2, a1 = full ? TAU : dir + spread / 2;
+          let a = a0 + Math.random() * 0.5;
+          let px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr;
+          while (a < a1) {
+            a += 0.18 + Math.random() * 0.22;
+            const r2 = rr * (0.92 + Math.random() * 0.16);
+            const nx = x + Math.cos(a) * r2, ny = y + Math.sin(a) * r2;
+            if (Math.random() < 0.8 && inField(px, py) && inField(nx, ny)) {
+              segs.push({ x0: px, y0: py, x1: nx, y1: ny, w: baseW * 0.55, t: rr + 30 + Math.random() * 20 });
+            }
+            px = nx;
+            py = ny;
+          }
+        }
+      }
+      segs.sort((p, q) => p.t - q.t);
+      return segs;
+    }
+
+    function line(g, x0, y0, x1, y1) {
+      g.beginPath();
+      g.moveTo(x0, y0);
+      g.lineTo(x1, y1);
+      g.stroke();
+    }
+
+    // Çatlak: derinde koyu kırılma gölgesi + ışığı dağıtan buzlu hale + parlak beyaz çekirdek
+    function drawSeg(g, s, alpha = 1) {
+      g.strokeStyle = `rgba(0, 38, 66, ${0.3 * alpha})`;
+      g.lineWidth = s.w + 1.2;
+      line(g, s.x0 + 0.8, s.y0 + 1.2, s.x1 + 0.8, s.y1 + 1.2);
+      g.strokeStyle = `rgba(215, 245, 255, ${0.14 * alpha})`;
+      g.lineWidth = s.w * 4;
+      line(g, s.x0, s.y0, s.x1, s.y1);
+      g.strokeStyle = `rgba(255, 255, 255, ${0.9 * alpha})`;
+      g.lineWidth = s.w;
+      line(g, s.x0, s.y0, s.x1, s.y1);
+    }
+
+    // Darbe noktasında ezilip beyazlaşmış buz
+    function bruise(x, y, r, a) {
+      for (const g of targets) {
+        const gr = g.createRadialGradient(x, y, 0, x, y, r);
+        gr.addColorStop(0, `rgba(255, 255, 255, ${a})`);
+        gr.addColorStop(0.5, `rgba(235, 250, 255, ${a * 0.45})`);
+        gr.addColorStop(1, 'rgba(235, 250, 255, 0)');
+        g.fillStyle = gr;
+        g.beginPath();
+        g.arc(x, y, r, 0, TAU);
+        g.fill();
+      }
+    }
+
+    function crack(x, y, e, dir = 0, spread = TAU) {
+      init();
+      e = clamp(e, 0.1, 1.2);
+      x = clamp(x, 4, W - 4);
+      y = clamp(y, 4, H - 4);
+      const segs = genSegs(x, y, e, dir, spread);
+      const maxT = segs.length ? segs[segs.length - 1].t : 1;
+      cracks.push({ segs, i: 0, age: 0, dur: 0.16 + e * 0.22, maxT, e });
+      bruise(x, y, 5 + e * 12, 0.35 + e * 0.35);
+      if (cracks.length > 8) finish(cracks.shift());
+    }
+
+    function finish(c) {
+      while (c.i < c.segs.length) {
+        const sg = c.segs[c.i++];
+        for (const g of targets) drawSeg(g, sg);
+      }
+    }
+
+    // Kayma izleri: disk tabanının buzda açtığı ince paralel çizikler
+    function scratch(id, x, y, r, speed, puck) {
+      let tr = trails.get(id);
+      if (!tr) {
+        trails.set(id, { x, y, offs: [rand(-0.7, 0.7), rand(-0.7, 0.7), rand(-0.7, 0.7)] });
+        return;
+      }
+      const dx = x - tr.x, dy = y - tr.y, d = Math.hypot(dx, dy);
+      if (d > 160) { tr.x = x; tr.y = y; return; } // yeniden doğma / ışınlanma
+      if (d < 0.6) return;
+      const nx = -dy / d, ny = dx / d;
+      if (Math.random() < 0.05) tr.offs[(Math.random() * 3) | 0] = rand(-0.7, 0.7);
+      if (puck && speed > 170) {
+        const col = `rgba(255, 255, 255, ${clamp(0.04 + speed / 7000, 0.04, 0.27).toFixed(3)})`;
+        const lines = speed > 1100 && !quality.lite ? 3 : 2;
+        for (const g of targets) {
+          g.strokeStyle = col;
+          g.lineWidth = 0.6;
+          g.beginPath();
+          for (let k = 0; k < lines; k++) {
+            const o = tr.offs[k] * r;
+            g.moveTo(tr.x + nx * o, tr.y + ny * o);
+            g.lineTo(x + nx * o, y + ny * o);
+          }
+          g.stroke();
+        }
+      } else if (!puck && speed > 500) {
+        const col = `rgba(235, 248, 255, ${Math.min(0.05, speed / 60000).toFixed(3)})`;
+        for (const g of targets) {
+          g.strokeStyle = col;
+          g.lineWidth = r * 0.5;
+          line(g, tr.x, tr.y, x, y);
+        }
+      }
+      tr.x = x;
+      tr.y = y;
+    }
+
+    function update(dt) {
+      if (!marks) return;
+      time += dt;
+
+      // Çatlakların büyümesi (çatlak ucu hızla ilerler, uçlarda buz kristali pırıltısı)
+      for (let k = cracks.length - 1; k >= 0; k--) {
+        const c = cracks[k];
+        c.age += dt;
+        const upto = Math.min(1, c.age / c.dur) * c.maxT;
+        let drawn = 0;
+        while (c.i < c.segs.length && c.segs[c.i].t <= upto) {
+          const s = c.segs[c.i++];
+          for (const g of targets) drawSeg(g, s);
+          if (++drawn % 14 === 0 && Math.random() < 0.6) spawn(s.x1, s.y1, '235,250,255', 1, 90, 0.35, 1.8);
+        }
+        if (c.i >= c.segs.length) cracks.splice(k, 1);
+      }
+
+      // Kayma izleri
+      let sp = 0;
+      for (let i = 0; i < pucks.length; i++) {
+        const p = pucks[i];
+        if (!p.active) { trails.delete('p' + i); continue; }
+        const v = Math.hypot(p.vx, p.vy);
+        sp += Math.min(v, 2000);
+        scratch('p' + i, p.x, p.y, PUCK_R, v, true);
+      }
+      for (let i = 0; i < 2; i++) {
+        const m = mallets[i];
+        scratch('m' + i, m.x, m.y, MALLET_R, Math.hypot(m.vx, m.vy), false);
+      }
+      // Diskin buzda kayma sesi hıza göre
+      const lvl = game.state === 'play' ? Math.min(0.07, (sp / 2000) * 0.05) : 0;
+      if (Math.abs(lvl - scrapeLevel) > 0.003) {
+        scrapeLevel = lvl;
+        Sound.setScrape(lvl);
+      }
+
+      // Yeniden donma: izler yavaşça silinir
+      fadeT += dt;
+      if (fadeT > 1.5) {
+        fadeT = 0;
+        mg.save();
+        mg.setTransform(1, 0, 0, 1, 0, 0);
+        mg.globalCompositeOperation = 'destination-out';
+        mg.fillStyle = 'rgba(0, 0, 0, 0.035)';
+        mg.fillRect(0, 0, marks.width, marks.height);
+        mg.restore();
+        compose();
+      }
+
+      // Buz altındaki kabarcıklar: yavaşça yükselir, akıntıyla süzülür
+      const n = quality.lite ? 16 : bubbles.length;
+      for (let i = 0; i < n; i++) {
+        const b = bubbles[i];
+        b.age += dt;
+        const k = 1.2 - b.depth;
+        b.x += (b.vx + Math.sin(time * 0.7 + b.ph) * 3) * dt * k;
+        b.y += (b.vy + Math.cos(time * 0.6 + b.ph) * 3) * dt * k;
+        b.depth = Math.max(0.05, b.depth - dt * 0.03);
+        if (b.age > b.life || !inField(b.x, b.y, 12)) bubbles[i] = newBubble(false);
+      }
+    }
+
+    function drawUnder(c) {
+      if (!marks) return;
+      // Buzun altında süzülen ışık lekeleri (saha içinde kalacak boyutta: kırpma maskesi gerekmez)
+      if (!quality.lite) {
+        c.globalCompositeOperation = 'lighter';
+        c.globalAlpha = 0.1;
+        const x = W / 2 + 70 * Math.sin(time * 0.05);
+        const y = H * (0.5 + 0.28 * Math.cos(time * 0.04));
+        c.drawImage(glowSprite, x - 150, y - 150, 300, 300);
+        c.globalCompositeOperation = 'source-over';
+      }
+      const n = quality.lite ? 16 : bubbles.length;
+      for (let i = 0; i < n; i++) {
+        const b = bubbles[i];
+        const fade = Math.min(1, b.age / 1.5, (b.life - b.age) / 1.5);
+        c.globalAlpha = Math.max(0, (0.1 + (1 - b.depth) * 0.3) * fade);
+        const s = b.r * 2 * (1.6 - b.depth * 0.8);
+        c.drawImage(bubbleSprite, b.x - s / 2, b.y - s / 2, s, s);
+      }
+      c.globalAlpha = 1;
+    }
+
+    // Masa katmanına, buzun içinde kalmış eski (iyileşmiş) silik çatlakları çizer
+    function staticFractures(g) {
+      for (let i = 0; i < 5; i++) {
+        const segs = genSegs(rand(60, W - 60), rand(80, H - 80), rand(0.3, 0.8), 0, TAU);
+        for (const s of segs) drawSeg(g, s, 0.12);
+      }
+    }
+
+    return { init, reset, attach, crack, update, drawUnder, staticFractures, bruise: (x, y, r, a) => { init(); bruise(x, y, r, a); } };
+  })();
+
+  // ---------------------------------------------------------------------------
   // Oyun durumu
   // ---------------------------------------------------------------------------
   const game = {
@@ -1542,6 +2192,7 @@
     if (quality.lite) count = Math.ceil(count * 0.5);
     const max = quality.lite ? 180 : 360;
     if (isWater() && !opts.keep) rgb = '215,240,255'; // suda kıvılcım yerine su damlası
+    else if (isIce() && !opts.keep) rgb = '232,248,255'; // buzda kıvılcım yerine buz kristali
     const col = `rgb(${rgb})`;
     for (let i = 0; i < count; i++) {
       if (particles.length >= max) break;
@@ -1810,6 +2461,15 @@
     if (isWater()) {
       Water.splash(m.hx, m.hy, k * 0.9);
       Sound.splash(k * 0.8, m.hx);
+    } else if (isIce()) {
+      spawn(m.hx, m.hy, '', 3 + Math.round(k * 6), 120 + k * 200, 0.4, 2);
+      if (k > 0.5) {
+        const e = (k - 0.45) / 0.55;
+        Ice.crack(m.hx, m.hy, e);
+        spawn(m.hx, m.hy, '', 10 + Math.round(e * 22), 280 + e * 520, 0.6, 2.6);
+        Sound.crackle(e, m.hx);
+        game.shake = Math.max(game.shake, 3 + e * 6);
+      }
     }
     if (!m.ai) vibrate(Math.round(6 + k * 18));
   }
@@ -1822,6 +2482,20 @@
     if (isWater()) {
       Water.splash(x, y, k * 0.7);
       Sound.splash(k * 0.55, x);
+    } else if (isIce()) {
+      // Çarpılan duvar ve sahaya doğru yön
+      let wx = x, wy = y, dir;
+      if (x <= PUCK_R + 1) { wx = 2; dir = 0; }
+      else if (x >= W - PUCK_R - 1) { wx = W - 2; dir = Math.PI; }
+      else if (y <= PUCK_R + 1) { wy = 2; dir = Math.PI / 2; }
+      else { wy = H - 2; dir = -Math.PI / 2; }
+      Ice.bruise(wx, wy, 6 + k * 8, 0.18 + k * 0.25); // bantta kar tozu
+      if (k > 0.45) {
+        const e = (k - 0.4) / 0.6;
+        Ice.crack(wx, wy, e, dir, Math.PI * 0.95);
+        spawn(wx, wy, '', 8 + Math.round(e * 16), 250 + e * 450, 0.55, 2.4, { dir, spread: 1.2 });
+        Sound.crackle(e * 0.9, x);
+      }
     }
   }
 
@@ -1832,6 +2506,10 @@
     spawn(x, y, PUCK_RGB, Math.round(3 + k * 8), 150 + k * 300, 0.4, 2.4, { spark: true });
     Sound.clack(k, x);
     if (isWater()) Water.splash(x, y, k * 0.6);
+    else if (isIce() && k > 0.6) {
+      Ice.crack(x, y, (k - 0.55) * 1.2);
+      Sound.crackle((k - 0.55) * 1.4, x);
+    }
   }
 
   function onGoal(scorer, p) {
@@ -1848,6 +2526,10 @@
     spawn(gx, gy, col.rgb, 70, 1100, 1.1, 4, { dir, spread: 1.25, spark: true, keep: true });
     Water.splash(gx, scorer === 0 ? 14 : H - 14, 1.8);
     if (isWater()) Sound.splash(1, gx);
+    if (isIce()) {
+      Ice.crack(gx, scorer === 0 ? 3 : H - 3, 1.1, scorer === 0 ? Math.PI / 2 : -Math.PI / 2, Math.PI * 0.9);
+      Sound.crackle(1, gx);
+    }
     spawn(gx, gy, PUCK_RGB, 30, 700, 0.9, 3.5, { dir, spread: 1.4 });
     spawn(gx, gy, '255,255,255', 20, 500, 0.6, 2.5, { dir, spread: 1.5, spark: true });
     ripple(gx, gy, col.rgb, 20, 300, 0.8, 8);
@@ -1951,6 +2633,10 @@
     spawn(W / 2, gy, sk.rgb, 34, 650, 0.8, 3, { dir: gi === 1 ? Math.PI / 2 : -Math.PI / 2, spread: 1.3, spark: true });
     floaters.push({ text: sk.name + '!', gi, rgb: sk.rgb, t: 0, dur: 1.3 });
     if (isWater()) Water.splash(W / 2, gi === 1 ? 16 : H - 16, 1.2);
+    if (isIce()) {
+      Ice.crack(W / 2, gi === 1 ? 3 : H - 3, 0.6, gi === 1 ? Math.PI / 2 : -Math.PI / 2, Math.PI * 0.8);
+      Sound.crackle(0.5, W / 2);
+    }
     Sound.skill(key);
     if (human) vibrate(25);
     skillUI.dirty = true;
@@ -2330,6 +3016,7 @@
     game.frenzy = false;
     pucks.length = 1;
     resetSkills();
+    if (isIce()) Ice.reset();
     mallets.forEach(resetMallet);
     mallets[0].ai = false;
     mallets[1].ai = settings.mode === 'ai';
@@ -2481,6 +3168,7 @@
     const n = Math.max(1, Math.ceil(dt * 60 - 1e-6));
     for (let i = 0; i < n; i++) stepPhysics(dt / n, n - 1 - i);
     if (isWater()) updateWater(dt);
+    else if (isIce()) Ice.update(dt);
   }
 
   // Suda yüzen nesneler: raketler daha derin oturur (daha çok su iter), paklar daha sığ
@@ -3234,15 +3922,17 @@
 
   // Tema: Neon ya da Su Stadyumu
   function applyTheme() {
-    const water = isWater();
-    if (water && !Water.init(waterCanvas)) {
+    const t = settings.theme;
+    if (t === 'water' && !Water.init(waterCanvas)) {
       toast('Bu cihaz WebGL desteklemiyor: su durağan gösterilecek.');
     }
-    document.body.classList.toggle('theme-water', water);
+    document.body.classList.toggle('theme-water', t === 'water');
+    document.body.classList.toggle('theme-ice', t === 'ice');
     goalSprites[0] = goalSprites[1] = null;
-    if (water) Water.reset();
+    if (t === 'water') Water.reset();
+    if (t === 'ice') Ice.reset();
     resize();
-    Sound.ambient(water);
+    Sound.ambient(t);
   }
 
   // Menü seçimleri
@@ -3515,6 +4205,7 @@
     ctx.drawImage(tableLayer, 0, 0, LW, LH);
     ctx.translate(B, B);
 
+    if (isIce()) Ice.drawUnder(ctx); // izler masa katmanının içinde
     drawGoals();
     drawScores();
     drawRipples();
@@ -3557,7 +4248,7 @@
   }
 
   function drawRipples() {
-    if (!ripples.length || isWater()) return; // suda gerçek dalgalar var
+    if (!ripples.length || isWater() || isIce()) return; // suda dalgalar, buzda çatlaklar var
     ctx.globalCompositeOperation = 'lighter';
     for (const r of ripples) {
       const t = r.t / r.dur;
@@ -3580,7 +4271,7 @@
   function drawPuck(p) {
     const tr = p.trail;
     const n = tr.length / 2;
-    if (n > 1 && !isWater()) { // suda iz yerine köpük ve dalga bırakır
+    if (n > 1 && settings.theme === 'neon') { // suda köpük ve dalga, buzda çizik bırakır
       const sp = Math.hypot(p.vx, p.vy);
       const heat = clamp((sp - 600) / 1500, 0, 1);
       ctx.globalCompositeOperation = 'lighter';
@@ -3609,7 +4300,7 @@
 
   function drawMallets() {
     for (const m of mallets) {
-      if (m.glow > 0.01 && !isWater()) {
+      if (m.glow > 0.01 && settings.theme === 'neon') {
         ctx.globalCompositeOperation = 'lighter';
         ctx.globalAlpha = m.glow;
         const s = MS * (1 + (1 - m.glow) * 0.35);
@@ -3722,5 +4413,5 @@
   }
 
   // Test ve hata ayıklama için
-  window.__airHockey = { Water, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update };
+  window.__airHockey = { Water, Ice, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update };
 })();
