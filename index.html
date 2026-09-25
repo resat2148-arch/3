@@ -33,24 +33,28 @@
   <div id="skillBar0" class="skillbar hidden" data-player="0" role="group" aria-label="Mavi oyuncunun skilleri">
     <button class="skill-btn" data-skill="grow" type="button" aria-label="Dev Kale: rakibin kalesi 5 saniye büyür">
       <span class="skill-ico"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6v12M15 6v12M2 12h4M4 10l-2 2 2 2M22 12h-4M20 10l2 2-2 2"/></svg></span></span>
-      <span class="skill-text"><b>Dev Kale</b><small data-role="sub">Rakip kale büyür</small></span>
+      <span class="skill-count" aria-hidden="true"></span>
+      <span class="skill-text"><b>Dev Kale</b><small data-role="sub">Ücretsiz hakkın var</small></span>
       <kbd>1</kbd>
     </button>
     <button class="skill-btn" data-skill="shrink" type="button" aria-label="Kale Kilidi: kendi kalen 5 saniye küçülür">
       <span class="skill-ico"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12h6"/></svg></span></span>
-      <span class="skill-text"><b>Kale Kilidi</b><small data-role="sub">Kalen küçülür</small></span>
+      <span class="skill-count" aria-hidden="true"></span>
+      <span class="skill-text"><b>Kale Kilidi</b><small data-role="sub">Ücretsiz hakkın var</small></span>
       <kbd>2</kbd>
     </button>
   </div>
   <div id="skillBar1" class="skillbar top hidden" data-player="1" role="group" aria-label="Pembe oyuncunun skilleri">
     <button class="skill-btn" data-skill="grow" type="button" aria-label="Dev Kale: rakibin kalesi 5 saniye büyür">
       <span class="skill-ico"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6v12M15 6v12M2 12h4M4 10l-2 2 2 2M22 12h-4M20 10l2 2-2 2"/></svg></span></span>
-      <span class="skill-text"><b>Dev Kale</b><small data-role="sub">Rakip kale büyür</small></span>
+      <span class="skill-count" aria-hidden="true"></span>
+      <span class="skill-text"><b>Dev Kale</b><small data-role="sub">Ücretsiz hakkın var</small></span>
       <kbd>Q</kbd>
     </button>
     <button class="skill-btn" data-skill="shrink" type="button" aria-label="Kale Kilidi: kendi kalen 5 saniye küçülür">
       <span class="skill-ico"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12h6"/></svg></span></span>
-      <span class="skill-text"><b>Kale Kilidi</b><small data-role="sub">Kalen küçülür</small></span>
+      <span class="skill-count" aria-hidden="true"></span>
+      <span class="skill-text"><b>Kale Kilidi</b><small data-role="sub">Ücretsiz hakkın var</small></span>
       <kbd>E</kbd>
     </button>
   </div>
@@ -116,8 +120,14 @@
         <div class="si grow"><b>Dev Kale</b><span>Rakibin kalesi 5 sn büyür</span></div>
         <div class="si shrink"><b>Kale Kilidi</b><span>Kendi kalen 5 sn küçülür</span></div>
       </div>
+      <p class="si-note">Her maçta her skillden <b>1 ücretsiz</b> hak · fazlası mağazada</p>
 
       <button id="startBtn" class="btn">OYNA</button>
+      <button id="menuStoreBtn" class="btn ghost store-btn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11h10.2L20 8H6.2"/><circle cx="9.5" cy="19.5" r="1.4"/><circle cx="16.5" cy="19.5" r="1.4"/></svg>
+        Mağaza
+        <small id="menuInv"></small>
+      </button>
 
       <p class="hint" id="hint"></p>
     </div>
@@ -175,6 +185,7 @@
       </div>
 
       <button id="againBtn" class="btn">TEKRAR OYNA</button>
+      <button id="overStoreBtn" class="btn ghost" type="button">Mağaza</button>
       <button id="menuBtn" class="btn ghost">Ana Menü</button>
     </div>
   </section>
@@ -187,6 +198,32 @@
       <button id="cardShare" class="btn hidden" type="button">GÖRSELİ PAYLAŞ</button>
       <button id="cardSave" class="btn ghost hidden" type="button">Görseli kaydet</button>
       <button id="cardClose" class="btn ghost" type="button">Geri</button>
+    </div>
+  </section>
+
+  <!-- Mağaza -->
+  <section id="storeMenu" class="overlay" aria-label="Mağaza">
+    <div class="panel small store-panel">
+      <div class="store-head">
+        <h2 class="title">MAĞAZA</h2>
+        <span class="test-badge" title="Ödeme altyapısı bağlanana kadar satın almalar test amaçlıdır">TEST MODU</span>
+      </div>
+      <p id="storeMsg" class="sub"></p>
+      <div class="inv" aria-label="Envanterin">
+        <div class="inv-item grow"><b id="invGrow">0</b><span>Dev Kale</span></div>
+        <div class="inv-item shrink"><b id="invShrink">0</b><span>Kale Kilidi</span></div>
+      </div>
+      <div id="storeList" class="store-list"></div>
+      <div id="storeConfirm" class="store-confirm hidden" role="dialog" aria-label="Satın almayı onayla">
+        <div class="confirm-item">
+          <span id="confirmName"></span>
+          <b id="confirmPrice"></b>
+        </div>
+        <p class="fine">Test modu: gerçek ödeme alınmaz, ürün hemen envanterine eklenir.</p>
+        <button id="confirmBuy" class="btn" type="button">SATIN AL</button>
+        <button id="confirmCancel" class="btn ghost" type="button">Vazgeç</button>
+      </div>
+      <button id="storeClose" class="btn ghost" type="button">Kapat</button>
     </div>
   </section>
 

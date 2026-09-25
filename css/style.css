@@ -316,8 +316,36 @@ body.skills.pvp #stage {
   color: rgb(var(--sc));
 }
 
-.skill-btn.cooling {
-  opacity: 0.72;
+/* Hak rozeti: ücretsiz / envanter adedi / satın al */
+.skill-count {
+  position: absolute;
+  top: -8px;
+  left: 8px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #1b2150;
+  box-shadow: inset 0 0 0 1px rgba(var(--sc), 0.7);
+  color: rgb(var(--sc));
+  font: 900 10px "Exo 2", system-ui, sans-serif;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+}
+
+.skill-count.free {
+  background: rgb(var(--sc));
+  color: #0d1030;
+  box-shadow: 0 0 10px rgba(var(--sc), 0.7);
+}
+
+.skill-btn.buy {
+  box-shadow: inset 0 0 0 1.5px rgba(var(--sc), 0.45), 0 8px 22px rgba(0, 0, 0, 0.4);
+  background:
+    repeating-linear-gradient(135deg, rgba(var(--sc), 0.06) 0 8px, transparent 8px 16px),
+    rgba(16, 20, 46, 0.92);
+}
+
+.skill-btn.buy small {
+  color: rgb(var(--sc));
 }
 
 .skill-btn.wait {
@@ -328,6 +356,249 @@ body.skills.pvp #stage {
   to {
     box-shadow: inset 0 0 0 2px rgb(var(--sc)), 0 0 34px rgba(var(--sc), 0.85), 0 8px 22px rgba(0, 0, 0, 0.4);
   }
+}
+
+/* Menü: skill notu ve mağaza düğmesi */
+.si-note {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.si-note b {
+  color: #ffe7a3;
+}
+
+.btn.store-btn {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px 8px;
+}
+
+.store-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.store-btn small {
+  flex-basis: 100%;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+
+/* Mağaza */
+.store-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.store-head .title {
+  margin: 0;
+}
+
+.test-badge {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 190, 60, 0.15);
+  box-shadow: inset 0 0 0 1px rgba(255, 190, 60, 0.6);
+  color: #ffd67a;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.inv {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.inv-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(255, 190, 60, 0.35);
+}
+
+.inv-item.shrink {
+  box-shadow: inset 0 0 0 1px rgba(190, 245, 255, 0.35);
+}
+
+.inv-item b {
+  font-size: 22px;
+  font-style: italic;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: #ffe7a3;
+}
+
+.inv-item.shrink b {
+  color: #e8fbff;
+}
+
+.inv-item span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.store-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.product {
+  --sc: 255, 190, 60;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 12px 12px 10px;
+  border: 0;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(var(--sc), 0.35);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.12s;
+}
+
+.product[data-kind="shrink"] {
+  --sc: 190, 245, 255;
+}
+
+.product[data-kind="bundle"] {
+  --sc: 155, 107, 255;
+}
+
+.product:hover,
+.product:focus-visible {
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 0 0 1.5px rgba(var(--sc), 0.8), 0 0 18px rgba(var(--sc), 0.25);
+  outline: none;
+}
+
+.product:active {
+  transform: scale(0.98);
+}
+
+.product.suggest {
+  box-shadow: inset 0 0 0 2px rgb(var(--sc)), 0 0 22px rgba(var(--sc), 0.4);
+}
+
+.product-ico {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(var(--sc), 0.16);
+  box-shadow: inset 0 0 0 1.5px rgba(var(--sc), 0.8), 0 0 14px rgba(var(--sc), 0.35);
+  color: rgb(var(--sc));
+}
+
+.product-ico svg {
+  width: 22px;
+  height: 22px;
+}
+
+.product[data-kind="bundle"] .product-ico svg {
+  width: 17px;
+  height: 17px;
+}
+
+.product-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.product-text b {
+  font-size: 16px;
+  font-style: italic;
+  font-weight: 900;
+}
+
+.product-text small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.product-price {
+  flex: none;
+  padding: 7px 11px;
+  border-radius: 10px;
+  background: rgba(var(--sc), 0.18);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.product-tag {
+  position: absolute;
+  top: -8px;
+  right: 12px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #7b4dff, #ff3d9a);
+  color: #fff;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.store-confirm {
+  margin-bottom: 4px;
+}
+
+.confirm-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(155, 107, 255, 0.4);
+  text-align: left;
+  font-weight: 700;
+}
+
+.confirm-item b {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.fine {
+  margin: 10px 2px 2px;
+  font-size: 12px;
+  color: #ffd67a;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
 }
 
 /* Menüdeki skill açıklaması */

@@ -20,10 +20,10 @@
   const TAU = Math.PI * 2;
   const MATCH_TIME = 60;              // maç süresi (sn)
   const SECOND_PUCK_AT = 45;         // ikinci topun girdiği saniye
-  // Skiller: süreler ve bekleme süreleri saniye, delta kale genişliğine eklenir
+  // Skiller: etki süresi saniye, delta kale genişliğine eklenir
   const SKILLS = {
-    grow:   { dur: 5, cd: 16, delta: 120, name: 'DEV KALE',    label: 'Dev Kale',    rgb: '255,190,60' },
-    shrink: { dur: 5, cd: 16, delta: -92, name: 'KALE KİLİDİ', label: 'Kale Kilidi', rgb: '190,245,255' },
+    grow:   { dur: 5, delta: 120, name: 'DEV KALE',    label: 'Dev Kale',    rgb: '255,190,60' },
+    shrink: { dur: 5, delta: -92, name: 'KALE KİLİDİ', label: 'Kale Kilidi', rgb: '190,245,255' },
   };
 
   const COLORS = [
@@ -34,7 +34,7 @@
   const FONT = '"Exo 2", system-ui, sans-serif';
 
   const AI_LEVELS = {
-    easy:   { speed: 540,  accel: 3000,  think: 0.22,  predict: 0.1,  aimErr: 1.0,  noise: 70, strike: 1.0,  bank: 0,    counter: false, skillSmart: 0.25, skillRandom: 0.03 },
+    easy:   { speed: 540,  accel: 3000,  think: 0.22,  predict: 0.1,  aimErr: 1.0,  noise: 70, strike: 1.0,  bank: 0,    counter: false, skillSmart: 0.25, skillRandom: 0.01 },
     medium: { speed: 880,  accel: 6000,  think: 0.1,   predict: 0.22, aimErr: 0.55, noise: 30, strike: 1.15, bank: 0.15, counter: true,  skillSmart: 0.6,  skillRandom: 0.008 },
     hard:   { speed: 1380, accel: 11000, think: 0.035, predict: 0.36, aimErr: 0.2,  noise: 6,  strike: 1.3,  bank: 0.3,  counter: true,  skillSmart: 0.95, skillRandom: 0 },
   };
@@ -1189,13 +1189,32 @@
   // Skiller
   // ---------------------------------------------------------------------------
   const SKILL_KEYS = ['grow', 'shrink'];
-  // Oyuncu başına kalan bekleme süreleri (0 = hazır)
-  const skills = [{ grow: 0, shrink: 0, aiTimer: 1 }, { grow: 0, shrink: 0, aiTimer: 1 }];
+  const FREE_PER_MATCH = 1; // her maçta her skillden ücretsiz hak
+
+  // Maç içi ücretsiz haklar (oyuncu başına)
+  const skills = [
+    { grow: FREE_PER_MATCH, shrink: FREE_PER_MATCH, aiTimer: 1 },
+    { grow: FREE_PER_MATCH, shrink: FREE_PER_MATCH, aiTimer: 1 },
+  ];
+
+  // Satın alınmış haklar: cihazda saklanır; iki oyunculu modda iki oyuncu da buradan kullanır.
+  const inventory = loadInventory();
+
+  function loadInventory() {
+    const v = store.get('inventory', null) || {};
+    const n = (x) => Math.max(0, Math.floor(Number(x) || 0));
+    return { grow: n(v.grow), shrink: n(v.shrink) };
+  }
+
+  function saveInventory() {
+    store.set('inventory', { grow: inventory.grow, shrink: inventory.shrink });
+  }
+
   const floaters = [];
 
   function resetSkills() {
     for (const sk of skills) {
-      sk.grow = sk.shrink = 0;
+      sk.grow = sk.shrink = FREE_PER_MATCH;
       sk.aiTimer = 1;
     }
     for (const g of goals) {
@@ -1210,43 +1229,45 @@
     return key === 'grow' ? 1 - p : p;
   }
 
+  // Önce maçın ücretsiz hakkı, sonra satın alınmış envanter harcanır; ikisi de yoksa mağaza açılır.
   function useSkill(p, key) {
-    const st = game.state;
-    if (!(st === 'play' || st === 'demo') || skills[p][key] > 0) {
-      if (!mallets[p].ai && st === 'play') Sound.denied();
+    const st = game.state, human = !mallets[p].ai;
+    // Maç başındaki geri sayımda da kullanılabilir; etki süresi top oyuna girince işlemeye başlar.
+    if (!(st === 'play' || st === 'demo' || (st === 'countdown' && human))) return false;
+    const gi = skillGoal(p, key);
+    if (goals[gi][key] > 0) {
+      // Aynı etki zaten sürüyor: hak boşa harcanmasın
+      if (human) Sound.denied();
+      return false;
+    }
+    if (skills[p][key] > 0) {
+      skills[p][key]--;
+    } else if (human && inventory[key] > 0) {
+      inventory[key]--;
+      saveInventory();
+    } else {
+      if (human) openStore({ focus: key, fromGame: true });
       return false;
     }
     const sk = SKILLS[key];
-    const gi = skillGoal(p, key);
-    skills[p][key] = sk.cd;
     goals[gi][key] = sk.dur;
     const gy = gi === 1 ? 0 : H;
     ripple(W / 2, gy, sk.rgb, 20, 240, 0.7, 6);
     spawn(W / 2, gy, sk.rgb, 34, 650, 0.8, 3, { dir: gi === 1 ? Math.PI / 2 : -Math.PI / 2, spread: 1.3, spark: true });
     floaters.push({ text: sk.name + '!', gi, rgb: sk.rgb, t: 0, dur: 1.3 });
     Sound.skill(key);
-    if (!mallets[p].ai) vibrate(25);
+    if (human) vibrate(25);
     skillUI.dirty = true;
     return true;
   }
 
   function updateSkills(dt) {
     for (let p = 0; p < 2; p++) {
-      for (const key of SKILL_KEYS) {
-        if (skills[p][key] > 0) {
-          skills[p][key] -= dt;
-          if (skills[p][key] <= 0) {
-            skills[p][key] = 0;
-            if (!mallets[p].ai && game.state === 'play') Sound.ready();
-          }
-        }
-      }
-      if (mallets[p].ai) {
-        skills[p].aiTimer -= dt;
-        if (skills[p].aiTimer <= 0) {
-          skills[p].aiTimer = 0.4;
-          aiSkills(p);
-        }
+      if (!mallets[p].ai) continue;
+      skills[p].aiTimer -= dt;
+      if (skills[p].aiTimer <= 0) {
+        skills[p].aiTimer = 0.4;
+        aiSkills(p);
       }
     }
     for (const g of goals) {
@@ -1255,9 +1276,11 @@
     }
   }
 
-  // Yapay zekâ: kalesine hızlı top geliyorsa kilitler, rakip kaleye şut gidiyorsa büyütür.
+  // Yapay zekâ yalnızca ücretsiz haklarını kullanır: kalesine hızlı top geliyorsa kilitler,
+  // rakip kaleye şut gidiyorsa büyütür.
   function aiSkills(p) {
     const L = mallets[p].level, sk = skills[p];
+    if (sk.grow <= 0 && sk.shrink <= 0) return;
     const flip = mallets[p].bottom;
     let threat = false, attack = false;
     for (const q of pucks) {
@@ -1273,9 +1296,9 @@
         if (Math.abs(hx - W / 2) < goals[1 - p].w / 2 + 110) attack = true;
       }
     }
-    if (threat && sk.shrink <= 0 && Math.random() < L.skillSmart) useSkill(p, 'shrink');
-    else if (attack && sk.grow <= 0 && Math.random() < L.skillSmart) useSkill(p, 'grow');
-    else if (L.skillRandom && Math.random() < L.skillRandom) useSkill(p, Math.random() < 0.5 ? 'grow' : 'shrink');
+    if (threat && sk.shrink > 0 && Math.random() < L.skillSmart) useSkill(p, 'shrink');
+    else if (attack && sk.grow > 0 && Math.random() < L.skillSmart) useSkill(p, 'grow');
+    else if (L.skillRandom && Math.random() < L.skillRandom) useSkill(p, sk.grow > 0 ? 'grow' : 'shrink');
   }
 
   function updateGoals(dt) {
@@ -1493,6 +1516,11 @@
       closeVolume();
       return;
     }
+    if (e.code === 'Escape' && storeEl.classList.contains('show')) {
+      if (storeState.pending) cancelPurchase();
+      else closeStore();
+      return;
+    }
     if (e.code === 'Escape' || e.code === 'KeyP') {
       togglePause();
       return;
@@ -1565,7 +1593,7 @@
   let clockShown = '';
 
   function showOverlay(el) {
-    [menuEl, pauseEl, overEl, cardEl].forEach((o) => o.classList.toggle('show', o === el));
+    [menuEl, pauseEl, overEl, cardEl, storeEl].forEach((o) => o.classList.toggle('show', o === el));
     const inGame = !el;
     pauseBtn.classList.toggle('hidden', !inGame);
     document.body.classList.toggle('playing', inGame);
@@ -1621,8 +1649,8 @@
       store.set('skillsSeen', true);
       const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
       setTimeout(() => toast(touch
-        ? 'Skiller hazır! Alttaki düğmelerle kullan.'
-        : 'Skiller hazır! 1 ve 2 tuşlarıyla ya da düğmelerle kullan.'), 1800);
+        ? 'Her skillden 1 ücretsiz hakkın var! Alttaki düğmelerle kullan.'
+        : 'Her skillden 1 ücretsiz hakkın var! 1 ve 2 tuşlarıyla ya da düğmelerle kullan.'), 1800);
     }
     serve(Math.random() < 0.5 ? 0 : 1);
   }
@@ -2164,6 +2192,7 @@
   }
 
   function togglePause() {
+    if (storeEl.classList.contains('show')) return; // mağaza kendi kapanışını yönetir
     if (game.state === 'paused') {
       resume();
     } else if (inputActive()) {
@@ -2285,38 +2314,186 @@
 
   // DOM yalnızca görünen bir şey değiştiğinde güncellenir
   function updateSkillUI() {
-    const playing = game.state === 'play';
+    const playing = game.state === 'play' || game.state === 'countdown';
     for (let p = 0; p < 2; p++) {
       const bar = skillBars[p];
       if (bar.classList.contains('hidden')) continue;
       for (const btn of bar.children) {
         const key = btn.dataset.skill, sk = SKILLS[key];
-        const cd = skills[p][key], left = goals[skillGoal(p, key)][key];
-        let state, sub, fill;
-        if (left > 0 && cd > 0) {
+        const free = skills[p][key], owned = mallets[p].ai ? 0 : inventory[key];
+        const left = goals[skillGoal(p, key)][key];
+        let state, sub, badge, fill;
+        if (left > 0) {
           state = 'active';
           sub = `Aktif · ${Math.ceil(left)} sn`;
           fill = left / sk.dur;
-        } else if (cd > 0) {
-          state = 'cooling';
-          sub = `Hazır: ${Math.ceil(cd)} sn`;
-          fill = 1 - cd / sk.cd;
-        } else {
+        } else if (free > 0 || owned > 0) {
           state = playing ? 'ready' : 'wait';
-          sub = key === 'grow' ? 'Rakip kale büyür' : 'Kalen küçülür';
+          sub = free > 0 ? 'Ücretsiz hakkın var' : `Envanter: ${owned}`;
           fill = 1;
+        } else {
+          state = 'buy';
+          sub = 'Satın al';
+          fill = 0;
         }
+        badge = free > 0 ? 'ÜCRETSİZ' : owned > 0 ? `×${owned}` : '+';
         const f = Math.round(fill * 40) / 40;
-        const sig = `${state}|${sub}|${f}`;
+        const sig = `${state}|${sub}|${badge}|${f}`;
         if (btn._sig === sig && !skillUI.dirty) continue;
         btn._sig = sig;
-        for (const c of ['ready', 'active', 'cooling', 'wait']) btn.classList.toggle(c, c === state);
+        for (const c of ['ready', 'active', 'buy', 'wait']) btn.classList.toggle(c, c === state);
         btn.style.setProperty('--fill', String(f));
         btn.querySelector('small').textContent = sub;
+        const b = btn.querySelector('.skill-count');
+        b.textContent = badge;
+        b.classList.toggle('free', free > 0);
       }
     }
     skillUI.dirty = false;
   }
+
+  // ---------------------------------------------------------------------------
+  // Mağaza ve satın alma
+  // ---------------------------------------------------------------------------
+  // Fiyatlar örnektir; gerçek fiyatlar ödeme sağlayıcısında tanımlanan ürünlerden gelmelidir.
+  const PRODUCTS = [
+    { id: 'grow_3', name: 'Dev Kale', desc: '3 kullanım', give: { grow: 3 }, price: '₺9,99' },
+    { id: 'shrink_3', name: 'Kale Kilidi', desc: '3 kullanım', give: { shrink: 3 }, price: '₺9,99' },
+    { id: 'bundle_5', name: 'Skill Paketi', desc: '5 Dev Kale + 5 Kale Kilidi', give: { grow: 5, shrink: 5 }, price: '₺24,99', tag: 'En avantajlı' },
+  ];
+
+  // Ödeme sağlayıcısı. Şu an TEST modunda: ödeme alınmaz, ürün doğrudan verilir.
+  // Gerçek ödeme için purchase() bir ödeme altyapısına (Google Play Faturalandırma, App Store,
+  // Stripe vb.) bağlanmalı ve envanter, satın almayı doğrulayan bir sunucudan gelmelidir;
+  // tarayıcıda tutulan envanter kullanıcı tarafından değiştirilebilir.
+  const Payments = {
+    mode: 'test',
+    purchase(product) {
+      return Promise.resolve({ ok: true, productId: product.id, test: true });
+    },
+  };
+
+  const SKILL_ICONS = {
+    grow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6v12M15 6v12M2 12h4M4 10l-2 2 2 2M22 12h-4M20 10l2 2-2 2"/></svg>',
+    shrink: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12h6"/></svg>',
+  };
+
+  const storeEl = $('storeMenu'), storeList = $('storeList'), storeConfirm = $('storeConfirm');
+  const storeState = { fromGame: false, focus: null, back: null, pending: null, busy: false };
+
+  function renderInventory() {
+    $('invGrow').textContent = inventory.grow;
+    $('invShrink').textContent = inventory.shrink;
+    const sum = $('menuInv');
+    if (sum) sum.textContent = `Envanter: ${inventory.grow} Dev Kale · ${inventory.shrink} Kale Kilidi`;
+  }
+
+  function renderProducts() {
+    storeList.textContent = '';
+    for (const pr of PRODUCTS) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'product';
+      const keys = Object.keys(pr.give);
+      b.dataset.kind = keys.length > 1 ? 'bundle' : keys[0];
+      if (storeState.focus && pr.give[storeState.focus] && keys.length === 1) b.classList.add('suggest');
+      const icons = keys.map((k) => SKILL_ICONS[k]).join('');
+      b.innerHTML = `
+        <span class="product-ico" aria-hidden="true">${icons}</span>
+        <span class="product-text"><b></b><small></small></span>
+        <span class="product-price"></span>`;
+      b.querySelector('b').textContent = pr.name;
+      b.querySelector('small').textContent = pr.desc;
+      b.querySelector('.product-price').textContent = pr.price;
+      if (pr.tag) {
+        const t = document.createElement('em');
+        t.className = 'product-tag';
+        t.textContent = pr.tag;
+        b.appendChild(t);
+      }
+      b.setAttribute('aria-label', `${pr.name}, ${pr.desc}, ${pr.price}`);
+      b.addEventListener('click', () => askPurchase(pr));
+      storeList.appendChild(b);
+    }
+  }
+
+  function openStore({ focus = null, fromGame = false } = {}) {
+    storeState.focus = focus;
+    storeState.fromGame = fromGame;
+    storeState.pending = null;
+    if (fromGame) {
+      // Maç duraklatılır, mağaza kapanınca kaldığı yerden sürer
+      game.resumeState = game.state;
+      game.state = 'paused';
+      keys.clear();
+      storeState.back = null;
+    } else {
+      storeState.back = [menuEl, overEl, pauseEl].find((o) => o.classList.contains('show')) || menuEl;
+    }
+    $('storeMsg').textContent = focus
+      ? `Bu maçtaki ücretsiz ${SKILLS[focus].label} hakkını kullandın. Devam etmek için paket al.`
+      : 'Her maçta her skillden 1 ücretsiz hakkın var. Daha fazlası için paket al.';
+    storeConfirm.classList.add('hidden');
+    storeList.classList.remove('hidden');
+    renderProducts();
+    renderInventory();
+    showOverlay(storeEl);
+  }
+
+  function closeStore() {
+    if (storeState.fromGame) {
+      storeState.fromGame = false;
+      resume();
+    } else {
+      showOverlay(storeState.back || menuEl);
+    }
+  }
+
+  function askPurchase(pr) {
+    storeState.pending = pr;
+    $('confirmName').textContent = `${pr.name} · ${pr.desc}`;
+    $('confirmPrice').textContent = pr.price;
+    storeList.classList.add('hidden');
+    storeConfirm.classList.remove('hidden');
+    $('confirmBuy').focus();
+  }
+
+  function cancelPurchase() {
+    storeState.pending = null;
+    storeConfirm.classList.add('hidden');
+    storeList.classList.remove('hidden');
+  }
+
+  function confirmPurchase() {
+    const pr = storeState.pending;
+    if (!pr || storeState.busy) return;
+    storeState.busy = true;
+    $('confirmBuy').disabled = true;
+    Payments.purchase(pr).then((res) => {
+      if (!res || !res.ok) throw new Error('declined');
+      for (const k of Object.keys(pr.give)) inventory[k] += pr.give[k];
+      saveInventory();
+      renderInventory();
+      skillUI.dirty = true;
+      Sound.ready();
+      const got = Object.keys(pr.give).map((k) => `${SKILLS[k].label} +${pr.give[k]}`).join(', ');
+      toast(`Satın alındı: ${got}`);
+      if (storeState.fromGame) closeStore();
+      else cancelPurchase();
+    }).catch(() => {
+      toast('Satın alma tamamlanamadı. Ödeme alınmadı.');
+      cancelPurchase();
+    }).finally(() => {
+      storeState.busy = false;
+      $('confirmBuy').disabled = false;
+    });
+  }
+
+  $('confirmBuy').addEventListener('click', confirmPurchase);
+  $('confirmCancel').addEventListener('click', cancelPurchase);
+  $('storeClose').addEventListener('click', closeStore);
+  $('menuStoreBtn').addEventListener('click', () => openStore());
+  $('overStoreBtn').addEventListener('click', () => openStore());
 
   function skillKey(code) {
     const pvp = settings.mode === 'pvp';
@@ -2771,6 +2948,7 @@
   }
 
   syncMenu();
+  renderInventory();
   resize();
   startDemo();
   requestAnimationFrame(frame);
@@ -2782,5 +2960,5 @@
   }
 
   // Test ve hata ayıklama için
-  window.__airHockey = { game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, useSkill, step: update };
+  window.__airHockey = { game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update };
 })();

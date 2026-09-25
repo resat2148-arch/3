@@ -10,14 +10,30 @@ Tarayıcıda ve telefonda çalışan, neon temalı bir air hockey oyunu. Kurulum
 
 ## Skiller
 
-Her oyuncunun iki skili vardır; kullanıldıktan sonra 16 saniyede yeniden dolar.
+Her maçta her skillden **1 ücretsiz** hakkın vardır; bekleme süresi yoktur ve maçın başından (geri sayım dahil) kullanılabilir. Ücretsiz hak bitince, mağazadan alınmış hakların varsa onlar kullanılır; yoksa skill düğmesi mağazayı açar (maç duraklar, satın alınca kaldığı yerden devam eder).
 
 | Skill | Etkisi | Süre |
 |---|---|---|
 | **Dev Kale** | Rakibin kalesi büyür (184 → 304). Bu kaleye gol atılınca etki biter. | 5 sn |
 | **Kale Kilidi** | Kendi kalen küçülür (184 → 92). | 5 sn |
 
-İkisi aynı kaleye denk gelirse etkiler birbirini kısmen dengeler. Yapay zekâ da skilleri kullanır: kalesine hızlı top gelirken kilitler, şut çektikten sonra rakip kaleyi büyütür (Zor seviyede en isabetli).
+- Aynı etki sürerken tekrar basmak hak harcamaz.
+- İkisi aynı kaleye denk gelirse etkiler birbirini kısmen dengeler.
+- Yapay zekâ yalnızca kendi ücretsiz haklarını kullanır (maç başına en fazla 2): kalesine hızlı top gelirken kilitler, şut çektikten sonra rakip kaleyi büyütür.
+
+## Mağaza ve satın alma
+
+Mağazada ek skill hakları satılır (fiyatlar örnektir, `js/game.js` içindeki `PRODUCTS` listesinden değiştirilir):
+
+| Ürün | İçerik | Örnek fiyat |
+|---|---|---|
+| Dev Kale | 3 kullanım | ₺9,99 |
+| Kale Kilidi | 3 kullanım | ₺9,99 |
+| Skill Paketi | 5 Dev Kale + 5 Kale Kilidi | ₺24,99 |
+
+Satın alınan haklar cihazda saklanır ve sonraki maçlarda da kullanılır; iki oyunculu modda iki oyuncu da aynı envanterden kullanır.
+
+> **Şu an TEST MODU:** ödeme alınmaz, ürün onaydan sonra doğrudan envantere eklenir. Gerçek ödeme için `Payments.purchase()` bir ödeme altyapısına bağlanmalıdır — örneğin Android uygulaması için Google Play Faturalandırma, iOS için App Store, web için Stripe. Ayrıca satın almaları doğrulayan ve envanteri tutan bir sunucu gerekir; tarayıcıda (localStorage) tutulan envanter kullanıcı tarafından değiştirilebilir.
 
 ## Özellikler
 
@@ -38,6 +54,7 @@ Her oyuncunun iki skili vardır; kullanıldıktan sonra 16 saniyede yeniden dola
 | Ses aç/kapa | `M` | 🔊 düğmesi → sessiz |
 | Ses seviyesi | `−` / `+` veya 🔊 düğmesi | 🔊 düğmesi → kaydırıcı |
 | Skiller (Mavi) | `1` Dev Kale, `2` Kale Kilidi (veya düğmeler) | Alttaki düğmeler |
+| Mağaza | Menüde veya maç sonunda "Mağaza" | Aynı |
 | Skiller (Pembe, 2 oyunculu) | `Q` Dev Kale, `E` Kale Kilidi | Üstteki düğmeler |
 
 ## Çalıştırma
