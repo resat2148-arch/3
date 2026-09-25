@@ -29,6 +29,32 @@
     <canvas id="game" aria-label="Air hockey masası"></canvas>
   </main>
 
+  <!-- Skill düğmeleri (alt: Mavi, üst: Pembe — iki oyunculu modda) -->
+  <div id="skillBar0" class="skillbar hidden" data-player="0" role="group" aria-label="Mavi oyuncunun skilleri">
+    <button class="skill-btn" data-skill="grow" type="button" aria-label="Dev Kale: rakibin kalesi 5 saniye büyür">
+      <span class="skill-ico"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6v12M15 6v12M2 12h4M4 10l-2 2 2 2M22 12h-4M20 10l2 2-2 2"/></svg></span></span>
+      <span class="skill-text"><b>Dev Kale</b><small data-role="sub">Rakip kale büyür</small></span>
+      <kbd>1</kbd>
+    </button>
+    <button class="skill-btn" data-skill="shrink" type="button" aria-label="Kale Kilidi: kendi kalen 5 saniye küçülür">
+      <span class="skill-ico"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12h6"/></svg></span></span>
+      <span class="skill-text"><b>Kale Kilidi</b><small data-role="sub">Kalen küçülür</small></span>
+      <kbd>2</kbd>
+    </button>
+  </div>
+  <div id="skillBar1" class="skillbar top hidden" data-player="1" role="group" aria-label="Pembe oyuncunun skilleri">
+    <button class="skill-btn" data-skill="grow" type="button" aria-label="Dev Kale: rakibin kalesi 5 saniye büyür">
+      <span class="skill-ico"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6v12M15 6v12M2 12h4M4 10l-2 2 2 2M22 12h-4M20 10l2 2-2 2"/></svg></span></span>
+      <span class="skill-text"><b>Dev Kale</b><small data-role="sub">Rakip kale büyür</small></span>
+      <kbd>Q</kbd>
+    </button>
+    <button class="skill-btn" data-skill="shrink" type="button" aria-label="Kale Kilidi: kendi kalen 5 saniye küçülür">
+      <span class="skill-ico"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12h6"/></svg></span></span>
+      <span class="skill-text"><b>Kale Kilidi</b><small data-role="sub">Kalen küçülür</small></span>
+      <kbd>E</kbd>
+    </button>
+  </div>
+
   <div class="hud">
     <button id="pauseBtn" class="hud-btn hidden" aria-label="Duraklat" title="Duraklat (Esc)">
       <svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg>
@@ -84,6 +110,11 @@
           <b>45. sn</b>
           <span>2. top oyuna girer</span>
         </div>
+      </div>
+
+      <div class="skills-info">
+        <div class="si grow"><b>Dev Kale</b><span>Rakibin kalesi 5 sn büyür</span></div>
+        <div class="si shrink"><b>Kale Kilidi</b><span>Kendi kalen 5 sn küçülür</span></div>
       </div>
 
       <button id="startBtn" class="btn">OYNA</button>

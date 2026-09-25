@@ -168,6 +168,209 @@ body.playing .clock {
   pointer-events: none;
 }
 
+/* Skill düğmeleri */
+body.skills #stage {
+  padding-bottom: calc(var(--safe-b) + 76px);
+}
+
+body.skills.pvp #stage {
+  padding-top: calc(var(--safe-t) + 128px);
+}
+
+.skillbar {
+  position: fixed;
+  z-index: 6;
+  left: 50%;
+  bottom: calc(var(--safe-b) + 10px);
+  display: flex;
+  gap: 10px;
+  transform: translateX(-50%);
+}
+
+/* Üstteki oyuncu karşıdan baktığı için ters çevrilir */
+.skillbar.top {
+  top: calc(var(--safe-t) + 64px);
+  bottom: auto;
+  transform: translateX(-50%) rotate(180deg);
+}
+
+.skill-btn {
+  --sc: 255, 190, 60;
+  --fill: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: min(180px, calc(50vw - 18px));
+  height: 56px;
+  padding: 0 12px 0 8px;
+  border: 0;
+  border-radius: 16px;
+  background: rgba(16, 20, 46, 0.92);
+  box-shadow: inset 0 0 0 1px rgba(var(--sc), 0.45), 0 8px 22px rgba(0, 0, 0, 0.4);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.12s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.skill-btn[data-skill="shrink"] {
+  --sc: 190, 245, 255;
+}
+
+.skill-btn:active {
+  transform: scale(0.95);
+}
+
+.skill-btn:focus-visible {
+  outline: 2px solid rgb(var(--sc));
+  outline-offset: 2px;
+}
+
+/* Simge çevresindeki halka bekleme süresini gösterir */
+.skill-ico {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 3px;
+  border-radius: 50%;
+  background: conic-gradient(rgb(var(--sc)) calc(var(--fill) * 1turn), rgba(255, 255, 255, 0.12) 0);
+}
+
+.skill-ico > span {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #0d1030;
+  color: rgb(var(--sc));
+}
+
+.skill-ico svg {
+  width: 20px;
+  height: 20px;
+}
+
+.skill-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.skill-text b {
+  font-size: 15px;
+  font-style: italic;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.skill-text small {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+.skill-btn kbd {
+  position: absolute;
+  top: -7px;
+  right: -5px;
+  min-width: 20px;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: #fff;
+  color: #0d1030;
+  font: 800 11px "Exo 2", system-ui, sans-serif;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+@media (pointer: coarse) {
+  .skill-btn kbd {
+    display: none;
+  }
+}
+
+.skill-btn.ready {
+  box-shadow: inset 0 0 0 1.5px rgba(var(--sc), 0.9), 0 0 20px rgba(var(--sc), 0.35), 0 8px 22px rgba(0, 0, 0, 0.4);
+}
+
+.skill-btn.ready .skill-ico > span {
+  background: linear-gradient(rgba(var(--sc), 0.2), rgba(var(--sc), 0.2)), #0d1030;
+}
+
+.skill-btn.active {
+  box-shadow: inset 0 0 0 2px rgb(var(--sc)), 0 0 26px rgba(var(--sc), 0.6), 0 8px 22px rgba(0, 0, 0, 0.4);
+  animation: skill-pulse 0.6s ease-in-out infinite alternate;
+}
+
+.skill-btn.active small {
+  color: rgb(var(--sc));
+}
+
+.skill-btn.cooling {
+  opacity: 0.72;
+}
+
+.skill-btn.wait {
+  opacity: 0.45;
+}
+
+@keyframes skill-pulse {
+  to {
+    box-shadow: inset 0 0 0 2px rgb(var(--sc)), 0 0 34px rgba(var(--sc), 0.85), 0 8px 22px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* Menüdeki skill açıklaması */
+.skills-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 8px 0 6px;
+}
+
+.si {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 8px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 190, 60, 0.4);
+}
+
+.si.shrink {
+  border-color: rgba(190, 245, 255, 0.4);
+}
+
+.si b {
+  font-size: 15px;
+  font-style: italic;
+  font-weight: 900;
+  color: #ffe7a3;
+  text-shadow: 0 0 10px rgba(255, 190, 60, 0.7);
+}
+
+.si.shrink b {
+  color: #e8fbff;
+  text-shadow: 0 0 10px rgba(190, 245, 255, 0.7);
+}
+
+.si span {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
 /* Maç sayacı */
 .clock {
   position: absolute;
@@ -1029,6 +1232,10 @@ body.playing .clock {
   pointer-events: none;
 }
 
+body.skills .toast {
+  bottom: calc(var(--safe-b) + 86px);
+}
+
 .toast.show {
   opacity: 1;
   transform: translate(-50%, 0);
@@ -1066,7 +1273,8 @@ body.playing .clock {
   .logo-rail i,
   .clock,
   .clock-tag,
-  .vol-pop {
+  .vol-pop,
+  .skill-btn.active {
     animation: none;
   }
 }

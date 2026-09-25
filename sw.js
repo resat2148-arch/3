@@ -1,5 +1,5 @@
 // Önce ağ, çevrimdışıysa önbellek: güncellemeler hemen gelir, oyun internetsiz de açılır.
-const CACHE = 'neon-air-hockey-v6';
+const CACHE = 'neon-air-hockey-v7';
 const ASSETS = ['./', 'index.html', 'css/style.css', 'js/game.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {

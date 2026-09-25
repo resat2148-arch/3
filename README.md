@@ -8,6 +8,17 @@ Tarayıcıda ve telefonda çalışan, neon temalı bir air hockey oyunu. Kurulum
 - **45. saniyede ikinci top** ortadan oyuna girer. Bu son 15 saniyede oyun gollerde durmaz: gol olan top kısa süre sonra yiyen tarafın yarısından geri gelir.
 - Süre bitince çok gol atan kazanır; eşitlikte maç berabere biter.
 
+## Skiller
+
+Her oyuncunun iki skili vardır; kullanıldıktan sonra 16 saniyede yeniden dolar.
+
+| Skill | Etkisi | Süre |
+|---|---|---|
+| **Dev Kale** | Rakibin kalesi büyür (184 → 304). Bu kaleye gol atılınca etki biter. | 5 sn |
+| **Kale Kilidi** | Kendi kalen küçülür (184 → 92). | 5 sn |
+
+İkisi aynı kaleye denk gelirse etkiler birbirini kısmen dengeler. Yapay zekâ da skilleri kullanır: kalesine hızlı top gelirken kilitler, şut çektikten sonra rakip kaleyi büyütür (Zor seviyede en isabetli).
+
 ## Özellikler
 
 - **Tek oyuncu**: üç zorluk seviyesinde yapay zekâya karşı (Kolay / Orta / Zor). Yapay zekâ pakın yolunu tahmin eder, bant vuruşu yapar ve karşı atağa geçer.
@@ -26,6 +37,8 @@ Tarayıcıda ve telefonda çalışan, neon temalı bir air hockey oyunu. Kurulum
 | Duraklat | `Esc` / `P` | ⏸ düğmesi |
 | Ses aç/kapa | `M` | 🔊 düğmesi → sessiz |
 | Ses seviyesi | `−` / `+` veya 🔊 düğmesi | 🔊 düğmesi → kaydırıcı |
+| Skiller (Mavi) | `1` Dev Kale, `2` Kale Kilidi (veya düğmeler) | Alttaki düğmeler |
+| Skiller (Pembe, 2 oyunculu) | `Q` Dev Kale, `E` Kale Kilidi | Üstteki düğmeler |
 
 ## Çalıştırma
 

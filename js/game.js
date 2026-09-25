@@ -9,7 +9,6 @@
   const B = 24;                     // masa kenarı kalınlığı
   const LW = W + B * 2, LH = H + B * 2;
   const GOAL_W = 184;
-  const GOAL_L = (W - GOAL_W) / 2, GOAL_R = (W + GOAL_W) / 2;
   const PUCK_R = 21, MALLET_R = 37;
   const MIN_D = PUCK_R + MALLET_R;
   const CENTER_GAP = MALLET_R * 0.5; // raketin merkez çizgisine en fazla yaklaşabileceği mesafe
@@ -21,7 +20,11 @@
   const TAU = Math.PI * 2;
   const MATCH_TIME = 60;              // maç süresi (sn)
   const SECOND_PUCK_AT = 45;         // ikinci topun girdiği saniye
-  const POSTS = [[GOAL_L, 0], [GOAL_R, 0], [GOAL_L, H], [GOAL_R, H]];
+  // Skiller: süreler ve bekleme süreleri saniye, delta kale genişliğine eklenir
+  const SKILLS = {
+    grow:   { dur: 5, cd: 16, delta: 120, name: 'DEV KALE',    label: 'Dev Kale',    rgb: '255,190,60' },
+    shrink: { dur: 5, cd: 16, delta: -92, name: 'KALE KİLİDİ', label: 'Kale Kilidi', rgb: '190,245,255' },
+  };
 
   const COLORS = [
     { main: '#19e6ff', light: '#c4faff', dark: '#064a74', rgb: '25,230,255', name: 'MAVİ', label: 'Mavi' },
@@ -31,9 +34,9 @@
   const FONT = '"Exo 2", system-ui, sans-serif';
 
   const AI_LEVELS = {
-    easy:   { speed: 540,  accel: 3000,  think: 0.22,  predict: 0.1,  aimErr: 1.0,  noise: 70, strike: 1.0,  bank: 0,    counter: false },
-    medium: { speed: 880,  accel: 6000,  think: 0.1,   predict: 0.22, aimErr: 0.55, noise: 30, strike: 1.15, bank: 0.15, counter: true },
-    hard:   { speed: 1380, accel: 11000, think: 0.035, predict: 0.36, aimErr: 0.2,  noise: 6,  strike: 1.3,  bank: 0.3,  counter: true },
+    easy:   { speed: 540,  accel: 3000,  think: 0.22,  predict: 0.1,  aimErr: 1.0,  noise: 70, strike: 1.0,  bank: 0,    counter: false, skillSmart: 0.25, skillRandom: 0.03 },
+    medium: { speed: 880,  accel: 6000,  think: 0.1,   predict: 0.22, aimErr: 0.55, noise: 30, strike: 1.15, bank: 0.15, counter: true,  skillSmart: 0.6,  skillRandom: 0.008 },
+    hard:   { speed: 1380, accel: 11000, think: 0.035, predict: 0.36, aimErr: 0.2,  noise: 6,  strike: 1.3,  bank: 0.3,  counter: true,  skillSmart: 0.95, skillRandom: 0 },
   };
 
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -310,6 +313,34 @@
         this.tone({ f0: n, dur: 0.5, type: 'sawtooth', vol: 0.09, delay: 0.72 + i * 0.03, lp: 3500, rev: 0.45 });
       });
     },
+    // Dev Kale: yükselen süpürme + akor; Kale Kilidi: metalik kilit + kalkan uğultusu
+    skill(key) {
+      if (!this.ok('skill', 0.15)) return;
+      if (key === 'grow') {
+        this.tone({ f0: 160, f1: 760, dur: 0.45, type: 'sawtooth', vol: 0.22, lp: 2200, rev: 0.3 });
+        this.tone({ f0: 320, f1: 1520, dur: 0.4, type: 'triangle', vol: 0.12, rev: 0.3 });
+        this.noise({ dur: 0.45, vol: 0.28, freq: 500, freqTo: 3500, q: 0.8, attack: 0.2 });
+        this.tone({ f0: 659.25, dur: 0.35, type: 'triangle', vol: 0.18, delay: 0.38, rev: 0.4 });
+        this.tone({ f0: 987.77, dur: 0.35, type: 'triangle', vol: 0.14, delay: 0.42, rev: 0.4 });
+        this.tone({ f0: 120, f1: 50, dur: 0.3, vol: 0.5, delay: 0.38 });
+      } else {
+        this.tone({ f0: 1400, f1: 850, dur: 0.07, type: 'square', vol: 0.2, lp: 3200 });
+        this.tone({ f0: 2100, dur: 0.18, type: 'triangle', vol: 0.18, rev: 0.25 });
+        this.noise({ dur: 0.05, vol: 0.5, type: 'highpass', freq: 3000 });
+        this.tone({ f0: 900, f1: 600, dur: 0.06, type: 'square', vol: 0.15, delay: 0.09, lp: 3000 });
+        this.tone({ f0: 110, dur: 0.6, vol: 0.45, delay: 0.08, attack: 0.03, rev: 0.2 });
+        this.tone({ f0: 220, dur: 0.6, type: 'triangle', vol: 0.12, delay: 0.08, attack: 0.03, rev: 0.3 });
+      }
+    },
+    ready() {
+      if (!this.ok('ready', 0.3)) return;
+      this.tone({ f0: 1318.5, dur: 0.12, type: 'triangle', vol: 0.2 });
+      this.tone({ f0: 1760, dur: 0.18, type: 'triangle', vol: 0.16, delay: 0.07, rev: 0.25 });
+    },
+    denied() {
+      if (!this.ok('denied', 0.25)) return;
+      this.tone({ f0: 170, f1: 110, dur: 0.14, type: 'square', vol: 0.2, lp: 900 });
+    },
     buzzer() {
       if (!this.ok('buzzer', 1)) return;
       this.tone({ f0: 155.56, dur: 1.1, type: 'sawtooth', vol: 0.3, attack: 0.02, lp: 1800, rev: 0.3 });
@@ -575,39 +606,6 @@
     rr(g, 0, 0, W, H, 26);
     g.stroke();
 
-    // Kale ağızları (çerçeveye oyulmuş)
-    [[1, -B + 5, 0], [0, H - 2, H]].forEach(([ci, y, ly]) => {
-      const col = COLORS[ci];
-      const inner = g.createLinearGradient(0, y, 0, y + B - 3);
-      if (ci === 1) {
-        inner.addColorStop(0, '#000');
-        inner.addColorStop(1, `rgba(${col.rgb},0.35)`);
-      } else {
-        inner.addColorStop(0, `rgba(${col.rgb},0.35)`);
-        inner.addColorStop(1, '#000');
-      }
-      rr(g, GOAL_L, y, GOAL_W, B - 3, 6);
-      g.fillStyle = '#02030a';
-      g.fill();
-      g.fillStyle = inner;
-      g.fill();
-      g.shadowBlur = 18 * S;
-      g.shadowColor = `rgba(${col.rgb},1)`;
-      g.strokeStyle = col.light;
-      g.lineWidth = 3;
-      g.beginPath();
-      g.moveTo(GOAL_L + 4, ly);
-      g.lineTo(GOAL_R - 4, ly);
-      g.stroke();
-      g.fillStyle = '#fff';
-      for (const x of [GOAL_L, GOAL_R]) {
-        g.beginPath();
-        g.arc(x, ly, 4.5, 0, TAU);
-        g.fill();
-      }
-      g.shadowBlur = 0;
-    });
-
     g.restore();
   }
 
@@ -793,6 +791,14 @@
 
   const pucks = [makePuck()];
 
+  // Kaleler: 0 = alt (Mavi'nin kalesi, y = H), 1 = üst (Pembe'nin kalesi, y = 0).
+  // grow / shrink: etkinin kalan süresi; w: ekranda ve fizikte kullanılan (yumuşakça değişen) genişlik.
+  const goals = [{ w: GOAL_W, grow: 0, shrink: 0 }, { w: GOAL_W, grow: 0, shrink: 0 }];
+
+  function goalTarget(g) {
+    return GOAL_W + (g.grow > 0 ? SKILLS.grow.delta : 0) + (g.shrink > 0 ? SKILLS.shrink.delta : 0);
+  }
+
   function makeMallet(i) {
     return {
       i, bottom: i === 0,
@@ -953,31 +959,32 @@
       p.x = W - PUCK_R;
       if (p.vx > 0) { imp = p.vx; p.vx = -p.vx * WALL_E; }
     }
-    const inMouth = p.x > GOAL_L && p.x < GOAL_R;
-    if (!inMouth) {
-      if (p.y < PUCK_R) {
-        p.y = PUCK_R;
-        if (p.vy < 0) { imp = Math.max(imp, -p.vy); p.vy = -p.vy * WALL_E; }
-      } else if (p.y > H - PUCK_R) {
-        p.y = H - PUCK_R;
-        if (p.vy > 0) { imp = Math.max(imp, p.vy); p.vy = -p.vy * WALL_E; }
-      }
+    const tHalf = goals[1].w / 2, bHalf = goals[0].w / 2;
+    if (p.y < PUCK_R && Math.abs(p.x - W / 2) >= tHalf) {
+      p.y = PUCK_R;
+      if (p.vy < 0) { imp = Math.max(imp, -p.vy); p.vy = -p.vy * WALL_E; }
+    } else if (p.y > H - PUCK_R && Math.abs(p.x - W / 2) >= bHalf) {
+      p.y = H - PUCK_R;
+      if (p.vy > 0) { imp = Math.max(imp, p.vy); p.vy = -p.vy * WALL_E; }
     }
-    for (const [qx, qy] of POSTS) {
-      const dx = p.x - qx, dy = p.y - qy, d2 = dx * dx + dy * dy;
-      if (d2 < PUCK_R * PUCK_R && d2 > 1e-6) {
-        const d = Math.sqrt(d2), nx = dx / d, ny = dy / d;
-        p.x = qx + nx * PUCK_R;
-        p.y = qy + ny * PUCK_R;
-        const vn = p.vx * nx + p.vy * ny;
-        if (vn < 0) {
-          p.vx -= (1 + WALL_E) * vn * nx;
-          p.vy -= (1 + WALL_E) * vn * ny;
-          imp = Math.max(imp, -vn);
-        }
-      }
-    }
+    imp = Math.max(imp,
+      collidePost(p, W / 2 - tHalf, 0), collidePost(p, W / 2 + tHalf, 0),
+      collidePost(p, W / 2 - bHalf, H), collidePost(p, W / 2 + bHalf, H));
     return imp;
+  }
+
+  // Kale direği: nokta çarpışması
+  function collidePost(p, qx, qy) {
+    const dx = p.x - qx, dy = p.y - qy, d2 = dx * dx + dy * dy;
+    if (d2 >= PUCK_R * PUCK_R || d2 < 1e-6) return 0;
+    const d = Math.sqrt(d2), nx = dx / d, ny = dy / d;
+    p.x = qx + nx * PUCK_R;
+    p.y = qy + ny * PUCK_R;
+    const vn = p.vx * nx + p.vy * ny;
+    if (vn >= 0) return 0;
+    p.vx -= (1 + WALL_E) * vn * nx;
+    p.vy -= (1 + WALL_E) * vn * ny;
+    return -vn;
   }
 
   // İki pak arasında eşit kütleli esnek çarpışma.
@@ -1136,8 +1143,11 @@
 
   function onGoal(scorer, p) {
     const col = COLORS[scorer];
-    const gx = clamp(p.x, GOAL_L + 10, GOAL_R - 10);
+    const gi = scorer === 0 ? 1 : 0; // golün girdiği kale
+    const half = goals[gi].w / 2;
+    const gx = clamp(p.x, W / 2 - half + 10, W / 2 + half - 10);
     const gy = scorer === 0 ? 0 : H;
+    goals[gi].grow = 0; // Dev Kale golle tükenir
     p.active = false;
     p.visible = false;
 
@@ -1173,6 +1183,108 @@
     banner('GOL!', col.rgb, 1.5, 150);
     game.state = 'goal';
     game.timer = 1.6;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Skiller
+  // ---------------------------------------------------------------------------
+  const SKILL_KEYS = ['grow', 'shrink'];
+  // Oyuncu başına kalan bekleme süreleri (0 = hazır)
+  const skills = [{ grow: 0, shrink: 0, aiTimer: 1 }, { grow: 0, shrink: 0, aiTimer: 1 }];
+  const floaters = [];
+
+  function resetSkills() {
+    for (const sk of skills) {
+      sk.grow = sk.shrink = 0;
+      sk.aiTimer = 1;
+    }
+    for (const g of goals) {
+      g.grow = g.shrink = 0;
+      g.w = GOAL_W;
+    }
+    floaters.length = 0;
+  }
+
+  // grow rakibin kalesini, shrink oyuncunun kendi kalesini etkiler
+  function skillGoal(p, key) {
+    return key === 'grow' ? 1 - p : p;
+  }
+
+  function useSkill(p, key) {
+    const st = game.state;
+    if (!(st === 'play' || st === 'demo') || skills[p][key] > 0) {
+      if (!mallets[p].ai && st === 'play') Sound.denied();
+      return false;
+    }
+    const sk = SKILLS[key];
+    const gi = skillGoal(p, key);
+    skills[p][key] = sk.cd;
+    goals[gi][key] = sk.dur;
+    const gy = gi === 1 ? 0 : H;
+    ripple(W / 2, gy, sk.rgb, 20, 240, 0.7, 6);
+    spawn(W / 2, gy, sk.rgb, 34, 650, 0.8, 3, { dir: gi === 1 ? Math.PI / 2 : -Math.PI / 2, spread: 1.3, spark: true });
+    floaters.push({ text: sk.name + '!', gi, rgb: sk.rgb, t: 0, dur: 1.3 });
+    Sound.skill(key);
+    if (!mallets[p].ai) vibrate(25);
+    skillUI.dirty = true;
+    return true;
+  }
+
+  function updateSkills(dt) {
+    for (let p = 0; p < 2; p++) {
+      for (const key of SKILL_KEYS) {
+        if (skills[p][key] > 0) {
+          skills[p][key] -= dt;
+          if (skills[p][key] <= 0) {
+            skills[p][key] = 0;
+            if (!mallets[p].ai && game.state === 'play') Sound.ready();
+          }
+        }
+      }
+      if (mallets[p].ai) {
+        skills[p].aiTimer -= dt;
+        if (skills[p].aiTimer <= 0) {
+          skills[p].aiTimer = 0.4;
+          aiSkills(p);
+        }
+      }
+    }
+    for (const g of goals) {
+      g.grow = Math.max(0, g.grow - dt);
+      g.shrink = Math.max(0, g.shrink - dt);
+    }
+  }
+
+  // Yapay zekâ: kalesine hızlı top geliyorsa kilitler, rakip kaleye şut gidiyorsa büyütür.
+  function aiSkills(p) {
+    const L = mallets[p].level, sk = skills[p];
+    const flip = mallets[p].bottom;
+    let threat = false, attack = false;
+    for (const q of pucks) {
+      if (!q.active) continue;
+      const ly = flip ? H - q.y : q.y;
+      const lvy = flip ? -q.vy : q.vy;
+      if (lvy < -650 && ly < H * 0.6) {
+        const hx = foldX(q.x + q.vx * (ly / -lvy));
+        if (Math.abs(hx - W / 2) < goals[p].w / 2 + 40) threat = true;
+      }
+      if (lvy > 650 && ly > H * 0.35) {
+        const hx = foldX(q.x + q.vx * ((H - ly) / lvy));
+        if (Math.abs(hx - W / 2) < goals[1 - p].w / 2 + 110) attack = true;
+      }
+    }
+    if (threat && sk.shrink <= 0 && Math.random() < L.skillSmart) useSkill(p, 'shrink');
+    else if (attack && sk.grow <= 0 && Math.random() < L.skillSmart) useSkill(p, 'grow');
+    else if (L.skillRandom && Math.random() < L.skillRandom) useSkill(p, Math.random() < 0.5 ? 'grow' : 'shrink');
+  }
+
+  function updateGoals(dt) {
+    const k = 1 - Math.exp(-9 * dt);
+    for (const g of goals) g.w += (goalTarget(g) - g.w) * k;
+    for (let i = floaters.length - 1; i >= 0; i--) {
+      floaters[i].t += dt;
+      if (floaters[i].t >= floaters[i].dur) floaters.splice(i, 1);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -1224,7 +1336,8 @@
       if (pvy < -40) {
         const t = (py - guardY) / -pvy;
         const hitX = foldX(px + pvx * t) + noise;
-        tx = W / 2 + clamp(hitX - W / 2, -GOAL_W * 0.75, GOAL_W * 0.75);
+        const ownW = goals[m.bottom ? 0 : 1].w;
+        tx = W / 2 + clamp(hitX - W / 2, -ownW * 0.75, ownW * 0.75);
         ty = guardY;
       } else {
         tx = W / 2 + (px - W / 2) * 0.4;
@@ -1264,7 +1377,7 @@
         // Hücum: pakın arkasına geç, sonra kaleye doğru vur
         mode = 'attack';
         if (m.aiMode !== 'attack') {
-          const spread = GOAL_W * 0.3 + L.aimErr * 150;
+          const spread = goals[m.bottom ? 1 : 0].w * 0.3 + L.aimErr * 150;
           m.aimX = W / 2 + rand(-spread, spread);
           if (Math.random() < L.bank) m.aimX = Math.random() < 0.5 ? -W / 2 : W * 1.5; // bant vuruşu
         }
@@ -1402,6 +1515,15 @@
       startMatch();
       return;
     }
+    const sk = skillKey(e.code);
+    if (sk) {
+      if (!e.repeat && inputActive() && !mallets[sk[0]].ai) {
+        e.preventDefault();
+        lastInputTouch = false;
+        useSkill(sk[0], sk[1]);
+      }
+      return;
+    }
     if (KEY_MOVE.includes(e.code)) {
       e.preventDefault();
       keys.add(e.code);
@@ -1463,6 +1585,7 @@
       resetMallet(m);
     });
     pucks.length = 1;
+    resetSkills();
     const p = pucks[0];
     placePuck(p, -1);
     p.active = true;
@@ -1471,6 +1594,7 @@
     game.score = [0, 0];
     game.banner = null;
     clockEl.classList.add('hidden');
+    showSkillBars(false);
     showOverlay(menuEl);
   }
 
@@ -1481,6 +1605,7 @@
     game.clock = MATCH_TIME;
     game.frenzy = false;
     pucks.length = 1;
+    resetSkills();
     mallets.forEach(resetMallet);
     mallets[0].ai = false;
     mallets[1].ai = settings.mode === 'ai';
@@ -1490,7 +1615,15 @@
     ripples.length = 0;
     clockEl.classList.remove('hidden');
     updateClock();
+    showSkillBars(true);
     showOverlay(null);
+    if (!store.get('skillsSeen', false)) {
+      store.set('skillsSeen', true);
+      const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+      setTimeout(() => toast(touch
+        ? 'Skiller hazır! Alttaki düğmelerle kullan.'
+        : 'Skiller hazır! 1 ve 2 tuşlarıyla ya da düğmelerle kullan.'), 1800);
+    }
     serve(Math.random() < 0.5 ? 0 : 1);
   }
 
@@ -1567,6 +1700,7 @@
   function update(dt) {
     game.time += dt;
     updateEffects(dt);
+    updateGoals(dt);
     const st = game.state;
     if (st === 'paused' || st === 'over') return;
 
@@ -1602,6 +1736,7 @@
         return;
       }
       updatePucks(dt);
+      updateSkills(dt);
     } else if (st === 'demo') {
       const p = pucks[0];
       if (!p.active) {
@@ -1614,6 +1749,7 @@
         }
       }
       updatePucks(dt);
+      updateSkills(dt);
     }
 
     if (st !== 'demo') updateClock();
@@ -2114,6 +2250,85 @@
     closeVolume();
   }, true);
 
+  // ---------------------------------------------------------------------------
+  // Skill düğmeleri
+  // ---------------------------------------------------------------------------
+  const skillBars = [$('skillBar0'), $('skillBar1')];
+  const skillUI = { dirty: true };
+
+  skillBars.forEach((bar, p) => {
+    bar.querySelectorAll('.skill-btn').forEach((btn) => {
+      const key = btn.dataset.skill;
+      // Basar basmaz çalışsın (raketi süren diğer parmakla aynı anda da)
+      btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        lastInputTouch = e.pointerType !== 'mouse';
+        Sound.init();
+        useSkill(p, key);
+      });
+      // Klavyeyle odaklanıp Enter/Boşluk
+      btn.addEventListener('click', (e) => {
+        if (e.detail === 0) useSkill(p, key);
+      });
+    });
+  });
+
+  function showSkillBars(on) {
+    const pvp = settings.mode === 'pvp';
+    skillBars[0].classList.toggle('hidden', !on);
+    skillBars[1].classList.toggle('hidden', !on || !pvp);
+    document.body.classList.toggle('skills', on);
+    document.body.classList.toggle('pvp', on && pvp);
+    skillUI.dirty = true;
+    resize();
+  }
+
+  // DOM yalnızca görünen bir şey değiştiğinde güncellenir
+  function updateSkillUI() {
+    const playing = game.state === 'play';
+    for (let p = 0; p < 2; p++) {
+      const bar = skillBars[p];
+      if (bar.classList.contains('hidden')) continue;
+      for (const btn of bar.children) {
+        const key = btn.dataset.skill, sk = SKILLS[key];
+        const cd = skills[p][key], left = goals[skillGoal(p, key)][key];
+        let state, sub, fill;
+        if (left > 0 && cd > 0) {
+          state = 'active';
+          sub = `Aktif · ${Math.ceil(left)} sn`;
+          fill = left / sk.dur;
+        } else if (cd > 0) {
+          state = 'cooling';
+          sub = `Hazır: ${Math.ceil(cd)} sn`;
+          fill = 1 - cd / sk.cd;
+        } else {
+          state = playing ? 'ready' : 'wait';
+          sub = key === 'grow' ? 'Rakip kale büyür' : 'Kalen küçülür';
+          fill = 1;
+        }
+        const f = Math.round(fill * 40) / 40;
+        const sig = `${state}|${sub}|${f}`;
+        if (btn._sig === sig && !skillUI.dirty) continue;
+        btn._sig = sig;
+        for (const c of ['ready', 'active', 'cooling', 'wait']) btn.classList.toggle(c, c === state);
+        btn.style.setProperty('--fill', String(f));
+        btn.querySelector('small').textContent = sub;
+      }
+    }
+    skillUI.dirty = false;
+  }
+
+  function skillKey(code) {
+    const pvp = settings.mode === 'pvp';
+    switch (code) {
+      case 'Digit1': case 'Numpad1': case 'KeyK': return [0, 'grow'];
+      case 'Digit2': case 'Numpad2': case 'KeyL': return [0, 'shrink'];
+      case 'KeyQ': return [pvp ? 1 : 0, 'grow'];
+      case 'KeyE': return [pvp ? 1 : 0, 'shrink'];
+      default: return null;
+    }
+  }
+
   // Menü seçimleri
   function syncMenu() {
     document.querySelectorAll('.seg').forEach((seg) => {
@@ -2126,11 +2341,11 @@
     const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
     $('hint').innerHTML = settings.mode === 'pvp'
       ? (touch
-        ? 'Telefonu masaya koyun: <b class="c">alt yarı</b> ve <b class="p">üst yarı</b> kendi raketini parmağıyla sürükler.'
-        : '<b class="c">Mavi</b>: fare veya ok tuşları · <b class="p">Pembe</b>: W A S D<br>Dokunmatik ekranda iki parmakla da oynanır.')
+        ? 'Telefonu masaya koyun: <b class="c">alt yarı</b> ve <b class="p">üst yarı</b> kendi raketini parmağıyla sürükler, skiller kendi tarafındaki düğmelerde.'
+        : '<b class="c">Mavi</b>: fare veya ok tuşları, skiller <b>1</b>/<b>2</b> · <b class="p">Pembe</b>: W A S D, skiller <b>Q</b>/<b>E</b><br>Dokunmatik ekranda iki parmakla da oynanır.')
       : (touch
-        ? 'Raketi parmağınla sürükle, pakı rakibin kalesine gönder!'
-        : 'Raketi <b>fare</b> (veya ok tuşları) ile yönet. <b>Esc</b> duraklatır, <b>M</b> sesi kapatır, <b>−</b>/<b>+</b> ses seviyesini değiştirir.');
+        ? 'Raketi parmağınla sürükle, skilleri alttaki düğmelerle kullan!'
+        : 'Raketi <b>fare</b> (veya ok tuşları) ile yönet, skiller <b>1</b>/<b>2</b>. <b>Esc</b> duraklatır, <b>M</b> sesi kapatır, <b>−</b>/<b>+</b> ses seviyesini değiştirir.');
   }
 
   document.querySelectorAll('.seg').forEach((seg) => {
@@ -2214,6 +2429,142 @@
     ctx.drawImage(sp.c, x - sp.w / 2, y - sp.h / 2, sp.w, sp.h);
   }
 
+  // Kaleler: sabit kısımlar (ağız, çizgi, direkler) genişlik ya da durum değişince bir kez çizilip
+  // saklanır; her karede yalnızca skill animasyonları (nabız, oklar, kalkan, etiket) çizilir.
+  const goalSprites = [null, null];
+  const GOAL_SPRITE_H = B + 14;
+
+  function goalLine(c, x0, x1, y) {
+    c.beginPath();
+    c.moveTo(x0, y);
+    c.lineTo(x1, y);
+    c.stroke();
+  }
+
+  function goalSprite(i) {
+    const g = goals[i], col = COLORS[i], top = i === 1;
+    const grow = g.grow > 0, shrink = g.shrink > 0;
+    const w = Math.round(g.w * 2) / 2;
+    const key = `${w}|${grow}|${shrink}|${S}`;
+    const cached = goalSprites[i];
+    if (cached && cached.key === key) return cached;
+
+    const y0 = top ? -B : H - 14; // görselin masadaki üst kenarı
+    const [c, gc] = makeLayer(W, GOAL_SPRITE_H);
+    gc.translate(0, -y0);
+    const half = w / 2, L = W / 2 - half, Rx = W / 2 + half;
+    const sy = top ? -B + 5 : H - 2, ly = top ? 0 : H;
+
+    rr(gc, L, sy, w, B - 3, 6);
+    gc.fillStyle = '#02030a';
+    gc.fill();
+    const gr = gc.createLinearGradient(0, sy, 0, sy + B - 3);
+    gr.addColorStop(top ? 0 : 1, '#000');
+    gr.addColorStop(top ? 1 : 0, `rgba(${col.rgb},0.35)`);
+    gc.fillStyle = gr;
+    gc.fill();
+
+    const lineRgb = grow ? SKILLS.grow.rgb : shrink ? SKILLS.shrink.rgb : col.rgb;
+    gc.lineCap = 'round';
+    gc.strokeStyle = `rgba(${lineRgb},0.3)`;
+    gc.lineWidth = 12;
+    goalLine(gc, L + 4, Rx - 4, ly);
+    gc.strokeStyle = grow ? '#ffe7a3' : shrink ? '#ffffff' : col.light;
+    gc.lineWidth = 3;
+    goalLine(gc, L + 4, Rx - 4, ly);
+
+    gc.fillStyle = shrink ? `rgb(${SKILLS.shrink.rgb})` : '#fff';
+    const pr = shrink ? 6.5 : 4.5;
+    for (const x of [L, Rx]) {
+      gc.beginPath();
+      gc.arc(x, ly, pr, 0, TAU);
+      gc.fill();
+    }
+    const sp = { c, key, y: y0 };
+    goalSprites[i] = sp;
+    return sp;
+  }
+
+  function drawGoals() {
+    const pvp = settings.mode === 'pvp' && game.state !== 'demo';
+    const pulse = 0.5 + 0.5 * Math.sin(game.time * 10);
+    for (let i = 0; i < 2; i++) {
+      const g = goals[i];
+      const sp = goalSprite(i);
+      ctx.drawImage(sp.c, 0, sp.y, W, GOAL_SPRITE_H);
+      const grow = g.grow > 0, shrink = g.shrink > 0;
+      if (!grow && !shrink) continue;
+
+      const top = i === 1;
+      const half = g.w / 2, L = W / 2 - half, Rx = W / 2 + half, ly = top ? 0 : H;
+      ctx.lineCap = 'round';
+
+      // Nabız gibi atan ek parıltı
+      ctx.strokeStyle = `rgb(${grow ? SKILLS.grow.rgb : SKILLS.shrink.rgb})`;
+      ctx.globalAlpha = 0.35 * pulse;
+      ctx.lineWidth = 14;
+      goalLine(ctx, L + 4, Rx - 4, ly);
+
+      // Kale Kilidi: kalenin önünde kesikli kalkan yayı
+      if (shrink) {
+        ctx.globalAlpha = 0.3 + 0.3 * pulse;
+        ctx.strokeStyle = `rgb(${SKILLS.shrink.rgb})`;
+        ctx.lineWidth = 3;
+        ctx.setLineDash([10, 8]);
+        ctx.beginPath();
+        ctx.arc(W / 2, ly, half + 18, top ? 0 : Math.PI, top ? Math.PI : TAU);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Dev Kale: direklerin dışında dışa bakan oklar
+      if (grow) {
+        ctx.globalAlpha = 0.5 + 0.5 * pulse;
+        ctx.fillStyle = `rgb(${SKILLS.grow.rgb})`;
+        const oy = top ? 9 : H - 9, o = 6 + pulse * 5;
+        for (const [x, d] of [[L - o, -1], [Rx + o, 1]]) {
+          ctx.beginPath();
+          ctx.moveTo(x + d * 9, oy);
+          ctx.lineTo(x, oy - 6);
+          ctx.lineTo(x, oy + 6);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+
+      // Kalan süre etiketleri
+      let row = 0;
+      for (const key of SKILL_KEYS) {
+        if (g[key] <= 0) continue;
+        const sk = SKILLS[key];
+        const label = textSprite(`${sk.name}  ${Math.ceil(g[key])}`, `800 15px ${FONT}`, 15, sk.rgb, false);
+        const y = top ? 36 + row * 20 : H - 36 - row * 20;
+        ctx.save();
+        ctx.translate(W / 2, y);
+        if (top && pvp) ctx.rotate(Math.PI);
+        ctx.globalAlpha = 0.9;
+        drawSprite(label, 0, 0);
+        ctx.restore();
+        row++;
+      }
+    }
+  }
+
+  // Skill kullanıldığında kalenin önünden yükselen yazı
+  function drawFloaters() {
+    const pvp = settings.mode === 'pvp' && game.state !== 'demo';
+    for (const f of floaters) {
+      const t = f.t / f.dur;
+      const top = f.gi === 1;
+      const rise = 40 * t;
+      const y = top ? 120 + rise : H - 120 - rise;
+      const pop = t < 0.15 ? 1.5 - (t / 0.15) * 0.5 : 1;
+      const alpha = t > 0.65 ? (1 - t) / 0.35 : 1;
+      textGlow(f.text, W / 2, y, 46, f.rgb, alpha, pop, top && pvp);
+    }
+  }
+
   function render() {
     let ox = 0, oy = 0;
     if (game.shake > 0.3 && !reduceMotion) {
@@ -2228,6 +2579,7 @@
     ctx.drawImage(tableLayer, 0, 0, LW, LH);
     ctx.translate(B, B);
 
+    drawGoals();
     drawScores();
     drawRipples();
     drawPucks();
@@ -2242,6 +2594,7 @@
       ctx.globalAlpha = 1;
       ctx.globalCompositeOperation = 'source-over';
     }
+    drawFloaters();
     drawBanner();
   }
 
@@ -2398,6 +2751,7 @@
     if (dt > 0) update(dt);
     // Duraklatılmışken ekranda değişen bir şey yok: çizme (pil ve ısınma için)
     if (game.state !== 'paused') render();
+    if (game.state !== 'demo') updateSkillUI();
     requestAnimationFrame(frame);
   }
 
@@ -2428,5 +2782,5 @@
   }
 
   // Test ve hata ayıklama için
-  window.__airHockey = { game, pucks, mallets, settings, AI_LEVELS, quality, Sound, step: update };
+  window.__airHockey = { game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, useSkill, step: update };
 })();
