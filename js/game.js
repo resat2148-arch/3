@@ -1,5 +1,34 @@
 /* Neon Air Hockey — bağımlılıksız, tek dosyalık oyun motoru. */
-(() => {
+
+// Açılış. Sayfada CrazyGames SDK'sı varsa (CrazyGames sürümü) önce SDK başlatılır ve ilerleme
+// SDK'nın veri modülüne kaydedilir: CrazyGames'in iframe'inde localStorage'a güvenilemez, veri
+// modülü ise oyuncunun hesabıyla buluta eşitlenir. Diğer her yerde localStorage kullanılır.
+(function (run) {
+  'use strict';
+  const sdk = window.CrazyGames && window.CrazyGames.SDK;
+  if (!sdk || typeof sdk.init !== 'function') {
+    run(null);
+    return;
+  }
+  let started = false;
+  const start = (cloud) => {
+    if (started) return;
+    started = true;
+    run(cloud);
+  };
+  // SDK yanıt vermezse oyun yine de (yerel kayıtla) açılsın
+  const timer = setTimeout(() => start(null), 6000);
+  Promise.resolve()
+    .then(() => sdk.init())
+    .then(() => {
+      clearTimeout(timer);
+      start(sdk.environment !== 'disabled' && sdk.data ? sdk.data : null);
+    })
+    .catch(() => {
+      clearTimeout(timer);
+      start(null);
+    });
+})(function (cloudData) {
   'use strict';
 
   // ---------------------------------------------------------------------------
@@ -197,14 +226,23 @@
   const rand = (a, b) => a + Math.random() * (b - a);
 
   // ---------------------------------------------------------------------------
-  // Ayarlar (localStorage erişilemezse varsayılanlarla çalışır)
+  // Kayıt: ayarlar ve ilerleme (altın, açılan temalar, envanter). CrazyGames'te SDK veri modülü,
+  // başka her yerde localStorage; ikisi de erişilemezse oyun varsayılanlarla çalışır.
   // ---------------------------------------------------------------------------
+  const saveBackend = cloudData || (() => {
+    try { return window.localStorage; } catch (e) { return null; }
+  })();
   const store = {
     get(k, d) {
-      try { const v = localStorage.getItem('neonah_' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; }
+      try {
+        const v = saveBackend && saveBackend.getItem('neonah_' + k);
+        return v === null || v === undefined ? d : JSON.parse(v);
+      } catch (e) {
+        return d;
+      }
     },
     set(k, v) {
-      try { localStorage.setItem('neonah_' + k, JSON.stringify(v)); } catch (e) { /* yok say */ }
+      try { if (saveBackend) saveBackend.setItem('neonah_' + k, JSON.stringify(v)); } catch (e) { /* yok say */ }
     },
   };
 
@@ -8142,12 +8180,13 @@
   startDemo();
   requestAnimationFrame(frame);
 
-  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  // Çevrimdışı önbellek (PWA); CrazyGames sürümünde gerekmez
+  if (!cloudData && !window.CrazyGames && 'serviceWorker' in navigator && location.protocol === 'https:') {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     });
   }
 
   // Test ve hata ayıklama için
-  window.__airHockey = { wallet, Ads, THEME_INFO, matchReward, adsLeft, Water, Ice, Lava, Sand, Space, Crystal, Swamp, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update };
-})();
+  window.__airHockey = { saveTarget: cloudData ? 'crazygames' : 'local', wallet, Ads, THEME_INFO, matchReward, adsLeft, Water, Ice, Lava, Sand, Space, Crystal, Swamp, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update };
+});

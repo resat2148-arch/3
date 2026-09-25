@@ -130,6 +130,17 @@ python3 -m http.server 8000
 
 Telefondan oynamak için siteyi **GitHub Pages** üzerinde yayınlayabilirsiniz: depo ayarlarında *Settings → Pages → Branch* altından bu dalı seçin. Açılan adresi telefonda açıp "Ana ekrana ekle" dediğinizde oyun tam ekran bir uygulama gibi çalışır.
 
+## CrazyGames sürümü
+
+```bash
+./tools/build-crazygames.sh
+# çıktı: dist/neon-air-hockey-crazygames.zip (CrazyGames geliştirici portalına yüklenecek dosya)
+```
+
+Bu sürümde `index.html`'e CrazyGames HTML5 SDK'sı (v3) eklenir, PWA dosyaları (manifest, `sw.js`) çıkarılır. Oyun açılırken SDK başlatılır ve **ilerleme SDK'nın veri modülüne kaydedilir** (altın, açılan temalar, envanter, ayarlar). CrazyGames'in iframe'inde localStorage'a güvenilemediği için bu gereklidir; veri modülü, oyuncu CrazyGames hesabıyla girdiyse ilerlemeyi cihazlar arasında eşitler. Portaldaki gönderim formunda ilerleme kaydı için **"CrazyGames SDK veri modülü"** seçeneği işaretlenmelidir.
+
+SDK yüklenemezse, başlatılamazsa ya da 6 saniye içinde yanıt vermezse oyun yine açılır ve yerel kayıtla (localStorage) çalışır. Kendi sitende yayınlanan normal sürüm SDK'yı yüklemez ve localStorage kullanır.
+
 ## Dosya yapısı
 
 ```
@@ -138,5 +149,6 @@ css/style.css         Arayüz, menüler ve arka plan
 js/game.js            Fizik, yapay zekâ, çizim, ses ve kontroller
 manifest.webmanifest  PWA tanımı
 sw.js                 Çevrimdışı önbellek
+tools/                CrazyGames sürümünü üreten betik
 icons/                Uygulama ikonları
 ```
