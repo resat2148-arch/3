@@ -184,8 +184,53 @@ body.theme-ice .bg-grid,
 body.theme-lava .blob,
 body.theme-lava .bg-grid,
 body.theme-sand .blob,
-body.theme-sand .bg-grid {
+body.theme-sand .bg-grid,
+body.theme-space .blob,
+body.theme-space .bg-grid {
   display: none;
+}
+
+/* Uzay Stadyumu teması: yıldızlı gökyüzü ve yavaşça dalgalanan kutup ışığı */
+body.theme-space .bg {
+  background:
+    radial-gradient(1.2px 1.2px at 23px 41px, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1px 1px at 131px 87px, rgba(200, 220, 255, 0.8), transparent),
+    radial-gradient(1.5px 1.5px at 71px 163px, rgba(255, 240, 220, 0.9), transparent),
+    radial-gradient(1px 1px at 181px 13px, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 97px 121px, rgba(220, 210, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 157px 191px, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(90% 40% at 50% 108%, rgba(70, 40, 170, 0.35), transparent 70%),
+    linear-gradient(#01020a, #050a24 55%, #02030c);
+  background-size: 200px 200px, 200px 200px, 200px 200px, 200px 200px, 230px 230px, 170px 170px, auto, auto;
+}
+
+body.theme-space .bg::after {
+  content: "";
+  position: absolute;
+  left: -25%;
+  right: -25%;
+  top: -12%;
+  height: 58%;
+  background:
+    radial-gradient(45% 55% at 30% 70%, rgba(60, 255, 170, 0.32), transparent 70%),
+    radial-gradient(40% 50% at 62% 55%, rgba(80, 220, 200, 0.2), transparent 70%),
+    radial-gradient(40% 45% at 80% 40%, rgba(170, 80, 255, 0.26), transparent 70%);
+  filter: blur(18px);
+  animation: aurora-drift 16s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+@keyframes aurora-drift {
+  0% { transform: translateX(-6%) skewX(-8deg) scaleY(0.9); opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { transform: translateX(6%) skewX(8deg) scaleY(1.1); opacity: 0.8; }
+}
+
+body.theme-space #game {
+  box-shadow:
+    0 0 0 1px rgba(160, 200, 255, 0.14),
+    0 0 90px rgba(90, 140, 255, 0.25),
+    0 30px 80px rgba(0, 0, 0, 0.85);
 }
 
 /* Kum Stadyumu teması: çölde gün batımı, ufukta sıcak ışık ve kum pusu */
@@ -1658,7 +1703,8 @@ body.skills .toast {
   .clock,
   .clock-tag,
   .vol-pop,
-  .skill-btn.active {
+  .skill-btn.active,
+  body.theme-space .bg::after {
     animation: none;
   }
 }

@@ -60,7 +60,7 @@
     difficulty: store.get('difficulty', 'medium'),
     sound: store.get('sound', true),
     volume: clamp(Number(store.get('volume', 1)) || 0, 0, 1),
-    theme: ['water', 'ice', 'lava', 'sand'].includes(store.get('theme', 'neon')) ? store.get('theme', 'neon') : 'neon',
+    theme: ['water', 'ice', 'lava', 'sand', 'space'].includes(store.get('theme', 'neon')) ? store.get('theme', 'neon') : 'neon',
   };
 
   const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -138,7 +138,7 @@
         this.scrapeNode = null;
       }
       this.ambTheme = theme;
-      if (theme !== 'water' && theme !== 'ice' && theme !== 'lava' && theme !== 'sand') return;
+      if (!['water', 'ice', 'lava', 'sand', 'space'].includes(theme)) return;
       const loop = () => {
         const src = c.createBufferSource();
         src.buffer = this.noiseBuf;
@@ -233,6 +233,53 @@
         lfo2.start();
         this.scrapeNode = sg;
         stop.push(wind, dust, sc, lfo, lfo2);
+      } else if (theme === 'space') {
+        // Derin sentezleyici dronu: hafif akortsuz iki testere dişi, yavaşça açılıp kapanan filtre
+        const f = filt('lowpass', 200, 2.5);
+        const dg = c.createGain();
+        dg.gain.value = 0.035;
+        const oscs = [[55, 'sawtooth'], [55.35, 'sawtooth'], [82.6, 'sine'], [110.2, 'triangle']].map(([hz, type]) => {
+          const o = c.createOscillator();
+          o.type = type;
+          o.frequency.value = hz;
+          o.connect(f);
+          return o;
+        });
+        const lfo = c.createOscillator();
+        lfo.frequency.value = 0.06;
+        const lg = c.createGain();
+        lg.gain.value = 130;
+        lfo.connect(lg);
+        lg.connect(f.frequency);
+        chain(f, dg, out);
+        // Uzak kozmik esinti
+        const air = loop();
+        const af = filt('bandpass', 2600, 3);
+        const ag = c.createGain();
+        ag.gain.value = 0.012;
+        const lfo2 = c.createOscillator();
+        lfo2.frequency.value = 0.045;
+        const lg2 = c.createGain();
+        lg2.gain.value = 1400;
+        lfo2.connect(lg2);
+        lg2.connect(af.frequency);
+        chain(air, af, ag, out);
+        // Diskin hızına göre yükselen çekim uğultusu (setScrape)
+        const hum = c.createOscillator();
+        hum.type = 'sawtooth';
+        hum.frequency.value = 73.4;
+        const hum2 = c.createOscillator();
+        hum2.type = 'sawtooth';
+        hum2.frequency.value = 110.4;
+        const hf = filt('lowpass', 900, 4);
+        const hg = c.createGain();
+        hg.gain.value = 0;
+        hum.connect(hf);
+        hum2.connect(hf);
+        chain(hf, hg, out);
+        for (const o of [...oscs, lfo, air, lfo2, hum, hum2]) o.start();
+        this.scrapeNode = hg;
+        stop.push(...oscs, lfo, air, lfo2, hum, hum2);
       } else {
         // Soğuk arena uğultusu
         const hum = loop();
@@ -297,6 +344,42 @@
         const t = 0.1 + Math.random() * (0.3 + e * 0.5);
         this.noise({ dur: 0.01 + Math.random() * 0.02, vol: 0.03 + e * 0.06 * Math.random(), type: 'highpass', freq: 3000 + Math.random() * 4000, delay: t, pan: clamp(pan + (Math.random() - 0.5) * 0.5, -1, 1) });
       }
+    },
+    // Uzay vuruşu: sentezleyici darbesi + uyumsuz kısmilerle metalik çınlama
+    spaceHit(k, x) {
+      if (!this.ok('hit', 0.04)) return;
+      const pan = this.panOf(x);
+      this.tone({ f0: 190 + k * 110, f1: 48, dur: 0.16, type: 'sawtooth', vol: 0.5 + k * 0.4, pan, lp: 700 });
+      this.tone({ f0: 150 + k * 60, f1: 55, dur: 0.13, vol: 0.7 + k * 0.5, pan });
+      this.noise({ dur: 0.03, vol: 0.3 + k * 0.4, type: 'highpass', freq: 3500, pan });
+      this.spaceRing(0.35 + k * 0.65, x, true);
+    },
+    // Metalik çınlama: çan benzeri uyumsuz kısmiler (1 : 2.76 : 5.40 : 8.93)
+    spaceRing(k, x, force) {
+      if (!force && !this.ok('ring', 0.06)) return;
+      const pan = this.panOf(x);
+      const f = 540 + Math.random() * 80 + k * 160;
+      [[1, 0.9, 0.2], [2.76, 0.5, 0.12], [5.4, 0.3, 0.07], [8.93, 0.18, 0.04]].forEach(([r, d, v]) => {
+        this.tone({ f0: f * r, f1: f * r * 0.995, dur: d * (0.5 + k * 0.7), vol: v * (0.4 + k), pan, rev: 0.35 });
+      });
+    },
+    // İki kütle çarpışması: bükülen uzay "vuuv" + metal çınlama
+    warp(k, x) {
+      if (!this.ok('warp', 0.08)) return;
+      const pan = this.panOf(x);
+      this.tone({ f0: 420 + k * 200, f1: 70, dur: 0.45 + k * 0.3, type: 'triangle', vol: 0.25 + k * 0.3, pan, rev: 0.4 });
+      this.spaceRing(0.5 + k * 0.5, x, true);
+    },
+    // Süpernova: derin patlama, yükselen parıltı, uzun kuyruk
+    supernova(x) {
+      if (!this.ok('nova', 0.3)) return;
+      const pan = this.panOf(x) * 0.5;
+      this.tone({ f0: 95, f1: 22, dur: 1.6, vol: 0.9, pan });
+      this.tone({ f0: 58, f1: 30, dur: 1.2, type: 'sawtooth', vol: 0.3, pan, lp: 300 });
+      this.noise({ dur: 1.8, vol: 0.45, type: 'lowpass', freq: 4200, freqTo: 70, q: 1.2, pan, rev: 0.5 });
+      [880, 1318.5, 1760, 2637].forEach((f, i) => {
+        this.tone({ f0: f * 0.5, f1: f, dur: 1.1, vol: 0.05, delay: 0.05 + i * 0.07, pan: (i % 2 ? 1 : -1) * 0.5, rev: 0.6, detune: i * 5 });
+      });
     },
     // Lav kabarcığı patlaması
     bloop(x) {
@@ -604,6 +687,7 @@
   const isIce = () => settings.theme === 'ice';
   const isLava = () => settings.theme === 'lava';
   const isSand = () => settings.theme === 'sand';
+  const isSpace = () => settings.theme === 'space';
   const stage = document.getElementById('stage');
   let S = 1; // mantıksal birim başına cihaz pikseli
   let cssScale = 1, boardShaken = false;
@@ -936,6 +1020,151 @@
     g.beginPath();
     g.ellipse(-r * 0.35, -r * 0.45, r * 0.3, r * 0.11, -0.6, 0, TAU);
     g.fill();
+    return c;
+  }
+
+  // Uzay teması: koyu metal kenar, derin uzay, bulutsular, uzak yıldızlar ve bir sarmal gökada,
+  // soluk saha çizgileri. Işık ağı, kutup ışığı ve parlak yıldızlar Space katmanıyla üstten gelir.
+  function buildSpaceTable(g) {
+    rr(g, 0, 0, LW, LH, 44);
+    const metal = g.createLinearGradient(0, 0, LW, LH);
+    metal.addColorStop(0, '#262a48');
+    metal.addColorStop(0.5, '#0e1024');
+    metal.addColorStop(1, '#22254a');
+    g.fillStyle = metal;
+    g.fill();
+    rr(g, 1.5, 1.5, LW - 3, LH - 3, 43);
+    g.lineWidth = 2;
+    g.strokeStyle = 'rgba(180, 200, 255, 0.12)';
+    g.stroke();
+    [[COLORS[1], 4], [COLORS[0], LH - 8]].forEach(([col, y]) => {
+      g.fillStyle = `rgba(${col.rgb}, 0.8)`;
+      rr(g, LW / 2 - 150, y, 300, 4, 2);
+      g.fill();
+    });
+    g.save();
+    g.shadowColor = 'rgba(110, 170, 255, 0.9)';
+    g.shadowBlur = 12 * S;
+    rr(g, B - 2, B - 2, W + 4, H + 4, 28);
+    g.lineWidth = 2;
+    g.strokeStyle = 'rgba(140, 190, 255, 0.7)';
+    g.stroke();
+    g.restore();
+
+    g.save();
+    g.translate(B, B);
+    rr(g, 0, 0, W, H, 26);
+    g.clip();
+    const sky = g.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, H * 0.62);
+    sky.addColorStop(0, '#0d1236');
+    sky.addColorStop(0.6, '#060920');
+    sky.addColorStop(1, '#020309');
+    g.fillStyle = sky;
+    g.fillRect(0, 0, W, H);
+    let seed = 99;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    // Bulutsular
+    const neb = [['120, 60, 220', 0.22], ['40, 160, 220', 0.16], ['220, 60, 150', 0.12], ['60, 220, 170', 0.08]];
+    for (let i = 0; i < 9; i++) {
+      const [c, a] = neb[i % neb.length];
+      const x = rnd() * W, y = rnd() * H, r = 90 + rnd() * 170;
+      g.save();
+      g.translate(x, y);
+      g.rotate(rnd() * TAU);
+      g.scale(1, 0.45 + rnd() * 0.4);
+      const gr = g.createRadialGradient(0, 0, 0, 0, 0, r);
+      gr.addColorStop(0, `rgba(${c}, ${a})`);
+      gr.addColorStop(0.5, `rgba(${c}, ${a * 0.4})`);
+      gr.addColorStop(1, `rgba(${c}, 0)`);
+      g.fillStyle = gr;
+      g.fillRect(-r, -r, r * 2, r * 2);
+      g.restore();
+    }
+    // Uzak sarmal gökada
+    g.save();
+    g.translate(W * 0.78, H * 0.13);
+    g.rotate(-0.5);
+    g.scale(1, 0.38);
+    const gal = g.createRadialGradient(0, 0, 0, 0, 0, 46);
+    gal.addColorStop(0, 'rgba(255, 240, 220, 0.55)');
+    gal.addColorStop(0.2, 'rgba(200, 190, 255, 0.25)');
+    gal.addColorStop(1, 'rgba(120, 120, 255, 0)');
+    g.fillStyle = gal;
+    g.fillRect(-46, -46, 92, 92);
+    g.fillStyle = 'rgba(220, 220, 255, 0.35)';
+    for (let i = 0; i < 160; i++) {
+      const t = rnd() * 3.2, arm = rnd() < 0.5 ? 0 : Math.PI;
+      const rad = 4 + t * 12, a = t * 1.7 + arm + (rnd() - 0.5) * 0.5;
+      g.fillRect(Math.cos(a) * rad, Math.sin(a) * rad, 1, 1);
+    }
+    g.restore();
+    // Uzak yıldızlar
+    for (let i = 0; i < 900; i++) {
+      const b = rnd();
+      g.fillStyle = b < 0.7 ? 'rgba(200, 215, 255, 0.35)' : b < 0.95 ? 'rgba(235, 240, 255, 0.6)' : 'rgba(255, 225, 200, 0.8)';
+      const s = b < 0.9 ? 0.8 : 1.3;
+      g.fillRect(rnd() * W, rnd() * H, s, s);
+    }
+    // Soluk saha çizgileri
+    g.lineCap = 'round';
+    const paint = (color, width, alpha, fn) => {
+      g.globalAlpha = alpha;
+      g.strokeStyle = color;
+      g.lineWidth = width;
+      g.beginPath();
+      fn();
+      g.stroke();
+      g.globalAlpha = 1;
+    };
+    paint('#cfe0ff', 3, 0.35, () => { g.moveTo(0, H / 2); g.lineTo(W, H / 2); });
+    paint('#cfe0ff', 3, 0.3, () => g.arc(W / 2, H / 2, 80, 0, TAU));
+    [['#ff6aa6', 0, 0, Math.PI], ['#4cc8f5', H, Math.PI, TAU]].forEach(([colr, y, a0, a1]) => {
+      paint(colr, 4, 0.5, () => g.arc(W / 2, y, 118, a0, a1));
+    });
+    const E = 30;
+    const edge = (x0, y0, x1, y1) => {
+      const gr = g.createLinearGradient(x0, y0, x1, y1);
+      gr.addColorStop(0, 'rgba(0, 0, 0, 0.55)');
+      gr.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      return gr;
+    };
+    g.fillStyle = edge(0, 0, E, 0); g.fillRect(0, 0, E, H);
+    g.fillStyle = edge(W, 0, W - E, 0); g.fillRect(W - E, 0, E, H);
+    g.fillStyle = edge(0, 0, 0, E); g.fillRect(0, 0, W, E);
+    g.fillStyle = edge(0, H, 0, H - E); g.fillRect(0, H - E, W, E);
+    g.restore();
+  }
+
+  // Uzay teması pakı: ak-mavi parlayan küçük bir yıldız
+  function buildSpacePuck(c, g, r) {
+    const halo = g.createRadialGradient(0, 0, r * 0.6, 0, 0, r + PS_PAD * 0.8);
+    halo.addColorStop(0, 'rgba(160, 220, 255, 0.55)');
+    halo.addColorStop(0.5, 'rgba(120, 140, 255, 0.18)');
+    halo.addColorStop(1, 'rgba(120, 100, 255, 0)');
+    g.fillStyle = halo;
+    g.beginPath();
+    g.arc(0, 0, r + PS_PAD * 0.8, 0, TAU);
+    g.fill();
+    const body = g.createRadialGradient(-r * 0.15, -r * 0.15, 0, 0, 0, r);
+    body.addColorStop(0, '#ffffff');
+    body.addColorStop(0.35, '#e6f6ff');
+    body.addColorStop(0.75, '#8fd0ff');
+    body.addColorStop(1, '#4a78ff');
+    g.fillStyle = body;
+    g.beginPath();
+    g.arc(0, 0, r, 0, TAU);
+    g.fill();
+    g.lineWidth = 2;
+    g.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    g.beginPath();
+    g.arc(0, 0, r - 1, 0, TAU);
+    g.stroke();
+    // Yıldız ışıltısı
+    g.globalCompositeOperation = 'lighter';
+    g.fillStyle = 'rgba(220, 240, 255, 0.55)';
+    g.fillRect(-r - PS_PAD * 0.6, -0.8, (r + PS_PAD * 0.6) * 2, 1.6);
+    g.fillRect(-0.8, -r - PS_PAD * 0.6, 1.6, (r + PS_PAD * 0.6) * 2);
+    g.globalCompositeOperation = 'source-over';
     return c;
   }
 
@@ -1282,6 +1511,10 @@
       buildSandTable(g);
       return;
     }
+    if (isSpace()) {
+      buildSpaceTable(g);
+      return;
+    }
 
     // Dış çerçeve
     rr(g, 0, 0, LW, LH, 44);
@@ -1551,6 +1784,7 @@
     if (style === 'ice') return buildIcePuck(c, g, r);
     if (style === 'lava') return buildLavaPuck(c, g, r);
     if (style === 'sand') return buildSandPuck(c, g, r);
+    if (style === 'space') return buildSpacePuck(c, g, r);
 
     g.save();
     g.shadowColor = 'rgba(0,0,0,0.7)';
@@ -3104,6 +3338,407 @@
   })();
 
   // ---------------------------------------------------------------------------
+  // Uzay Stadyumu (Kutup Işığı / Yerçekimi Ağı): zeminde ışıktan bir ağ. Ağın düğümleri yaylarla
+  // dinlenme konumlarına ve komşularına bağlıdır (iki boyutlu dalga denklemi): raketler ve paklar
+  // kütleleriyle ağı kendilerine doğru büker; hızlı hareket, vuruş ve çarpışmalar ağda yayılan
+  // dalgalar üretir, dalgalar bantlardan yansır. Ağın ardında dalgalanan kutup ışığı perdeleri ve
+  // ağın bükülmesiyle kayan (merceklenen) yıldızlar vardır. Gol bir süpernova patlamasıdır.
+  // ---------------------------------------------------------------------------
+  const Space = (() => {
+    const GS = 30, GX = W / GS + 1, GY = H / GS + 1, GN = GX * GY;
+    const ux = new Float32Array(GN), uy = new Float32Array(GN);
+    const vx = new Float32Array(GN), vy = new Float32Array(GN);
+    const fx = new Float32Array(GN), fy = new Float32Array(GN);
+    const lvl = new Uint8Array(GN);
+    const K_NB = 900;      // komşu yayları (dalga hızı ≈ √K_NB · GS ≈ 600 birim/sn)
+    const K_REST = 150;    // dinlenme konumuna çeken yay (bükülme yerel kalsın)
+    const DAMP = 4;
+    const MAXU = 20;
+    const LEVELS = [
+      // renk, çizgi kalınlığı
+      ['rgba(95, 120, 255, 0.3)', 1],
+      ['rgba(120, 165, 255, 0.6)', 1.15],
+      ['rgba(110, 195, 255, 0.58)', 1.35],
+      ['rgba(150, 230, 255, 0.78)', 1.6],
+      ['rgba(225, 250, 255, 0.95)', 1.9],
+    ];
+    const stars = [];
+    const novas = [];
+    let aurora = null, time = 0, humLevel = 0;
+    // Kutup ışığı düşük çözünürlüklü ayrı bir katmanda birkaç karede bir çizilir. Ağın parıltısı,
+    // düğüm başına bir pikselli minik bir görüntüden büyütülerek (yumuşak hale) elde edilir:
+    // geniş parıltı çizgileri çizmekten çok daha ucuz.
+    const FXS = 3;
+    let auroraC = null, auroraG = null, hazeC = null, hazeG = null, hazeImg = null, fxC = null, fxG = null, frame = 0;
+    const paths = [];
+    const energy = new Float32Array(GN);
+    const segs = new Float32Array(GN * 2 * 5); // x0, y0, x1, y1, düzey
+    let segN = 0;
+
+    // Perde: dikey renk geçişi (256 adımlık tablo, önçarpımlı) × yatayda ince ışık sütunları
+    function makeCurtain(stops, seed) {
+      const c = document.createElement('canvas');
+      c.width = 1;
+      c.height = 256;
+      const gg = c.getContext('2d');
+      const gr = gg.createLinearGradient(0, 0, 0, 256);
+      for (const [o, col] of stops) gr.addColorStop(o, col);
+      gg.fillStyle = gr;
+      gg.fillRect(0, 0, 1, 256);
+      const d = gg.getImageData(0, 0, 1, 256).data;
+      const lut = new Float32Array(256 * 3);
+      for (let y = 0; y < 256; y++) {
+        const a = d[y * 4 + 3] / 255;
+        lut[y * 3] = d[y * 4] * a;
+        lut[y * 3 + 1] = d[y * 4 + 1] * a;
+        lut[y * 3 + 2] = d[y * 4 + 2] * a;
+      }
+      const cols = Math.ceil(W / FXS);
+      const ray = new Float32Array(cols);
+      const ph = [seed, seed * 1.7, seed * 2.3, seed * 3.1];
+      for (let x = 0; x < cols; x++) {
+        const u = (x / cols) * TAU;
+        const r = 0.5 + 0.22 * Math.sin(u * 3 + ph[0]) + 0.16 * Math.sin(u * 7 + ph[1]) + 0.12 * Math.sin(u * 13 + ph[2]) + 0.1 * Math.sin(u * 23 + ph[3]);
+        ray[x] = clamp(r, 0.08, 1);
+      }
+      return { lut, ray };
+    }
+
+    function init() {
+      if (aurora) return;
+      // Perdenin alt kenarı keskin ve parlak, yukarı doğru soluyor (gerçek kutup ışığı gibi)
+      const green = makeCurtain([[0, 'rgba(90, 60, 200, 0)'], [0.3, 'rgba(90, 80, 220, 0.1)'], [0.62, 'rgba(40, 200, 170, 0.3)'],
+        [0.86, 'rgba(90, 255, 170, 0.7)'], [0.93, 'rgba(190, 255, 220, 0.9)'], [1, 'rgba(120, 255, 190, 0)']], 1.3);
+      const violet = makeCurtain([[0, 'rgba(255, 60, 160, 0)'], [0.4, 'rgba(200, 60, 200, 0.12)'], [0.85, 'rgba(170, 90, 255, 0.5)'],
+        [0.92, 'rgba(240, 170, 255, 0.75)'], [1, 'rgba(200, 120, 255, 0)']], 4.1);
+      auroraC = document.createElement('canvas');
+      auroraC.width = Math.ceil(W / FXS);
+      auroraC.height = Math.ceil(H / FXS);
+      auroraG = auroraC.getContext('2d');
+      hazeC = document.createElement('canvas');
+      hazeC.width = GX;
+      hazeC.height = GY;
+      hazeG = hazeC.getContext('2d');
+      hazeImg = hazeG.createImageData(GX, GY);
+      // Kutup ışığı + parıltı: tahtaya tek seferde eklenen birleşik katman
+      fxC = document.createElement('canvas');
+      fxC.width = auroraC.width;
+      fxC.height = auroraC.height;
+      fxG = fxC.getContext('2d');
+      aurora = [
+        { tex: green, base: H * 0.42, amp: 46, k1: 0.011, k2: 0.027, w1: 0.35, w2: 0.52, ph: 0, a: 0.8, h: 330 },
+        { tex: violet, base: H * 0.2, amp: 34, k1: 0.014, k2: 0.023, w1: -0.28, w2: 0.41, ph: 2, a: 0.55, h: 240 },
+        { tex: green, base: H * 0.78, amp: 40, k1: 0.009, k2: 0.031, w1: 0.22, w2: -0.47, ph: 4, a: 0.45, h: 260 },
+      ];
+      for (let i = 0; i < 60; i++) {
+        const big = Math.random() < 0.18;
+        stars.push({
+          x: rand(4, W - 4), y: rand(4, H - 4),
+          s: big ? rand(1.8, 2.6) : rand(0.9, 1.6),
+          big, ph: rand(0, TAU), sp: rand(1.2, 3.5),
+          col: ['255,255,255', '200,225,255', '255,236,210', '210,200,255'][(Math.random() * 4) | 0],
+        });
+      }
+    }
+
+    function reset() {
+      init();
+      ux.fill(0); uy.fill(0); vx.fill(0); vy.fill(0);
+      novas.length = 0;
+    }
+
+    // Kütle: dinlenme konumuna göre cisme doğru çekim (merkezde ve uzakta sıfır, s mesafesinde en güçlü)
+    function well(x, y, s, A) {
+      const R = s * 3.2;
+      const i0 = Math.max(1, Math.floor((x - R) / GS)), i1 = Math.min(GX - 2, Math.ceil((x + R) / GS));
+      const j0 = Math.max(1, Math.floor((y - R) / GS)), j1 = Math.min(GY - 2, Math.ceil((y + R) / GS));
+      const k = K_REST * A, is2 = 1 / (s * s);
+      for (let j = j0; j <= j1; j++) {
+        for (let i = i0; i <= i1; i++) {
+          const dx = x - i * GS, dy = y - j * GS, d2 = dx * dx + dy * dy;
+          const f = k / (1 + d2 * is2);
+          const n = j * GX + i;
+          fx[n] += dx * f;
+          fy[n] += dy * f;
+        }
+      }
+    }
+
+    // Darbe: çevredeki düğümlere dışa doğru hız (dalga halkası)
+    function pulse(x, y, e, radius = 90) {
+      init();
+      const i0 = Math.max(1, Math.floor((x - radius) / GS)), i1 = Math.min(GX - 2, Math.ceil((x + radius) / GS));
+      const j0 = Math.max(1, Math.floor((y - radius) / GS)), j1 = Math.min(GY - 2, Math.ceil((y + radius) / GS));
+      const str = 420 * e;
+      for (let j = j0; j <= j1; j++) {
+        for (let i = i0; i <= i1; i++) {
+          const dx = i * GS - x, dy = j * GS - y, d = Math.hypot(dx, dy);
+          if (d >= radius || d < 0.01) continue;
+          const t = 1 - d / radius, f = (str * t * t) / d;
+          const n = j * GX + i;
+          vx[n] += dx * f;
+          vy[n] += dy * f;
+        }
+      }
+    }
+
+    function nova(x, y, e = 1) {
+      pulse(x, y, 2.4 * e, 260);
+      novas.push({ x, y, t: 0, dur: 1.5, e });
+    }
+
+    function step(dt) {
+      for (let j = 1; j < GY - 1; j++) {
+        for (let i = 1; i < GX - 1; i++) {
+          const n = j * GX + i;
+          const lx = ux[n - 1] + ux[n + 1] + ux[n - GX] + ux[n + GX] - 4 * ux[n];
+          const ly = uy[n - 1] + uy[n + 1] + uy[n - GX] + uy[n + GX] - 4 * uy[n];
+          vx[n] += (K_NB * lx - K_REST * ux[n] - DAMP * vx[n] + fx[n]) * dt;
+          vy[n] += (K_NB * ly - K_REST * uy[n] - DAMP * vy[n] + fy[n]) * dt;
+        }
+      }
+      for (let n = 0; n < GN; n++) {
+        let x = ux[n] + vx[n] * dt, y = uy[n] + vy[n] * dt;
+        const m = x * x + y * y;
+        if (m > MAXU * MAXU) { const k = MAXU / Math.sqrt(m); x *= k; y *= k; }
+        ux[n] = x;
+        uy[n] = y;
+      }
+    }
+
+    function update(dt) {
+      if (!aurora) return;
+      time += dt;
+      fx.fill(0);
+      fy.fill(0);
+      for (const m of mallets) well(m.x, m.y, 44, 1.7);
+      let sp = 0;
+      for (const p of pucks) {
+        if (!p.active) continue;
+        well(p.x, p.y, 30, 1.3);
+        sp = Math.max(sp, Math.hypot(p.vx, p.vy));
+      }
+      const n = Math.min(4, Math.ceil(dt * 90));
+      for (let i = 0; i < n; i++) step(dt / n);
+      for (let i = novas.length - 1; i >= 0; i--) {
+        novas[i].t += dt;
+        if (novas[i].t >= novas[i].dur) novas.splice(i, 1);
+      }
+      // Diskin hızına göre yükselen "çekim uğultusu"
+      const lv = game.state === 'play' ? Math.min(0.09, (sp / MAX_PUCK) * 0.1) : 0;
+      if (Math.abs(lv - humLevel) > 0.004) {
+        humLevel = lv;
+        Sound.setScrape(lv);
+      }
+    }
+
+    // Kutup ışığını düşük çözünürlüklü katmana piksel piksel (toplamalı) hesapla
+    let auroraImg = null, auroraAcc = null;
+    function renderAurora() {
+      const cw = auroraC.width, ch = auroraC.height;
+      if (!auroraImg) {
+        auroraImg = auroraG.createImageData(cw, ch);
+        auroraAcc = new Float32Array(cw * ch * 3);
+      }
+      const acc = auroraAcc;
+      acc.fill(0);
+      for (const r of aurora) {
+        const { lut, ray } = r.tex;
+        const breathe = 0.75 + 0.25 * Math.sin(time * 0.3 + r.ph);
+        const hh = r.h / FXS;
+        for (let cx = 0; cx < cw; cx++) {
+          const xc = (cx + 0.5) * FXS;
+          const y = r.base + r.amp * Math.sin(xc * r.k1 + time * r.w1 + r.ph) + r.amp * 0.45 * Math.sin(xc * r.k2 - time * r.w2);
+          // Perde boyunca yavaşça gezinen parlaklık dalgaları
+          const glow = 0.6 + 0.4 * Math.sin(xc * 0.017 - time * 0.7 + r.ph) * Math.sin(xc * 0.006 + time * 0.23);
+          const edge = Math.min(1, xc / 90, (W - xc) / 90);
+          const a = r.a * breathe * glow * edge;
+          if (a <= 0.01) continue;
+          const bot = y / FXS, top = bot - hh, rr = ray[cx];
+          const y0 = Math.max(0, Math.ceil(top)), y1 = Math.min(ch - 1, Math.floor(bot));
+          for (let cy = y0; cy <= y1; cy++) {
+            const k = (cy - top) / hh;
+            // Işık sütunları yukarı doğru belirginleşir; alt kenarda daha eşit
+            const m = a * (rr + (1 - rr) * k * k * k * k * k * 0.6);
+            const li = ((k * 255) | 0) * 3, o = (cy * cw + cx) * 3;
+            acc[o] += lut[li] * m;
+            acc[o + 1] += lut[li + 1] * m;
+            acc[o + 2] += lut[li + 2] * m;
+          }
+        }
+      }
+      // Önçarpımlı toplamı ImageData'ya (önçarpımsız) çevir
+      const d = auroraImg.data;
+      for (let i = 0, j = 0; i < acc.length; i += 3, j += 4) {
+        const R = acc[i], G = acc[i + 1], Bc = acc[i + 2];
+        const A = Math.min(255, Math.max(R, G, Bc));
+        if (A < 0.5) { d[j + 3] = 0; continue; }
+        const k = 255 / A;
+        d[j] = R * k; d[j + 1] = G * k; d[j + 2] = Bc * k; d[j + 3] = A;
+      }
+      auroraG.putImageData(auroraImg, 0, 0);
+    }
+
+    // Düğüm yer değiştirmesini çift doğrusal ara değerle örnekle (yıldızların merceklenmesi için)
+    function sample(arr, x, y) {
+      const gx = clamp(x / GS, 0, GX - 1.001), gy = clamp(y / GS, 0, GY - 1.001);
+      const i = gx | 0, j = gy | 0, tx = gx - i, ty = gy - j, n = j * GX + i;
+      const a = arr[n] + (arr[n + 1] - arr[n]) * tx;
+      const b = arr[n + GX] + (arr[n + GX + 1] - arr[n + GX]) * tx;
+      return a + (b - a) * ty;
+    }
+
+    function drawStars(c) {
+      c.globalCompositeOperation = 'lighter';
+      for (const s of stars) {
+        const x = s.x + sample(ux, s.x, s.y) * 1.6, y = s.y + sample(uy, s.x, s.y) * 1.6;
+        const tw = 0.55 + 0.45 * Math.sin(time * s.sp + s.ph);
+        c.globalAlpha = tw * (s.big ? 0.95 : 0.7);
+        c.fillStyle = `rgb(${s.col})`;
+        c.fillRect(x - s.s / 2, y - s.s / 2, s.s, s.s);
+        if (s.big) {
+          c.globalAlpha = tw * 0.35;
+          c.fillRect(x - s.s * 2.2, y - 0.4, s.s * 4.4, 0.8);
+          c.fillRect(x - 0.4, y - s.s * 2.2, 0.8, s.s * 4.4);
+        }
+      }
+      c.globalAlpha = 1;
+      c.globalCompositeOperation = 'source-over';
+    }
+
+    // Ağ çizgilerini parlaklık düzeyine göre gruplayıp her düzey için tek bir yol oluştur
+    function buildPaths() {
+      for (let n = 0; n < GN; n++) {
+        const e = Math.sqrt(ux[n] * ux[n] + uy[n] * uy[n]) / 12 + Math.sqrt(vx[n] * vx[n] + vy[n] * vy[n]) / 380;
+        energy[n] = e;
+        lvl[n] = e >= 1 ? 3 : (e * 3.99) | 0;
+      }
+      segN = 0;
+      const seg = (L, x0, y0, x1, y1) => {
+        const o = segN++ * 5;
+        segs[o] = x0; segs[o + 1] = y0; segs[o + 2] = x1; segs[o + 3] = y1; segs[o + 4] = L;
+      };
+      for (let j = 0; j < GY; j++) {
+        const major = j % 5 === 0 ? 1 : 0;
+        for (let i = 0; i < GX - 1; i++) {
+          const a = j * GX + i, b = a + 1;
+          seg(Math.max(lvl[a], lvl[b]) + major, i * GS + ux[a], j * GS + uy[a], (i + 1) * GS + ux[b], j * GS + uy[b]);
+        }
+      }
+      for (let i = 0; i < GX; i++) {
+        const major = i % 5 === 2 ? 1 : 0;
+        for (let j = 0; j < GY - 1; j++) {
+          const a = j * GX + i, b = a + GX;
+          seg(Math.max(lvl[a], lvl[b]) + major, i * GS + ux[a], j * GS + uy[a], i * GS + ux[b], (j + 1) * GS + uy[b]);
+        }
+      }
+    }
+
+    // Ağın parıltısı: enerjili düğümlerin çevresinde camgöbeğinden beyaza yumuşak hale
+    function drawHaze(c) {
+      const d = hazeImg.data;
+      for (let n = 0; n < GN; n++) {
+        const e = Math.min(1.4, energy[n]);
+        const j = n * 4;
+        d[j] = 60 + e * 70;
+        d[j + 1] = 150 + e * 60;
+        d[j + 2] = 255;
+        d[j + 3] = e > 0.3 ? Math.min(160, (e - 0.3) * 95) : 0;
+      }
+      hazeG.putImageData(hazeImg, 0, 0);
+      c.drawImage(hazeC, -GS / 2 / FXS, -GS / 2 / FXS, (GX * GS) / FXS, (GY * GS) / FXS);
+    }
+
+    function drawGrid(c) {
+      // Parçaları düzeylerine göre tek yolda topla, her düzeyi tek seferde çiz
+      c.lineCap = 'butt';
+      for (let L = 0; L < LEVELS.length; L++) {
+        let any = false;
+        const p = new Path2D();
+        for (let k = 0; k < segN; k++) {
+          const o = k * 5;
+          if (segs[o + 4] !== L) continue;
+          p.moveTo(segs[o], segs[o + 1]);
+          p.lineTo(segs[o + 2], segs[o + 3]);
+          any = true;
+        }
+        if (!any) continue;
+        c.strokeStyle = LEVELS[L][0];
+        // Tüm çizgiler tam 1 cihaz pikseli: kalın çizgiye göre çok daha hızlı "saç teli" çizimi.
+        // Parlak düzeyler bir piksel kaydırılıp ikinci kez çizilerek kalınlaşır.
+        c.lineWidth = 1 / S;
+        c.stroke(p);
+        if (L >= 2) {
+          c.translate(0.7 / S, 0.7 / S);
+          c.stroke(p);
+          if (L >= 4) {
+            c.translate(-1.4 / S, 0);
+            c.stroke(p);
+            c.translate(0.7 / S, 0);
+          }
+          c.translate(-0.7 / S, -0.7 / S);
+        }
+      }
+    }
+
+
+    function drawNovas(c) {
+      if (!novas.length) return;
+      c.globalCompositeOperation = 'lighter';
+      for (const v of novas) {
+        const t = v.t / v.dur, e = 1 - Math.pow(1 - t, 3);
+        // Parlak çekirdek
+        const r = (26 + 190 * e) * v.e;
+        const g = c.createRadialGradient(v.x, v.y, 0, v.x, v.y, r);
+        const a = (1 - t) * (1 - t);
+        g.addColorStop(0, `rgba(255, 255, 255, ${a})`);
+        g.addColorStop(0.25, `rgba(170, 230, 255, ${a * 0.7})`);
+        g.addColorStop(0.6, `rgba(170, 90, 255, ${a * 0.3})`);
+        g.addColorStop(1, 'rgba(120, 60, 255, 0)');
+        c.fillStyle = g;
+        c.beginPath();
+        c.arc(v.x, v.y, r, 0, TAU);
+        c.fill();
+        // Şok dalgası halkaları
+        c.lineWidth = 3 + 9 * (1 - t);
+        c.globalAlpha = (1 - t) * 0.8;
+        c.strokeStyle = 'rgb(160, 225, 255)';
+        c.beginPath();
+        c.arc(v.x, v.y, (30 + 470 * e) * v.e, 0, TAU);
+        c.stroke();
+        c.globalAlpha = (1 - t) * 0.5;
+        c.strokeStyle = 'rgb(220, 140, 255)';
+        c.lineWidth = 2 + 4 * (1 - t);
+        c.beginPath();
+        c.arc(v.x, v.y, (18 + 300 * e) * v.e, 0, TAU);
+        c.stroke();
+        c.globalAlpha = 1;
+      }
+      c.globalCompositeOperation = 'source-over';
+    }
+
+    function drawOver(c) {
+      if (!aurora) return;
+      buildPaths();
+      // Kutup ışığı yavaş değişir: 3 karede bir (hafif modda 6)
+      if (frame++ % (quality.lite ? 6 : 3) === 0) renderAurora();
+      fxG.clearRect(0, 0, fxC.width, fxC.height);
+      fxG.drawImage(auroraC, 0, 0);
+      fxG.globalCompositeOperation = 'lighter';
+      drawHaze(fxG);
+      fxG.globalCompositeOperation = 'source-over';
+      c.globalCompositeOperation = 'lighter';
+      c.drawImage(fxC, 0, 0, fxC.width * FXS, fxC.height * FXS);
+      c.globalCompositeOperation = 'source-over';
+      drawStars(c);
+      drawGrid(c);
+      drawNovas(c);
+    }
+
+    return { init, reset, update, drawOver, pulse, nova };
+  })();
+
+  // ---------------------------------------------------------------------------
   // Oyun durumu
   // ---------------------------------------------------------------------------
   const game = {
@@ -3474,6 +4109,7 @@
     if (k > 0.35) ripple(m.hx, m.hy, col.rgb, 10, 50 + k * 50, 0.35, 3);
     game.shake = Math.max(game.shake, k * 5);
     if (isSand()) Sound.sandHit(k, m.hx);
+    else if (isSpace()) Sound.spaceHit(k, m.hx);
     else Sound.hit(k, m.hx);
     if (isWater()) {
       Water.splash(m.hx, m.hy, k * 0.9);
@@ -3505,6 +4141,8 @@
         spawn(m.hx, m.hy, '205,170,115', 14 + Math.round(e * 24), 220 + e * 480, 0.7, 2.4, { dir, spread: 1.3, keep: true });
         Sound.sandBlast(e, m.hx);
       }
+    } else if (isSpace()) {
+      Space.pulse(m.hx, m.hy, 0.35 + k * 0.9, 70 + k * 60);
     }
     if (!m.ai) vibrate(Math.round(6 + k * 18));
   }
@@ -3557,6 +4195,9 @@
         spawn(wx, wy, '215,182,130', 6 + Math.round(e * 14), 180 + e * 380, 0.6, 2.2, { dir, spread: 1.1, keep: true });
         Sound.sandBlast(e * 0.7, x);
       }
+    } else if (isSpace()) {
+      Space.pulse(x, y, 0.3 + k * 0.8, 60 + k * 50);
+      if (k > 0.35) Sound.spaceRing(k * 0.6, x);
     }
   }
 
@@ -3576,6 +4217,10 @@
     } else if (isSand() && k > 0.5) {
       Sand.blast(x, y, (k - 0.45) * 1.1);
       Sound.sandBlast((k - 0.45) * 1.2, x);
+    } else if (isSpace()) {
+      // İki kütlenin çarpışması ağda halka halka yayılır
+      Space.pulse(x, y, 0.8 + k * 1.4, 140 + k * 100);
+      Sound.warp(k, x);
     }
   }
 
@@ -3611,6 +4256,14 @@
       spawn(gx, sy, '215,180,125', 60, 850, 1.2, 3, { dir, spread: 1.4, keep: true });
       spawn(gx, sy, '240,220,180', 30, 500, 1.6, 2, { dir, spread: 1.6, keep: true });
       Sound.sandBlast(1.2, gx);
+    } else if (isSpace()) {
+      // Süpernova
+      const sy = scorer === 0 ? 14 : H - 14;
+      Space.nova(gx, sy, 1);
+      spawn(gx, sy, '255,255,255', 40, 1000, 1.2, 3, { dir, spread: 1.5, spark: true, keep: true });
+      spawn(gx, sy, '150,210,255', 40, 750, 1.5, 3.2, { dir, spread: 1.6, keep: true });
+      spawn(gx, sy, '200,130,255', 30, 520, 1.8, 2.6, { dir, spread: 1.6, keep: true });
+      Sound.supernova(gx);
     }
     spawn(gx, gy, PUCK_RGB, 30, 700, 0.9, 3.5, { dir, spread: 1.4 });
     spawn(gx, gy, '255,255,255', 20, 500, 0.6, 2.5, { dir, spread: 1.5, spark: true });
@@ -3724,6 +4377,8 @@
     } else if (isSand()) {
       Sand.blast(W / 2, gi === 1 ? 12 : H - 12, 0.7);
       Sound.sandBlast(0.5, W / 2);
+    } else if (isSpace()) {
+      Space.pulse(W / 2, gi === 1 ? 10 : H - 10, 1.6, 200);
     }
     Sound.skill(key);
     if (human) vibrate(25);
@@ -4107,6 +4762,7 @@
     if (isIce()) Ice.reset();
     if (isLava()) Lava.reset();
     if (isSand()) Sand.reset();
+    if (isSpace()) Space.reset();
     mallets.forEach(resetMallet);
     mallets[0].ai = false;
     mallets[1].ai = settings.mode === 'ai';
@@ -4261,6 +4917,7 @@
     else if (isIce()) Ice.update(dt);
     else if (isLava()) Lava.update(dt);
     else if (isSand()) Sand.update(dt);
+    else if (isSpace()) Space.update(dt);
   }
 
   // Suda yüzen nesneler: raketler daha derin oturur (daha çok su iter), paklar daha sığ
@@ -5022,11 +5679,13 @@
     document.body.classList.toggle('theme-ice', t === 'ice');
     document.body.classList.toggle('theme-lava', t === 'lava');
     document.body.classList.toggle('theme-sand', t === 'sand');
+    document.body.classList.toggle('theme-space', t === 'space');
     goalSprites[0] = goalSprites[1] = null;
     if (t === 'water') Water.reset();
     if (t === 'ice') Ice.reset();
     if (t === 'lava') Lava.reset();
     if (t === 'sand') Sand.reset();
+    if (t === 'space') Space.reset();
     resize();
     Sound.ambient(t);
   }
@@ -5304,6 +5963,7 @@
     if (isIce()) Ice.drawUnder(ctx); // izler masa katmanının içinde
     else if (isLava()) Lava.drawOver(ctx);
     else if (isSand()) Sand.drawOver(ctx);
+    else if (isSpace()) Space.drawOver(ctx);
     drawGoals();
     drawScores();
     drawRipples();
@@ -5369,17 +6029,21 @@
   function drawPuck(p) {
     const tr = p.trail;
     const n = tr.length / 2;
-    if (n > 1 && settings.theme === 'neon') { // suda köpük ve dalga, buzda çizik bırakır
+    if (n > 1 && (settings.theme === 'neon' || isSpace())) { // suda köpük ve dalga, buzda çizik bırakır
       const sp = Math.hypot(p.vx, p.vy);
       const heat = clamp((sp - 600) / 1500, 0, 1);
       ctx.globalCompositeOperation = 'lighter';
-      ctx.fillStyle = `rgb(255,${Math.round(lerp(226, 110, heat))},${Math.round(lerp(110, 60, heat))})`;
+      ctx.fillStyle = isSpace() // uzayda kuyruklu yıldız
+        ? `rgb(${Math.round(lerp(140, 220, heat))},${Math.round(lerp(200, 150, heat))},255)`
+        : `rgb(255,${Math.round(lerp(226, 110, heat))},${Math.round(lerp(110, 60, heat))})`;
       // Her ikinci noktayı çiz: aynı görünüm, yarı maliyet
-      for (let i = n % 2; i < n; i += 2) {
+      // Uzayda ince, sürekli kuyruklu yıldız izi (her nokta, daha küçük)
+      const comet = isSpace(), step = comet ? 1 : 2, rk = comet ? 0.6 : 1;
+      for (let i = comet ? 0 : n % 2; i < n; i += step) {
         const t = (i + 1) / n;
-        ctx.globalAlpha = t * t * 0.3;
+        ctx.globalAlpha = t * t * (comet ? 0.22 : 0.3);
         ctx.beginPath();
-        ctx.arc(tr[i * 2], tr[i * 2 + 1], PUCK_R * (0.35 + 0.65 * t), 0, TAU);
+        ctx.arc(tr[i * 2], tr[i * 2 + 1], PUCK_R * rk * (0.25 + 0.75 * t), 0, TAU);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
@@ -5511,5 +6175,5 @@
   }
 
   // Test ve hata ayıklama için
-  window.__airHockey = { Water, Ice, Lava, Sand, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update };
+  window.__airHockey = { Water, Ice, Lava, Sand, Space, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update };
 })();
