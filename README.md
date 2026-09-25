@@ -35,12 +35,37 @@ Satın alınan haklar cihazda saklanır ve sonraki maçlarda da kullanılır; ik
 
 > **Şu an TEST MODU:** ödeme alınmaz, ürün onaydan sonra doğrudan envantere eklenir. Gerçek ödeme için `Payments.purchase()` bir ödeme altyapısına bağlanmalıdır — örneğin Android uygulaması için Google Play Faturalandırma, iOS için App Store, web için Stripe. Ayrıca satın almaları doğrulayan ve envanteri tutan bir sunucu gerekir; tarayıcıda (localStorage) tutulan envanter kullanıcı tarafından değiştirilebilir.
 
+## Altın (oyun parası) ve tema kilitleri
+
+**Neon** ve **Su Stadyumu** herkese açıktır. Diğer temalar oyun parası olan **altınla** açılır. Kilitli bir temaya dokununca tema, menünün arkasındaki tanıtım maçında önizlenir; yeterli altın varsa tek dokunuşla açılır. Açılan temalar kalıcıdır.
+
+| Tema | Fiyat |
+|---|---|
+| Buz Stadyumu | 250 |
+| Kum Stadyumu | 300 |
+| Lav Stadyumu | 400 |
+| Bataklık Stadyumu | 450 |
+| Uzay Stadyumu | 500 |
+| Kristal Mağarası | 600 |
+
+Altın kazanma yolları:
+
+- **Her maçtan sonra** (maç süre bitene kadar oynanmalı; yarıda bırakılan maç ödül vermez):
+  - Tek oyuncu: sonuç (galibiyet 35, beraberlik 20, yenilgi 10) × zorluk (Kolay 1, Orta 1,5, Zor 2) + attığın her gol için 2 (en fazla 10 gol). Örnek: Orta seviyede 3-1 galibiyet = 35 × 1,5 + 6 = 59.
+  - İki oyuncu: 15 + atılan her gol için 1 (en fazla 10).
+  - Maç sonunda reklam izleyerek o maçın ödülü **2 katına** çıkarılabilir.
+- **Reklam izleyerek**: menüde, mağazada ve tema açma ekranında "Reklam izle" ile her reklam için +50 altın. Günde en fazla 10 ödüllü reklam izlenebilir; reklam sonuna kadar izlenmezse ödül verilmez. Reklam oynarken oyun sesi kısılır.
+
+Fiyatlar ve ödüller `js/game.js` içindeki `THEME_INFO`, `COIN` ve `matchReward()` ile ayarlanır.
+
+> **Reklamlar şu an TEST MODUNDA:** gerçek reklam yerine 5 saniyelik örnek bir gösterim oynatılır. Gerçek reklam için `Ads.showRewarded()` bir reklam altyapısına bağlanmalıdır — web için Google H5 Games Ads (Ad Placement API, ödüllü reklam), mobil uygulama için AdMob ödüllü reklam gibi. Gerçek sistemde ödül, reklam sağlayıcısının sunucu tarafı doğrulamasından (SSV) sonra bir sunucuda eklenmelidir; tarayıcıda (localStorage) tutulan bakiye ve açılan temalar kullanıcı tarafından değiştirilebilir.
+
 ## Temalar
 
-Menüdeki **Tema** seçiminden değiştirilir; seçim cihazda saklanır.
+Menüdeki **Tema** seçiminden değiştirilir; seçim cihazda saklanır. Kilitli temalar için yukarıdaki bölüme bakın.
 
-- **Neon**: parlayan çizgiler, neon raketler ve ışık izleri.
-- **Su Stadyumu**: masanın yerinde gerçek zamanlı simüle edilen bir havuz.
+- **Neon** (ücretsiz): parlayan çizgiler, neon raketler ve ışık izleri.
+- **Su Stadyumu** (ücretsiz): masanın yerinde gerçek zamanlı simüle edilen bir havuz.
   - **Fizik**: su yüzeyi dalga denklemiyle hesaplanır; dalgalar yayılır, havuz duvarlarından yansır, viskozite ve sürtünmeyle söner.
   - **Etkileşim**: raketler ve paklar suyu hacimleriyle iter; önlerinde kabarma, arkalarında V biçimli iz ve dalga halkaları oluşur. Hızlı hareket köpük bırakır; çarpışmalar ve goller sıçrama ve halka dalgaları üretir.
   - **Görüntü (WebGL)**: tabana boyanmış saha çizgileri ve mozaik fayanslar dalgaların altında kırılarak görünür; yüzey eğriliğinden kostik ışık desenleri, Fresnel yansıması, projektör pırıltıları, nesnelerin tabana düşen gölgeleri ve köpük.

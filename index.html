@@ -91,6 +91,11 @@
         <div class="logo-rail"><i></i></div>
       </div>
 
+      <div class="wallet-row">
+        <div class="wallet" title="Altın bakiyen"><i class="coin" aria-hidden="true"></i><b id="coinMenu" class="coin-val">0</b></div>
+        <button id="earnBtn" class="earn-btn" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span>Reklam izle</span><b>+50</b></button>
+      </div>
+
       <div class="field">
         <div class="label">Mod</div>
         <div class="seg" data-group="mode">
@@ -172,6 +177,13 @@
       </div>
       <p id="resultSub" class="sub"></p>
 
+      <div id="reward" class="reward">
+        <div class="reward-main"><i class="coin" aria-hidden="true"></i><b id="rewardAmt">+0</b></div>
+        <div id="rewardWhy" class="reward-why"></div>
+        <button id="doubleBtn" class="earn-btn wide" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span>Reklam izle, ödülü 2 katına çıkar</span></button>
+        <div class="reward-bal">Bakiye <i class="coin" aria-hidden="true"></i><b id="coinOver" class="coin-val">0</b></div>
+      </div>
+
       <div class="share">
         <div class="share-label">Skorunu paylaş</div>
         <div class="share-row" id="shareRow">
@@ -226,6 +238,11 @@
         <span class="test-badge" title="Ödeme altyapısı bağlanana kadar satın almalar test amaçlıdır">TEST MODU</span>
       </div>
       <p id="storeMsg" class="sub"></p>
+      <div class="store-coins">
+        <div class="wallet" title="Altın bakiyen"><i class="coin" aria-hidden="true"></i><b id="coinStore" class="coin-val">0</b></div>
+        <button id="storeEarnBtn" class="earn-btn" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span>Reklam izle</span><b>+50</b></button>
+      </div>
+      <p class="coin-note">Altın her maçtan sonra ve reklam izleyerek kazanılır; temaları açmak için kullanılır.</p>
       <div class="inv" aria-label="Envanterin">
         <div class="inv-item grow"><b id="invGrow">0</b><span>Dev Kale</span></div>
         <div class="inv-item shrink"><b id="invShrink">0</b><span>Kale Kilidi</span></div>
@@ -241,6 +258,41 @@
         <button id="confirmCancel" class="btn ghost" type="button">Vazgeç</button>
       </div>
       <button id="storeClose" class="btn ghost" type="button">Kapat</button>
+    </div>
+  </section>
+
+  <!-- Tema kilidi: arkada tema önizlenir -->
+  <section id="unlockMenu" class="overlay unlock-overlay" aria-label="Temayı aç">
+    <span class="preview-badge">ÖNİZLEME</span>
+    <div class="panel small unlock-panel">
+      <div class="lock-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></div>
+      <h2 id="unlockName" class="title"></h2>
+      <p id="unlockDesc" class="sub"></p>
+      <div class="confirm-item">
+        <span>Fiyat</span>
+        <b class="price"><i class="coin" aria-hidden="true"></i><span id="unlockPrice">0</span></b>
+      </div>
+      <p class="unlock-bal">Bakiyen <i class="coin" aria-hidden="true"></i><b id="coinUnlock" class="coin-val">0</b> <span id="unlockNeed"></span></p>
+      <button id="unlockBuy" class="btn" type="button">KİLİDİ AÇ</button>
+      <button id="unlockAd" class="earn-btn wide" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span>Reklam izle</span><b>+50</b></button>
+      <button id="unlockCancel" class="btn ghost" type="button">Vazgeç</button>
+    </div>
+  </section>
+
+  <!-- Ödüllü reklam (test modu: gerçek reklam altyapısı bağlanana kadar örnek gösterim) -->
+  <section id="adMenu" class="overlay" aria-label="Reklam">
+    <div class="panel small ad-panel">
+      <div class="store-head">
+        <h2 class="title">REKLAM</h2>
+        <span class="test-badge" title="Reklam altyapısı bağlanana kadar örnek gösterim">TEST MODU</span>
+      </div>
+      <div class="ad-box" aria-hidden="true">
+        <div class="ad-art"><span>Reklam alanı</span><small>Gerçek ödüllü reklam burada oynatılacak</small></div>
+      </div>
+      <div class="ad-bar"><i id="adProgress"></i></div>
+      <p id="adMsg" class="sub"></p>
+      <button id="adClaim" class="btn" type="button" disabled>ÖDÜLÜ AL</button>
+      <button id="adClose" class="btn ghost" type="button">Kapat</button>
     </div>
   </section>
 

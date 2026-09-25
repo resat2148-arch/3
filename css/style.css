@@ -1748,3 +1748,336 @@ body.skills .toast {
     animation: none;
   }
 }
+
+/* ---------- Altın (oyun parası) ---------- */
+.coin {
+  display: inline-block;
+  flex: none;
+  width: 1.05em;
+  height: 1.05em;
+  border-radius: 50%;
+  vertical-align: -0.16em;
+  background:
+    radial-gradient(circle at 35% 30%, #fff6c8 0 12%, transparent 13%),
+    radial-gradient(circle, #ffd54a 0 52%, #e0a415 53% 62%, #ffcf3a 63% 100%);
+  box-shadow: 0 0 0 1px rgba(120, 70, 0, 0.55), 0 0 8px rgba(255, 200, 60, 0.45);
+}
+
+.coin-val {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+
+.coin-val.bump {
+  animation: coin-bump 0.5s ease;
+}
+
+@keyframes coin-bump {
+  30% { transform: scale(1.3); color: #fff3b0; text-shadow: 0 0 12px rgba(255, 210, 80, 0.9); }
+}
+
+.wallet-row,
+.store-coins {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: -8px 0 16px;
+}
+
+.store-coins {
+  margin: 0 0 4px;
+}
+
+.wallet {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(255, 205, 70, 0.45), 0 0 16px rgba(255, 190, 40, 0.12);
+  font-size: 18px;
+}
+
+.wallet b {
+  color: #ffe7a3;
+  font-style: italic;
+  font-weight: 900;
+}
+
+.earn-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 200, 60, 0.22), rgba(255, 120, 60, 0.18));
+  box-shadow: inset 0 0 0 1px rgba(255, 200, 60, 0.6);
+  color: #fff3d0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.12s;
+}
+
+.earn-btn:hover {
+  background: linear-gradient(135deg, rgba(255, 200, 60, 0.32), rgba(255, 120, 60, 0.26));
+  box-shadow: inset 0 0 0 1.5px rgba(255, 210, 90, 0.9), 0 0 16px rgba(255, 190, 40, 0.3);
+}
+
+.earn-btn:active {
+  transform: scale(0.97);
+}
+
+.earn-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+}
+
+.earn-btn .tv {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.earn-btn b {
+  color: #ffd54a;
+}
+
+.earn-btn b:empty {
+  display: none;
+}
+
+.earn-btn.wide {
+  display: flex;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 14px;
+}
+
+.coin-note {
+  margin: 0 0 12px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+/* Maç sonu ödülü */
+.reward {
+  margin: 4px 0 14px;
+  padding: 12px 12px 10px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(255, 205, 70, 0.4);
+}
+
+.reward-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 30px;
+}
+
+.reward-main b {
+  color: #ffe08a;
+  font-style: italic;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 14px rgba(255, 200, 60, 0.55);
+}
+
+.reward-why {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.reward-bal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.reward-bal b {
+  color: #ffe7a3;
+}
+
+.reward .earn-btn.hidden {
+  display: none;
+}
+
+/* Kilitli temalar */
+.seg[data-group="theme"] button.locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  color: rgba(152, 160, 200, 0.75);
+}
+
+.lock-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px 1px 5px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  font-size: 11px;
+  font-weight: 800;
+  color: #cfc3a0;
+}
+
+.lock-tag svg {
+  width: 11px;
+  height: 11px;
+}
+
+.lock-tag.afford {
+  color: #ffe08a;
+  box-shadow: inset 0 0 0 1px rgba(255, 205, 70, 0.6);
+}
+
+/* Tema kilidi: panel altta, üstte tema önizlenir */
+.unlock-overlay {
+  align-items: flex-end;
+  background: linear-gradient(rgba(5, 6, 15, 0) 30%, rgba(5, 6, 15, 0.85) 75%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.unlock-overlay .panel {
+  margin: 0 auto;
+}
+
+.preview-badge {
+  position: fixed;
+  top: calc(var(--safe-t) + 18px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(5, 6, 15, 0.7);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.unlock-panel {
+  padding-top: 22px;
+}
+
+.unlock-panel .title {
+  margin: 4px 0 4px;
+  font-size: 26px;
+}
+
+.unlock-panel .sub {
+  margin: 0 0 12px;
+}
+
+.lock-ico {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto;
+  border-radius: 14px;
+  background: rgba(255, 205, 70, 0.14);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 205, 70, 0.7);
+  color: #ffd54a;
+}
+
+.lock-ico svg {
+  width: 24px;
+  height: 24px;
+}
+
+.confirm-item .price {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #ffe08a;
+}
+
+.unlock-bal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.unlock-bal b {
+  color: #ffe7a3;
+}
+
+#unlockNeed {
+  color: #ff9db8;
+  font-weight: 700;
+}
+
+#unlockBuy:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+}
+
+/* Ödüllü reklam (test) */
+.ad-box {
+  margin: 4px 0 12px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.ad-art {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 170px;
+  background: linear-gradient(120deg, #1d2a6b, #6a2d8f, #b3346d, #1d2a6b);
+  background-size: 300% 100%;
+  animation: shimmer 5s linear infinite;
+  color: #fff;
+}
+
+.ad-art span {
+  font-size: 22px;
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.ad-art small {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.ad-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.ad-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #ffd54a, #ff8a3d);
+  transform: scaleX(0);
+  transform-origin: left;
+}

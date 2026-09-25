@@ -55,12 +55,51 @@
     },
   };
 
+  // ---------------------------------------------------------------------------
+  // Oyun parası (altın) ve tema kilitleri
+  // Neon ve Su Stadyumu herkese açık; diğer temalar altınla açılır. Altın her tamamlanan maçtan
+  // sonra ve ödüllü reklam izleyerek kazanılır. Bakiye ve açılan temalar cihazda saklanır.
+  // ---------------------------------------------------------------------------
+  const THEME_INFO = {
+    neon: { name: 'Neon', price: 0 },
+    water: { name: 'Su Stadyumu', price: 0 },
+    ice: { name: 'Buz Stadyumu', price: 250, desc: 'Çatlayan, sürekli değişen buz tabakası; sert şutta buz çatırdar.' },
+    sand: { name: 'Kum Stadyumu', price: 300, desc: 'Raketlerin ittiği, oluk açılan kum; sert şutta kum savrulur.' },
+    lava: { name: 'Lav Stadyumu', price: 400, desc: 'Kırılan bazalt kabuk ve altından fışkıran lav.' },
+    mud: { name: 'Bataklık Stadyumu', price: 450, desc: 'Ağır, yapışkan çamur; yüzen yosunlar ve patlayan kabarcıklar.' },
+    space: { name: 'Uzay Stadyumu', price: 500, desc: 'Kütlelerle bükülen ışık ağı, kutup ışığı ve süpernova golleri.' },
+    crystal: { name: 'Kristal Mağarası', price: 600, desc: 'Işık dalgalarıyla gökkuşağına bürünen kristaller; her vuruş bir nota.' },
+  };
+  const COIN = { adReward: 50, adDaily: 10 };
+
+  const wallet = (() => {
+    const v = store.get('wallet', null) || {};
+    const n = (x) => Math.max(0, Math.floor(Number(x) || 0));
+    return {
+      coins: n(v.coins),
+      unlocked: Array.isArray(v.unlocked) ? v.unlocked.filter((t) => THEME_INFO[t]) : [],
+      adDay: String(v.adDay || ''),
+      adCount: n(v.adCount),
+    };
+  })();
+
+  function saveWallet() {
+    store.set('wallet', { coins: wallet.coins, unlocked: wallet.unlocked, adDay: wallet.adDay, adCount: wallet.adCount });
+  }
+
+  function isUnlocked(t) {
+    const info = THEME_INFO[t];
+    return !!info && (info.price === 0 || wallet.unlocked.includes(t));
+  }
+
+  const savedTheme = store.get('theme', 'neon');
+
   const settings = {
     mode: store.get('mode', 'ai'),
     difficulty: store.get('difficulty', 'medium'),
     sound: store.get('sound', true),
     volume: clamp(Number(store.get('volume', 1)) || 0, 0, 1),
-    theme: ['water', 'ice', 'lava', 'sand', 'space', 'crystal', 'mud'].includes(store.get('theme', 'neon')) ? store.get('theme', 'neon') : 'neon',
+    theme: isUnlocked(savedTheme) ? savedTheme : 'neon',
   };
 
   const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -567,6 +606,7 @@
     },
     // Kaydırıcı değeri kulağa doğrusal gelsin diye karesi alınır (%50 ≈ yarı yükseklik hissi)
     level() {
+      if (this.adMute) return 0; // reklam oynarken oyun sesi kısılır
       return settings.sound ? settings.volume * settings.volume : 0;
     },
     applyVolume() {
@@ -5992,6 +6032,14 @@
       closeVolume();
       return;
     }
+    if (e.code === 'Escape' && adEl.classList.contains('show')) {
+      endAd();
+      return;
+    }
+    if (e.code === 'Escape' && unlockEl.classList.contains('show')) {
+      cancelUnlock();
+      return;
+    }
     if (e.code === 'Escape' && storeEl.classList.contains('show')) {
       if (storeState.pending) cancelPurchase();
       else closeStore();
@@ -6063,13 +6111,14 @@
   // ---------------------------------------------------------------------------
   const $ = (id) => document.getElementById(id);
   const menuEl = $('menu'), pauseEl = $('pauseMenu'), overEl = $('overMenu');
+  const unlockEl = $('unlockMenu'), adEl = $('adMenu');
   const pauseBtn = $('pauseBtn'), soundBtn = $('soundBtn'), fsBtn = $('fsBtn');
 
   const clockEl = $('clock'), clockTime = $('clockTime'), clockTag = $('clockTag');
   let clockShown = '';
 
   function showOverlay(el) {
-    [menuEl, pauseEl, overEl, cardEl, storeEl].forEach((o) => o.classList.toggle('show', o === el));
+    [menuEl, pauseEl, overEl, cardEl, storeEl, unlockEl, adEl].forEach((o) => o.classList.toggle('show', o === el));
     const inGame = !el;
     pauseBtn.classList.toggle('hidden', !inGame);
     document.body.classList.toggle('playing', inGame);
@@ -6339,6 +6388,7 @@
           : 'Bir dahaki sefere! Tekrar dene.';
 
     prepareShare({ a, b, draw, w, win, pvp, difficulty: settings.difficulty });
+    grantMatchReward({ a, b, draw, win, pvp, difficulty: settings.difficulty });
     banner('SÜRE BİTTİ!', '255,255,255', 1.3, 84);
     Sound.buzzer();
     // Konfeti
@@ -7029,6 +7079,288 @@
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Altın: maç ödülü, ödüllü reklam ve tema kilitleri
+  // ---------------------------------------------------------------------------
+  const DIFF_MULT = { easy: 1, medium: 1.5, hard: 2 };
+  const fmt = (n) => n.toLocaleString('tr-TR');
+  const lastReward = { total: 0, doubled: true };
+
+  // Maç ödülü: sonuç (galibiyet 35, beraberlik 20, yenilgi 10) × zorluk (Kolay 1, Orta 1,5, Zor 2)
+  // + attığın her gol için 2 (en fazla 10 gol). İki oyunculu modda sabit 15 + gol başına 1.
+  function matchReward(r) {
+    if (r.pvp) {
+      const g = Math.min(10, r.a + r.b);
+      return { total: 15 + g, why: `Maç 15 · ${g} gol +${g}` };
+    }
+    const base = r.win ? 35 : r.draw ? 20 : 10;
+    const mult = DIFF_MULT[r.difficulty] || 1;
+    const goals = Math.min(10, r.a) * 2;
+    const label = r.win ? 'Galibiyet' : r.draw ? 'Beraberlik' : 'Maç';
+    const diff = { easy: 'Kolay', medium: 'Orta', hard: 'Zor' }[r.difficulty];
+    const parts = [`${label} ${base}`];
+    if (mult !== 1) parts.push(`${diff} ×${String(mult).replace('.', ',')}`);
+    if (goals) parts.push(`${r.a} gol +${goals}`);
+    return { total: Math.round(base * mult) + goals, why: parts.join(' · ') };
+  }
+
+  function grantMatchReward(r) {
+    const rw = matchReward(r);
+    lastReward.total = rw.total;
+    lastReward.doubled = false;
+    addCoins(rw.total, false);
+    $('rewardWhy').textContent = rw.why;
+    $('rewardAmt').textContent = '+0';
+    renderReward();
+    // Sonuç ekranı açılınca sayaç yükselerek dolsun
+    setTimeout(() => countUp($('rewardAmt'), 0, rw.total, '+'), 1450);
+  }
+
+  function renderReward() {
+    const btn = $('doubleBtn');
+    const left = adsLeft();
+    btn.classList.toggle('hidden', lastReward.doubled || lastReward.total <= 0);
+    btn.disabled = left <= 0;
+    btn.querySelector('span').textContent = left > 0
+      ? `Reklam izle, ödülü 2 katına çıkar (+${lastReward.total})`
+      : 'Bugünlük reklam hakkın doldu';
+  }
+
+  function countUp(el, from, to, prefix = '') {
+    const t0 = performance.now(), dur = 700;
+    const tick = (now) => {
+      const k = Math.min(1, (now - t0) / dur);
+      el.textContent = prefix + fmt(Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3))));
+      if (k < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  function addCoins(n, bump = true) {
+    wallet.coins += n;
+    saveWallet();
+    updateCoins(bump);
+  }
+
+  function updateCoins(bump) {
+    for (const id of ['coinMenu', 'coinStore', 'coinOver', 'coinUnlock']) {
+      const el = $(id);
+      el.textContent = fmt(wallet.coins);
+      if (bump) {
+        el.classList.remove('bump');
+        void el.offsetWidth;
+        el.classList.add('bump');
+      }
+    }
+    const left = adsLeft();
+    for (const id of ['earnBtn', 'storeEarnBtn', 'unlockAd']) {
+      const b = $(id);
+      b.disabled = left <= 0;
+      b.querySelector('span').textContent = left > 0 ? 'Reklam izle' : 'Bugünlük reklam hakkın doldu';
+      b.querySelector('b').textContent = left > 0 ? `+${COIN.adReward}` : '';
+      b.title = left > 0 ? `Bugün kalan reklam: ${left}/${COIN.adDaily}` : 'Yarın yeniden reklam izleyebilirsin';
+    }
+    renderReward();
+    renderThemeLocks();
+    if (unlockEl.classList.contains('show')) renderUnlock();
+  }
+
+  function today() {
+    const d = new Date();
+    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  }
+
+  // Bugün kalan ödüllü reklam hakkı
+  function adsLeft() {
+    const d = today();
+    if (wallet.adDay !== d) {
+      wallet.adDay = d;
+      wallet.adCount = 0;
+    }
+    return Math.max(0, COIN.adDaily - wallet.adCount);
+  }
+
+  // Ödüllü reklam sağlayıcısı. Şu an TEST modunda: gerçek reklam yerine kısa bir örnek gösterim
+  // oynatılır. Gerçek reklam için showRewarded() bir reklam altyapısına bağlanmalıdır (web için
+  // Google H5 Games Ads / Ad Placement API'nin ödüllü reklamı, mobil uygulama için AdMob ödüllü
+  // reklam vb.). Ödül ancak reklam sonuna kadar izlenince verilir; gerçek sistemde ödül, reklam
+  // sağlayıcısının sunucu tarafı doğrulamasından (SSV) sonra sunucuda eklenmelidir.
+  const Ads = {
+    mode: 'test',
+    testDuration: 5, // sn
+    showRewarded() {
+      return playTestAd(this.testDuration);
+    },
+  };
+
+  const adState = { back: null, done: false, timer: 0, resolve: null };
+
+  function playTestAd(secs) {
+    return new Promise((resolve) => {
+      adState.back = [menuEl, overEl, storeEl, unlockEl, pauseEl].find((o) => o.classList.contains('show')) || menuEl;
+      adState.done = false;
+      adState.resolve = resolve;
+      Sound.adMute = true;
+      Sound.applyVolume();
+      const bar = $('adProgress'), msg = $('adMsg'), claim = $('adClaim');
+      claim.disabled = true;
+      $('adClose').textContent = 'Kapat (ödülsüz)';
+      const t0 = performance.now();
+      const tick = () => {
+        const k = Math.min(1, (performance.now() - t0) / (secs * 1000));
+        bar.style.transform = `scaleX(${k})`;
+        if (k < 1) {
+          msg.textContent = `Ödül için reklamı sonuna kadar izle: ${Math.ceil(secs * (1 - k))} sn`;
+        } else {
+          clearInterval(adState.timer);
+          adState.done = true;
+          claim.disabled = false;
+          msg.textContent = 'Reklam bitti, ödülün hazır.';
+          $('adClose').textContent = 'Kapat';
+        }
+      };
+      tick();
+      clearInterval(adState.timer);
+      adState.timer = setInterval(tick, 100);
+      showOverlay(adEl);
+    });
+  }
+
+  function endAd() {
+    clearInterval(adState.timer);
+    Sound.adMute = false;
+    Sound.applyVolume();
+    const done = adState.done, resolve = adState.resolve;
+    adState.resolve = null;
+    showOverlay(adState.back || menuEl);
+    if (resolve) resolve(done);
+  }
+
+  $('adClaim').addEventListener('click', endAd);
+  $('adClose').addEventListener('click', endAd);
+
+  function watchAd(onReward) {
+    if (adsLeft() <= 0) {
+      toast('Bugünlük reklam hakkın doldu. Yarın yeniden izleyebilirsin.');
+      return;
+    }
+    Ads.showRewarded().then((rewarded) => {
+      if (!rewarded) {
+        toast('Reklam yarıda kaldı, ödül verilmedi.');
+        return;
+      }
+      wallet.adCount++;
+      saveWallet();
+      onReward();
+      Sound.ready();
+    }).catch(() => toast('Reklam şu an gösterilemiyor. Biraz sonra tekrar dene.'));
+  }
+
+  function earnFromAd() {
+    watchAd(() => {
+      addCoins(COIN.adReward);
+      toast(`+${COIN.adReward} altın kazandın!`);
+    });
+  }
+
+  $('earnBtn').addEventListener('click', earnFromAd);
+  $('storeEarnBtn').addEventListener('click', earnFromAd);
+  $('unlockAd').addEventListener('click', earnFromAd);
+  $('doubleBtn').addEventListener('click', () => {
+    if (lastReward.doubled) return;
+    watchAd(() => {
+      const before = wallet.coins;
+      lastReward.doubled = true;
+      addCoins(lastReward.total);
+      countUp($('rewardAmt'), lastReward.total, lastReward.total * 2, '+');
+      countUp($('coinOver'), before, wallet.coins);
+      toast(`Ödül 2 katına çıktı: +${lastReward.total} altın`);
+    });
+  });
+
+  // Tema düğmelerinde kilit ve fiyat
+  const LOCK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>';
+  function renderThemeLocks() {
+    document.querySelectorAll('.seg[data-group="theme"] button').forEach((b) => {
+      const t = b.dataset.value, locked = !isUnlocked(t);
+      b.classList.toggle('locked', locked);
+      let tag = b.querySelector('.lock-tag');
+      if (locked && !tag) {
+        tag = document.createElement('small');
+        tag.className = 'lock-tag';
+        tag.innerHTML = `${LOCK_SVG}<i class="coin" aria-hidden="true"></i><span></span>`;
+        b.appendChild(tag);
+      } else if (!locked && tag) {
+        tag.remove();
+        tag = null;
+      }
+      if (tag) {
+        const price = THEME_INFO[t].price;
+        tag.querySelector('span').textContent = fmt(price);
+        tag.classList.toggle('afford', wallet.coins >= price);
+        b.setAttribute('aria-label', `${THEME_INFO[t].name}, kilitli, ${price} altın`);
+      } else {
+        b.removeAttribute('aria-label');
+      }
+    });
+  }
+
+  // Kilitli tema: arkadaki tanıtım maçında önizlenir, altınla açılır
+  const unlockState = { theme: null, prev: null };
+
+  function openUnlock(t) {
+    unlockState.theme = t;
+    if (unlockState.prev === null) unlockState.prev = settings.theme;
+    settings.theme = t; // yalnızca önizleme: kaydedilmez
+    applyTheme();
+    renderUnlock();
+    showOverlay(unlockEl);
+  }
+
+  function renderUnlock() {
+    const t = unlockState.theme, info = THEME_INFO[t];
+    if (!info) return;
+    const need = info.price - wallet.coins;
+    $('unlockName').textContent = info.name;
+    $('unlockDesc').textContent = info.desc || '';
+    $('unlockPrice').textContent = fmt(info.price);
+    $('coinUnlock').textContent = fmt(wallet.coins);
+    $('unlockNeed').textContent = need > 0 ? `· ${fmt(need)} eksik` : '';
+    const buy = $('unlockBuy');
+    buy.disabled = need > 0;
+    buy.textContent = need > 0 ? 'YETERSİZ ALTIN' : `KİLİDİ AÇ`;
+  }
+
+  function buyUnlock() {
+    const t = unlockState.theme, info = THEME_INFO[t];
+    if (!info || wallet.coins < info.price) return;
+    wallet.coins -= info.price;
+    if (!wallet.unlocked.includes(t)) wallet.unlocked.push(t);
+    saveWallet();
+    settings.theme = t;
+    store.set('theme', t);
+    unlockState.theme = unlockState.prev = null;
+    updateCoins(true);
+    syncMenu();
+    Sound.ready();
+    toast(`${info.name} açıldı!`);
+    showOverlay(menuEl);
+  }
+
+  function cancelUnlock() {
+    const prev = unlockState.prev;
+    unlockState.theme = unlockState.prev = null;
+    if (prev && prev !== settings.theme) {
+      settings.theme = prev;
+      applyTheme();
+    }
+    syncMenu();
+    showOverlay(menuEl);
+  }
+
+  $('unlockBuy').addEventListener('click', buyUnlock);
+  $('unlockCancel').addEventListener('click', cancelUnlock);
+
   // Tema: Neon ya da Su Stadyumu
   function applyTheme() {
     const t = settings.theme;
@@ -7078,6 +7410,10 @@
       const b = e.target.closest('button');
       if (!b) return;
       const key = seg.dataset.group;
+      if (key === 'theme' && !isUnlocked(b.dataset.value)) {
+        openUnlock(b.dataset.value);
+        return;
+      }
       const prev = settings[key];
       settings[key] = b.dataset.value;
       store.set(key, settings[key]);
@@ -7086,6 +7422,7 @@
     });
   });
 
+  updateCoins(false);
   $('startBtn').addEventListener('click', startMatch);
   $('resumeBtn').addEventListener('click', resume);
   $('restartBtn').addEventListener('click', startMatch);
@@ -7541,5 +7878,5 @@
   }
 
   // Test ve hata ayıklama için
-  window.__airHockey = { Water, Ice, Lava, Sand, Space, Crystal, Swamp, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update };
+  window.__airHockey = { wallet, Ads, THEME_INFO, matchReward, adsLeft, Water, Ice, Lava, Sand, Space, Crystal, Swamp, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update };
 })();
