@@ -2242,3 +2242,21 @@ body.skills .toast {
 .sw-mud { background: radial-gradient(circle at 70% 30%, #7fae3f 0 14%, transparent 15%), radial-gradient(circle at 35% 60%, #6b4a2a, #2a1a0e 80%); }
 .sw-space { background: radial-gradient(ellipse at 50% 90%, rgba(60, 255, 170, 0.7), transparent 60%), linear-gradient(#0b1236, #3a1f7a); }
 .sw-crystal { background: conic-gradient(from 20deg, #a85cff, #4678ff, #3ce1eb, #32eb8c, #ffbe46, #ff4682, #a85cff); }
+
+/* CrazyGames sürümü: platform kuralı gereği oyunun dışına (başka bir oynanabilir sürüme) götüren
+   sosyal paylaşım düğmeleri gösterilmez; skor kartı görseli kalır. */
+html[data-build="crazygames"] .share-label,
+html[data-build="crazygames"] #shareRow {
+  display: none !important;
+}
+
+html[data-build="crazygames"] .share {
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+html[data-build="crazygames"] .card-link {
+  margin: 0;
+  width: 100%;
+}
