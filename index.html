@@ -127,22 +127,11 @@
         </div>
       </div>
 
-      <div class="rules">
-        <div class="rule">
-          <b>60 sn</b>
-          <span>maç süresi</span>
-        </div>
-        <div class="rule hot">
-          <b>45. sn</b>
-          <span>2. top oyuna girer</span>
-        </div>
-      </div>
-
       <div class="skills-info">
         <div class="si grow"><b>Dev Kale</b><span>Rakibin kalesi 5 sn büyür</span></div>
         <div class="si shrink"><b>Kale Kilidi</b><span>Kendi kalen 5 sn küçülür</span></div>
       </div>
-      <p class="si-note">Her maçta her skillden <b>1 ücretsiz</b> hak · fazlası mağazada</p>
+      <p class="si-note">Her maçta her skillden <b>1 ücretsiz</b> hak · fazlası mağazada altınla</p>
 
       <button id="startBtn" class="btn">OYNA</button>
       <button id="menuStoreBtn" class="btn ghost store-btn" type="button">
@@ -230,52 +219,60 @@
     </div>
   </section>
 
-  <!-- Mağaza -->
+  <!-- Mağaza: altınla alınan her şey (temalar ve yetenekler) -->
   <section id="storeMenu" class="overlay" aria-label="Mağaza">
     <div class="panel small store-panel">
       <div class="store-head">
         <h2 class="title">MAĞAZA</h2>
-        <span class="test-badge" title="Ödeme altyapısı bağlanana kadar satın almalar test amaçlıdır">TEST MODU</span>
       </div>
-      <p id="storeMsg" class="sub"></p>
       <div class="store-coins">
         <div class="wallet" title="Altın bakiyen"><i class="coin" aria-hidden="true"></i><b id="coinStore" class="coin-val">0</b></div>
         <button id="storeEarnBtn" class="earn-btn" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span>Reklam izle</span><b>+50</b></button>
       </div>
-      <p class="coin-note">Altın her maçtan sonra ve reklam izleyerek kazanılır; temaları açmak için kullanılır.</p>
-      <div class="inv" aria-label="Envanterin">
-        <div class="inv-item grow"><b id="invGrow">0</b><span>Dev Kale</span></div>
-        <div class="inv-item shrink"><b id="invShrink">0</b><span>Kale Kilidi</span></div>
+      <p class="coin-note">Altın her maçtan sonra ve reklam izleyerek kazanılır.</p>
+      <div class="store-tabs" role="tablist">
+        <button id="tabBtnThemes" data-tab="themes" role="tab" type="button">Temalar</button>
+        <button id="tabBtnSkills" data-tab="skills" role="tab" type="button">Yetenekler</button>
       </div>
-      <div id="storeList" class="store-list"></div>
+      <div id="tabThemes" class="store-tab" role="tabpanel">
+        <div id="themeList" class="store-list"></div>
+      </div>
+      <div id="tabSkills" class="store-tab" role="tabpanel">
+        <p id="storeMsg" class="sub"></p>
+        <div class="inv" aria-label="Envanterin">
+          <div class="inv-item grow"><b id="invGrow">0</b><span>Dev Kale</span></div>
+          <div class="inv-item shrink"><b id="invShrink">0</b><span>Kale Kilidi</span></div>
+        </div>
+        <div id="storeList" class="store-list"></div>
+      </div>
       <div id="storeConfirm" class="store-confirm hidden" role="dialog" aria-label="Satın almayı onayla">
         <div class="confirm-item">
           <span id="confirmName"></span>
-          <b id="confirmPrice"></b>
+          <b class="price"><i class="coin" aria-hidden="true"></i><span id="confirmPrice"></span></b>
         </div>
-        <p class="fine">Test modu: gerçek ödeme alınmaz, ürün hemen envanterine eklenir.</p>
+        <p class="unlock-bal">Bakiyen <i class="coin" aria-hidden="true"></i><b id="coinConfirm" class="coin-val">0</b> <span id="confirmNeed" class="need"></span></p>
         <button id="confirmBuy" class="btn" type="button">SATIN AL</button>
+        <button id="confirmAd" class="earn-btn wide hidden" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span>Reklam izle</span><b>+50</b></button>
+        <button id="confirmPreview" class="btn ghost hidden" type="button">Önizle</button>
         <button id="confirmCancel" class="btn ghost" type="button">Vazgeç</button>
       </div>
       <button id="storeClose" class="btn ghost" type="button">Kapat</button>
     </div>
   </section>
 
-  <!-- Tema kilidi: arkada tema önizlenir -->
-  <section id="unlockMenu" class="overlay unlock-overlay" aria-label="Temayı aç">
+  <!-- Tema önizleme (mağazadan): arkada tema oynar -->
+  <section id="unlockMenu" class="overlay unlock-overlay" aria-label="Tema önizleme">
     <span class="preview-badge">ÖNİZLEME</span>
     <div class="panel small unlock-panel">
-      <div class="lock-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></div>
       <h2 id="unlockName" class="title"></h2>
       <p id="unlockDesc" class="sub"></p>
       <div class="confirm-item">
         <span>Fiyat</span>
         <b class="price"><i class="coin" aria-hidden="true"></i><span id="unlockPrice">0</span></b>
       </div>
-      <p class="unlock-bal">Bakiyen <i class="coin" aria-hidden="true"></i><b id="coinUnlock" class="coin-val">0</b> <span id="unlockNeed"></span></p>
-      <button id="unlockBuy" class="btn" type="button">KİLİDİ AÇ</button>
-      <button id="unlockAd" class="earn-btn wide" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span>Reklam izle</span><b>+50</b></button>
-      <button id="unlockCancel" class="btn ghost" type="button">Vazgeç</button>
+      <p class="unlock-bal">Bakiyen <i class="coin" aria-hidden="true"></i><b id="coinUnlock" class="coin-val">0</b> <span id="unlockNeed" class="need"></span></p>
+      <button id="unlockBuy" class="btn" type="button">SATIN AL</button>
+      <button id="unlockCancel" class="btn ghost" type="button">Mağazaya dön</button>
     </div>
   </section>
 

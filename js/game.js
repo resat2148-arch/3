@@ -57,12 +57,12 @@
 
   // ---------------------------------------------------------------------------
   // Oyun parası (altın) ve tema kilitleri
-  // Neon ve Su Stadyumu herkese açık; diğer temalar altınla açılır. Altın her tamamlanan maçtan
+  // Su Stadyumu herkese açık; diğer temalar ve ek yetenek hakları mağazada altınla alınır. Altın her tamamlanan maçtan
   // sonra ve ödüllü reklam izleyerek kazanılır. Bakiye ve açılan temalar cihazda saklanır.
   // ---------------------------------------------------------------------------
   const THEME_INFO = {
-    neon: { name: 'Neon', price: 0 },
-    water: { name: 'Su Stadyumu', price: 0 },
+    water: { name: 'Su Stadyumu', price: 0, desc: 'Gerçek zamanlı simüle edilen havuz; raketler suyu iter.' },
+    neon: { name: 'Neon', price: 200, desc: 'Parlayan çizgiler, neon raketler ve ışık izleri.' },
     ice: { name: 'Buz Stadyumu', price: 250, desc: 'Çatlayan, sürekli değişen buz tabakası; sert şutta buz çatırdar.' },
     sand: { name: 'Kum Stadyumu', price: 300, desc: 'Raketlerin ittiği, oluk açılan kum; sert şutta kum savrulur.' },
     lava: { name: 'Lav Stadyumu', price: 400, desc: 'Kırılan bazalt kabuk ve altından fışkıran lav.' },
@@ -92,14 +92,14 @@
     return !!info && (info.price === 0 || wallet.unlocked.includes(t));
   }
 
-  const savedTheme = store.get('theme', 'neon');
+  const savedTheme = store.get('theme', 'water');
 
   const settings = {
     mode: store.get('mode', 'ai'),
     difficulty: store.get('difficulty', 'medium'),
     sound: store.get('sound', true),
     volume: clamp(Number(store.get('volume', 1)) || 0, 0, 1),
-    theme: isUnlocked(savedTheme) ? savedTheme : 'neon',
+    theme: isUnlocked(savedTheme) ? savedTheme : 'water',
   };
 
   const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -6037,7 +6037,7 @@
       return;
     }
     if (e.code === 'Escape' && unlockEl.classList.contains('show')) {
-      cancelUnlock();
+      endPreview(false);
       return;
     }
     if (e.code === 'Escape' && storeEl.classList.contains('show')) {
@@ -6926,33 +6926,23 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Mağaza ve satın alma
+  // Mağaza: altınla alınan her şey burada. Temalar sekmesi (tema kilitleri) ve Yetenekler
+  // sekmesi (Dev Kale / Kale Kilidi ek hakları). Gerçek para ile satış yoktur.
   // ---------------------------------------------------------------------------
-  // Fiyatlar örnektir; gerçek fiyatlar ödeme sağlayıcısında tanımlanan ürünlerden gelmelidir.
   const PRODUCTS = [
-    { id: 'grow_3', name: 'Dev Kale', desc: '3 kullanım', give: { grow: 3 }, price: '₺9,99' },
-    { id: 'shrink_3', name: 'Kale Kilidi', desc: '3 kullanım', give: { shrink: 3 }, price: '₺9,99' },
-    { id: 'bundle_5', name: 'Skill Paketi', desc: '5 Dev Kale + 5 Kale Kilidi', give: { grow: 5, shrink: 5 }, price: '₺24,99', tag: 'En avantajlı' },
+    { id: 'grow_3', name: 'Dev Kale', desc: '3 kullanım', give: { grow: 3 }, price: 60 },
+    { id: 'shrink_3', name: 'Kale Kilidi', desc: '3 kullanım', give: { shrink: 3 }, price: 60 },
+    { id: 'bundle_5', name: 'Skill Paketi', desc: '5 Dev Kale + 5 Kale Kilidi', give: { grow: 5, shrink: 5 }, price: 170, tag: 'En avantajlı' },
   ];
-
-  // Ödeme sağlayıcısı. Şu an TEST modunda: ödeme alınmaz, ürün doğrudan verilir.
-  // Gerçek ödeme için purchase() bir ödeme altyapısına (Google Play Faturalandırma, App Store,
-  // Stripe vb.) bağlanmalı ve envanter, satın almayı doğrulayan bir sunucudan gelmelidir;
-  // tarayıcıda tutulan envanter kullanıcı tarafından değiştirilebilir.
-  const Payments = {
-    mode: 'test',
-    purchase(product) {
-      return Promise.resolve({ ok: true, productId: product.id, test: true });
-    },
-  };
 
   const SKILL_ICONS = {
     grow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6v12M15 6v12M2 12h4M4 10l-2 2 2 2M22 12h-4M20 10l2 2-2 2"/></svg>',
     shrink: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12h6"/></svg>',
   };
 
-  const storeEl = $('storeMenu'), storeList = $('storeList'), storeConfirm = $('storeConfirm');
-  const storeState = { fromGame: false, focus: null, back: null, pending: null, busy: false };
+  const storeEl = $('storeMenu'), storeList = $('storeList'), themeList = $('themeList'), storeConfirm = $('storeConfirm');
+  // pending: { kind: 'skill' | 'theme', ... }
+  const storeState = { fromGame: false, focus: null, back: null, pending: null, tab: 'themes', preview: null };
 
   function renderInventory() {
     $('invGrow').textContent = inventory.grow;
@@ -6961,36 +6951,105 @@
     if (sum) sum.textContent = `Envanter: ${inventory.grow} Dev Kale · ${inventory.shrink} Kale Kilidi`;
   }
 
+  function priceChip(price) {
+    const c = document.createElement('span');
+    c.className = 'product-price coin-price' + (wallet.coins >= price ? '' : ' short');
+    c.innerHTML = '<i class="coin" aria-hidden="true"></i><span></span>';
+    c.querySelector('span').textContent = fmt(price);
+    return c;
+  }
+
+  function productButton(kind, name, desc, iconHtml, right) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'product';
+    b.dataset.kind = kind;
+    b.innerHTML = `
+      <span class="product-ico" aria-hidden="true">${iconHtml}</span>
+      <span class="product-text"><b></b><small></small></span>`;
+    b.querySelector('b').textContent = name;
+    b.querySelector('small').textContent = desc;
+    b.appendChild(right);
+    return b;
+  }
+
   function renderProducts() {
     storeList.textContent = '';
     for (const pr of PRODUCTS) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'product';
       const keys = Object.keys(pr.give);
-      b.dataset.kind = keys.length > 1 ? 'bundle' : keys[0];
+      const b = productButton(keys.length > 1 ? 'bundle' : keys[0], pr.name, pr.desc, keys.map((k) => SKILL_ICONS[k]).join(''), priceChip(pr.price));
       if (storeState.focus && pr.give[storeState.focus] && keys.length === 1) b.classList.add('suggest');
-      const icons = keys.map((k) => SKILL_ICONS[k]).join('');
-      b.innerHTML = `
-        <span class="product-ico" aria-hidden="true">${icons}</span>
-        <span class="product-text"><b></b><small></small></span>
-        <span class="product-price"></span>`;
-      b.querySelector('b').textContent = pr.name;
-      b.querySelector('small').textContent = pr.desc;
-      b.querySelector('.product-price').textContent = pr.price;
       if (pr.tag) {
         const t = document.createElement('em');
         t.className = 'product-tag';
         t.textContent = pr.tag;
         b.appendChild(t);
       }
-      b.setAttribute('aria-label', `${pr.name}, ${pr.desc}, ${pr.price}`);
-      b.addEventListener('click', () => askPurchase(pr));
+      b.setAttribute('aria-label', `${pr.name}, ${pr.desc}, ${pr.price} altın`);
+      b.addEventListener('click', () => askPurchase({ kind: 'skill', pr, name: `${pr.name} · ${pr.desc}`, price: pr.price }));
       storeList.appendChild(b);
     }
   }
 
-  function openStore({ focus = null, fromGame = false } = {}) {
+  function renderThemes() {
+    themeList.textContent = '';
+    for (const t of Object.keys(THEME_INFO)) {
+      const info = THEME_INFO[t], open = isUnlocked(t), sel = settings.theme === t && open;
+      let right;
+      if (!open) {
+        right = priceChip(info.price);
+      } else {
+        right = document.createElement('span');
+        right.className = 'product-price state' + (sel ? ' selected' : '');
+        right.textContent = sel ? 'Seçili' : storeState.fromGame ? 'Açık' : 'Seç';
+      }
+      const b = productButton('theme', info.name, info.desc || '', `<i class="swatch sw-${t}"></i>`, right);
+      b.dataset.theme = t;
+      if (!open) b.classList.add('locked');
+      if (info.price === 0) {
+        const tg = document.createElement('em');
+        tg.className = 'product-tag free';
+        tg.textContent = 'Ücretsiz';
+        b.appendChild(tg);
+      }
+      b.setAttribute('aria-label', `${info.name}, ${open ? (sel ? 'seçili' : 'açık') : `${info.price} altın`}`);
+      b.addEventListener('click', () => {
+        if (!open) askPurchase({ kind: 'theme', theme: t, name: info.name, price: info.price });
+        else if (!storeState.fromGame && !sel) selectTheme(t);
+      });
+      themeList.appendChild(b);
+    }
+  }
+
+  function selectTheme(t) {
+    settings.theme = t;
+    store.set('theme', t);
+    applyTheme();
+    syncMenu();
+    renderThemes();
+    toast(`${THEME_INFO[t].name} seçildi.`);
+  }
+
+  function setTab(tab) {
+    storeState.tab = tab;
+    $('tabThemes').classList.toggle('hidden', tab !== 'themes');
+    $('tabSkills').classList.toggle('hidden', tab !== 'skills');
+    for (const id of ['tabBtnThemes', 'tabBtnSkills']) {
+      const b = $(id), on = b.dataset.tab === tab;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    }
+  }
+
+  function showStoreBody(confirm) {
+    storeConfirm.classList.toggle('hidden', !confirm);
+    document.querySelector('.store-tabs').classList.toggle('hidden', confirm);
+    $('tabThemes').classList.toggle('hidden', confirm || storeState.tab !== 'themes');
+    $('tabSkills').classList.toggle('hidden', confirm || storeState.tab !== 'skills');
+  }
+
+  // tab: 'themes' | 'skills'; theme: doğrudan satın alma adımı açılacak tema
+  function openStore({ focus = null, fromGame = false, tab = null, theme = null } = {}) {
     storeState.focus = focus;
     storeState.fromGame = fromGame;
     storeState.pending = null;
@@ -7004,13 +7063,18 @@
       storeState.back = [menuEl, overEl, pauseEl].find((o) => o.classList.contains('show')) || menuEl;
     }
     $('storeMsg').textContent = focus
-      ? `Bu maçtaki ücretsiz ${SKILLS[focus].label} hakkını kullandın. Devam etmek için paket al.`
-      : 'Her maçta her skillden 1 ücretsiz hakkın var. Daha fazlası için paket al.';
-    storeConfirm.classList.add('hidden');
-    storeList.classList.remove('hidden');
+      ? `Bu maçtaki ücretsiz ${SKILLS[focus].label} hakkını kullandın. Devam etmek için altınla paket al.`
+      : 'Her maçta her skillden 1 ücretsiz hakkın var. Fazlası için altınla paket al.';
+    setTab(tab || (focus ? 'skills' : 'themes'));
     renderProducts();
+    renderThemes();
     renderInventory();
+    showStoreBody(false);
     showOverlay(storeEl);
+    if (theme && !isUnlocked(theme)) {
+      const info = THEME_INFO[theme];
+      askPurchase({ kind: 'theme', theme, name: info.name, price: info.price });
+    }
   }
 
   function closeStore() {
@@ -7022,48 +7086,124 @@
     }
   }
 
-  function askPurchase(pr) {
-    storeState.pending = pr;
-    $('confirmName').textContent = `${pr.name} · ${pr.desc}`;
-    $('confirmPrice').textContent = pr.price;
-    storeList.classList.add('hidden');
-    storeConfirm.classList.remove('hidden');
+  function askPurchase(item) {
+    storeState.pending = item;
+    $('confirmName').textContent = item.name;
+    $('confirmPrice').textContent = fmt(item.price);
+    renderConfirm();
+    showStoreBody(true);
     $('confirmBuy').focus();
+  }
+
+  function renderConfirm() {
+    const it = storeState.pending;
+    if (!it) return;
+    const need = it.price - wallet.coins, left = adsLeft();
+    $('coinConfirm').textContent = fmt(wallet.coins);
+    $('confirmNeed').textContent = need > 0 ? `· ${fmt(need)} eksik` : '';
+    const buy = $('confirmBuy');
+    buy.disabled = need > 0;
+    buy.textContent = need > 0 ? 'YETERSİZ ALTIN' : 'SATIN AL';
+    // Yetmiyorsa reklamla altın kazanma kısayolu
+    const ad = $('confirmAd');
+    ad.classList.toggle('hidden', need <= 0);
+    ad.disabled = left <= 0;
+    ad.querySelector('span').textContent = left > 0 ? 'Reklam izle' : 'Bugünlük reklam hakkın doldu';
+    ad.querySelector('b').textContent = left > 0 ? `+${COIN.adReward}` : '';
+    // Önizleme yalnızca menüden açılan mağazada (arkada tanıtım maçı oynarken)
+    $('confirmPreview').classList.toggle('hidden', it.kind !== 'theme' || storeState.fromGame || storeState.back !== menuEl);
   }
 
   function cancelPurchase() {
     storeState.pending = null;
-    storeConfirm.classList.add('hidden');
-    storeList.classList.remove('hidden');
+    showStoreBody(false);
   }
 
   function confirmPurchase() {
-    const pr = storeState.pending;
-    if (!pr || storeState.busy) return;
-    storeState.busy = true;
-    $('confirmBuy').disabled = true;
-    Payments.purchase(pr).then((res) => {
-      if (!res || !res.ok) throw new Error('declined');
-      for (const k of Object.keys(pr.give)) inventory[k] += pr.give[k];
+    const it = storeState.pending;
+    if (!it || wallet.coins < it.price) return;
+    wallet.coins -= it.price;
+    if (it.kind === 'skill') {
+      for (const k of Object.keys(it.pr.give)) inventory[k] += it.pr.give[k];
       saveInventory();
       renderInventory();
       skillUI.dirty = true;
-      Sound.ready();
-      const got = Object.keys(pr.give).map((k) => `${SKILLS[k].label} +${pr.give[k]}`).join(', ');
+      const got = Object.keys(it.pr.give).map((k) => `${SKILLS[k].label} +${it.pr.give[k]}`).join(', ');
       toast(`Satın alındı: ${got}`);
-      if (storeState.fromGame) closeStore();
-      else cancelPurchase();
-    }).catch(() => {
-      toast('Satın alma tamamlanamadı. Ödeme alınmadı.');
-      cancelPurchase();
-    }).finally(() => {
-      storeState.busy = false;
-      $('confirmBuy').disabled = false;
-    });
+    } else {
+      if (!wallet.unlocked.includes(it.theme)) wallet.unlocked.push(it.theme);
+      if (!storeState.fromGame) {
+        // Yeni açılan tema hemen seçilir (önizlemede zaten uygulanmış olabilir)
+        settings.theme = it.theme;
+        store.set('theme', it.theme);
+        if (!it.previewed) applyTheme(); // önizlemede zaten uygulandı
+        syncMenu();
+        toast(`${it.name} açıldı ve seçildi!`);
+      } else {
+        toast(`${it.name} açıldı! Ana menüden seçebilirsin.`);
+      }
+    }
+    saveWallet();
+    updateCoins(true);
+    Sound.ready();
+    storeState.pending = null;
+    if (storeState.fromGame && it.kind === 'skill') {
+      closeStore();
+      return;
+    }
+    renderProducts();
+    renderThemes();
+    showStoreBody(false);
   }
 
+  // Tema önizleme: mağaza gizlenir, tema arkadaki tanıtım maçında oynar
+  function previewTheme() {
+    const it = storeState.pending;
+    if (!it || it.kind !== 'theme') return;
+    storeState.preview = { prev: settings.theme };
+    settings.theme = it.theme; // yalnızca önizleme: kaydedilmez
+    applyTheme();
+    renderPreview();
+    showOverlay(unlockEl);
+  }
+
+  function renderPreview() {
+    const it = storeState.pending;
+    if (!it || it.kind !== 'theme') return;
+    const need = it.price - wallet.coins;
+    $('unlockName').textContent = it.name;
+    $('unlockDesc').textContent = THEME_INFO[it.theme].desc || '';
+    $('unlockPrice').textContent = fmt(it.price);
+    $('coinUnlock').textContent = fmt(wallet.coins);
+    $('unlockNeed').textContent = need > 0 ? `· ${fmt(need)} eksik` : '';
+    $('unlockBuy').disabled = need > 0;
+    $('unlockBuy').textContent = need > 0 ? 'YETERSİZ ALTIN' : 'SATIN AL';
+  }
+
+  function endPreview(bought) {
+    const pv = storeState.preview;
+    storeState.preview = null;
+    if (!bought && pv && pv.prev !== settings.theme) {
+      settings.theme = pv.prev;
+      applyTheme();
+    }
+    showOverlay(storeEl);
+  }
+
+  $('unlockBuy').addEventListener('click', () => {
+    const it = storeState.pending;
+    if (!it || wallet.coins < it.price) return;
+    it.previewed = true;
+    storeState.preview = null;
+    showOverlay(storeEl);
+    confirmPurchase();
+  });
+  $('unlockCancel').addEventListener('click', () => endPreview(false));
   $('confirmBuy').addEventListener('click', confirmPurchase);
   $('confirmCancel').addEventListener('click', cancelPurchase);
+  $('confirmPreview').addEventListener('click', previewTheme);
+  $('tabBtnThemes').addEventListener('click', () => setTab('themes'));
+  $('tabBtnSkills').addEventListener('click', () => setTab('skills'));
   $('storeClose').addEventListener('click', closeStore);
   $('menuStoreBtn').addEventListener('click', () => openStore());
   $('overStoreBtn').addEventListener('click', () => openStore());
@@ -7143,7 +7283,7 @@
   }
 
   function updateCoins(bump) {
-    for (const id of ['coinMenu', 'coinStore', 'coinOver', 'coinUnlock']) {
+    for (const id of ['coinMenu', 'coinStore', 'coinOver', 'coinUnlock', 'coinConfirm']) {
       const el = $(id);
       el.textContent = fmt(wallet.coins);
       if (bump) {
@@ -7153,7 +7293,7 @@
       }
     }
     const left = adsLeft();
-    for (const id of ['earnBtn', 'storeEarnBtn', 'unlockAd']) {
+    for (const id of ['earnBtn', 'storeEarnBtn']) {
       const b = $(id);
       b.disabled = left <= 0;
       b.querySelector('span').textContent = left > 0 ? 'Reklam izle' : 'Bugünlük reklam hakkın doldu';
@@ -7162,7 +7302,14 @@
     }
     renderReward();
     renderThemeLocks();
-    if (unlockEl.classList.contains('show')) renderUnlock();
+    if (storeState.pending) {
+      renderConfirm();
+      renderPreview();
+    }
+    if (storeEl.classList.contains('show')) {
+      renderProducts();
+      renderThemes();
+    }
   }
 
   function today() {
@@ -7265,7 +7412,7 @@
 
   $('earnBtn').addEventListener('click', earnFromAd);
   $('storeEarnBtn').addEventListener('click', earnFromAd);
-  $('unlockAd').addEventListener('click', earnFromAd);
+  $('confirmAd').addEventListener('click', earnFromAd);
   $('doubleBtn').addEventListener('click', () => {
     if (lastReward.doubled) return;
     watchAd(() => {
@@ -7305,61 +7452,6 @@
     });
   }
 
-  // Kilitli tema: arkadaki tanıtım maçında önizlenir, altınla açılır
-  const unlockState = { theme: null, prev: null };
-
-  function openUnlock(t) {
-    unlockState.theme = t;
-    if (unlockState.prev === null) unlockState.prev = settings.theme;
-    settings.theme = t; // yalnızca önizleme: kaydedilmez
-    applyTheme();
-    renderUnlock();
-    showOverlay(unlockEl);
-  }
-
-  function renderUnlock() {
-    const t = unlockState.theme, info = THEME_INFO[t];
-    if (!info) return;
-    const need = info.price - wallet.coins;
-    $('unlockName').textContent = info.name;
-    $('unlockDesc').textContent = info.desc || '';
-    $('unlockPrice').textContent = fmt(info.price);
-    $('coinUnlock').textContent = fmt(wallet.coins);
-    $('unlockNeed').textContent = need > 0 ? `· ${fmt(need)} eksik` : '';
-    const buy = $('unlockBuy');
-    buy.disabled = need > 0;
-    buy.textContent = need > 0 ? 'YETERSİZ ALTIN' : `KİLİDİ AÇ`;
-  }
-
-  function buyUnlock() {
-    const t = unlockState.theme, info = THEME_INFO[t];
-    if (!info || wallet.coins < info.price) return;
-    wallet.coins -= info.price;
-    if (!wallet.unlocked.includes(t)) wallet.unlocked.push(t);
-    saveWallet();
-    settings.theme = t;
-    store.set('theme', t);
-    unlockState.theme = unlockState.prev = null;
-    updateCoins(true);
-    syncMenu();
-    Sound.ready();
-    toast(`${info.name} açıldı!`);
-    showOverlay(menuEl);
-  }
-
-  function cancelUnlock() {
-    const prev = unlockState.prev;
-    unlockState.theme = unlockState.prev = null;
-    if (prev && prev !== settings.theme) {
-      settings.theme = prev;
-      applyTheme();
-    }
-    syncMenu();
-    showOverlay(menuEl);
-  }
-
-  $('unlockBuy').addEventListener('click', buyUnlock);
-  $('unlockCancel').addEventListener('click', cancelUnlock);
 
   // Tema: Neon ya da Su Stadyumu
   function applyTheme() {
@@ -7411,7 +7503,7 @@
       if (!b) return;
       const key = seg.dataset.group;
       if (key === 'theme' && !isUnlocked(b.dataset.value)) {
-        openUnlock(b.dataset.value);
+        openStore({ tab: 'themes', theme: b.dataset.value });
         return;
       }
       const prev = settings[key];

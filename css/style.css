@@ -2081,3 +2081,99 @@ body.skills .toast {
   transform: scaleX(0);
   transform-origin: left;
 }
+
+/* Mağaza sekmeleri */
+.store-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-bottom: 12px;
+  padding: 5px;
+  border-radius: 15px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.store-tabs button {
+  padding: 10px 6px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.store-tabs button.active {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(255, 200, 60, 0.25), rgba(255, 120, 60, 0.2));
+  box-shadow: inset 0 0 0 1px rgba(255, 205, 70, 0.6), 0 0 16px rgba(255, 190, 40, 0.18);
+}
+
+.product[data-kind="theme"] {
+  --sc: 150, 170, 230;
+}
+
+.product.locked .product-text b {
+  color: #c9cde6;
+}
+
+.coin-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 205, 70, 0.16) !important;
+  color: #ffe08a !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 205, 70, 0.5);
+}
+
+.coin-price.short {
+  opacity: 0.6;
+}
+
+.product-price.state {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.product-price.state.selected {
+  background: rgba(25, 230, 255, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(25, 230, 255, 0.6);
+  color: #c9f7ff;
+}
+
+.product-tag.free {
+  background: linear-gradient(90deg, #0fb8e6, #27c98a);
+}
+
+.need {
+  color: #ff9db8;
+  font-weight: 700;
+}
+
+/* Tema renk örnekleri */
+.swatch {
+  display: block;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.product[data-kind="theme"] .product-ico {
+  background: none;
+  box-shadow: none;
+}
+
+.sw-water { background: radial-gradient(circle at 30% 30%, #b8f0ff, #3fb2e0 45%, #0d4f7c); }
+.sw-neon { background: linear-gradient(135deg, #19e6ff, #7b4dff 55%, #ff3d9a); }
+.sw-ice { background: radial-gradient(circle at 30% 25%, #ffffff, #bfefff 30%, #2a8fb8 80%); }
+.sw-sand { background: repeating-linear-gradient(135deg, #f0d49a 0 5px, #d9b477 5px 9px); }
+.sw-lava { background: radial-gradient(circle at 60% 60%, #ffd05a, #ff6a14 30%, #3a0d05 70%); }
+.sw-mud { background: radial-gradient(circle at 70% 30%, #7fae3f 0 14%, transparent 15%), radial-gradient(circle at 35% 60%, #6b4a2a, #2a1a0e 80%); }
+.sw-space { background: radial-gradient(ellipse at 50% 90%, rgba(60, 255, 170, 0.7), transparent 60%), linear-gradient(#0b1236, #3a1f7a); }
+.sw-crystal { background: conic-gradient(from 20deg, #a85cff, #4678ff, #3ce1eb, #32eb8c, #ffbe46, #ff4682, #a85cff); }

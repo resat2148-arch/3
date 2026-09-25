@@ -10,7 +10,7 @@ Tarayıcıda ve telefonda çalışan, neon temalı bir air hockey oyunu. Kurulum
 
 ## Skiller
 
-Her maçta her skillden **1 ücretsiz** hakkın vardır; bekleme süresi yoktur ve maçın başından (geri sayım dahil) kullanılabilir. Ücretsiz hak bitince, mağazadan alınmış hakların varsa onlar kullanılır; yoksa skill düğmesi mağazayı açar (maç duraklar, satın alınca kaldığı yerden devam eder).
+Her maçta her skillden **1 ücretsiz** hakkın vardır; bekleme süresi yoktur ve maçın başından (geri sayım dahil) kullanılabilir. Ücretsiz hak bitince, mağazadan altınla alınmış hakların varsa onlar kullanılır; yoksa skill düğmesi mağazayı açar.
 
 | Skill | Etkisi | Süre |
 |---|---|---|
@@ -21,26 +21,17 @@ Her maçta her skillden **1 ücretsiz** hakkın vardır; bekleme süresi yoktur 
 - İkisi aynı kaleye denk gelirse etkiler birbirini kısmen dengeler.
 - Yapay zekâ yalnızca kendi ücretsiz haklarını kullanır (maç başına en fazla 2): kalesine hızlı top gelirken kilitler, şut çektikten sonra rakip kaleyi büyütür.
 
-## Mağaza ve satın alma
+## Altın (oyun parası) ve Mağaza
 
-Mağazada ek skill hakları satılır (fiyatlar örnektir, `js/game.js` içindeki `PRODUCTS` listesinden değiştirilir):
+Oyunda gerçek parayla satış yoktur. Altınla alınabilen her şey **Mağaza**'da, iki sekmede toplanır:
 
-| Ürün | İçerik | Örnek fiyat |
-|---|---|---|
-| Dev Kale | 3 kullanım | ₺9,99 |
-| Kale Kilidi | 3 kullanım | ₺9,99 |
-| Skill Paketi | 5 Dev Kale + 5 Kale Kilidi | ₺24,99 |
-
-Satın alınan haklar cihazda saklanır ve sonraki maçlarda da kullanılır; iki oyunculu modda iki oyuncu da aynı envanterden kullanır.
-
-> **Şu an TEST MODU:** ödeme alınmaz, ürün onaydan sonra doğrudan envantere eklenir. Gerçek ödeme için `Payments.purchase()` bir ödeme altyapısına bağlanmalıdır — örneğin Android uygulaması için Google Play Faturalandırma, iOS için App Store, web için Stripe. Ayrıca satın almaları doğrulayan ve envanteri tutan bir sunucu gerekir; tarayıcıda (localStorage) tutulan envanter kullanıcı tarafından değiştirilebilir.
-
-## Altın (oyun parası) ve tema kilitleri
-
-**Neon** ve **Su Stadyumu** herkese açıktır. Diğer temalar oyun parası olan **altınla** açılır. Kilitli bir temaya dokununca tema, menünün arkasındaki tanıtım maçında önizlenir; yeterli altın varsa tek dokunuşla açılır. Açılan temalar kalıcıdır.
+- **Temalar**: yalnızca **Su Stadyumu** ücretsizdir; diğer temalar altınla açılır. Açılan bir tema kalıcıdır ve mağazadan ya da menüden seçilebilir. Menüde kilitli bir temaya dokunmak mağazayı o temanın satın alma adımında açar. Menüden açılan mağazada "Önizle" ile tema, arkadaki tanıtım maçında denenebilir.
+- **Yetenekler**: Dev Kale ve Kale Kilidi ek hakları. Satın alınan haklar cihazda saklanır ve sonraki maçlarda da kullanılır; iki oyunculu modda iki oyuncu da aynı envanterden kullanır. Maç içinde ücretsiz hak bitince skill düğmesi mağazayı bu sekmede açar (maç duraklar, satın alınca kaldığı yerden devam eder).
 
 | Tema | Fiyat |
 |---|---|
+| Su Stadyumu | Ücretsiz |
+| Neon | 200 |
 | Buz Stadyumu | 250 |
 | Kum Stadyumu | 300 |
 | Lav Stadyumu | 400 |
@@ -48,23 +39,29 @@ Satın alınan haklar cihazda saklanır ve sonraki maçlarda da kullanılır; ik
 | Uzay Stadyumu | 500 |
 | Kristal Mağarası | 600 |
 
+| Yetenek paketi | İçerik | Fiyat |
+|---|---|---|
+| Dev Kale | 3 kullanım | 60 |
+| Kale Kilidi | 3 kullanım | 60 |
+| Skill Paketi | 5 Dev Kale + 5 Kale Kilidi | 170 |
+
 Altın kazanma yolları:
 
 - **Her maçtan sonra** (maç süre bitene kadar oynanmalı; yarıda bırakılan maç ödül vermez):
   - Tek oyuncu: sonuç (galibiyet 35, beraberlik 20, yenilgi 10) × zorluk (Kolay 1, Orta 1,5, Zor 2) + attığın her gol için 2 (en fazla 10 gol). Örnek: Orta seviyede 3-1 galibiyet = 35 × 1,5 + 6 = 59.
   - İki oyuncu: 15 + atılan her gol için 1 (en fazla 10).
   - Maç sonunda reklam izleyerek o maçın ödülü **2 katına** çıkarılabilir.
-- **Reklam izleyerek**: menüde, mağazada ve tema açma ekranında "Reklam izle" ile her reklam için +50 altın. Günde en fazla 10 ödüllü reklam izlenebilir; reklam sonuna kadar izlenmezse ödül verilmez. Reklam oynarken oyun sesi kısılır.
+- **Reklam izleyerek**: menüde ve mağazada "Reklam izle" ile her reklam için +50 altın (altın yetmediğinde satın alma adımında da çıkar). Günde en fazla 10 ödüllü reklam izlenebilir; reklam sonuna kadar izlenmezse ödül verilmez. Reklam oynarken oyun sesi kısılır.
 
-Fiyatlar ve ödüller `js/game.js` içindeki `THEME_INFO`, `COIN` ve `matchReward()` ile ayarlanır.
+Fiyatlar ve ödüller `js/game.js` içindeki `THEME_INFO`, `PRODUCTS`, `COIN` ve `matchReward()` ile ayarlanır.
 
-> **Reklamlar şu an TEST MODUNDA:** gerçek reklam yerine 5 saniyelik örnek bir gösterim oynatılır. Gerçek reklam için `Ads.showRewarded()` bir reklam altyapısına bağlanmalıdır — web için Google H5 Games Ads (Ad Placement API, ödüllü reklam), mobil uygulama için AdMob ödüllü reklam gibi. Gerçek sistemde ödül, reklam sağlayıcısının sunucu tarafı doğrulamasından (SSV) sonra bir sunucuda eklenmelidir; tarayıcıda (localStorage) tutulan bakiye ve açılan temalar kullanıcı tarafından değiştirilebilir.
+> **Reklamlar şu an TEST MODUNDA:** gerçek reklam yerine 5 saniyelik örnek bir gösterim oynatılır. Gerçek reklam için `Ads.showRewarded()` bir reklam altyapısına bağlanmalıdır — web için Google H5 Games Ads (Ad Placement API, ödüllü reklam), mobil uygulama için AdMob ödüllü reklam gibi. Gerçek sistemde ödül, reklam sağlayıcısının sunucu tarafı doğrulamasından (SSV) sonra bir sunucuda eklenmelidir; tarayıcıda (localStorage) tutulan bakiye, envanter ve açılan temalar kullanıcı tarafından değiştirilebilir.
 
 ## Temalar
 
-Menüdeki **Tema** seçiminden değiştirilir; seçim cihazda saklanır. Kilitli temalar için yukarıdaki bölüme bakın.
+Menüdeki **Tema** seçiminden ya da Mağaza'nın Temalar sekmesinden değiştirilir; seçim cihazda saklanır. Kilitli temalar Mağaza'da altınla açılır.
 
-- **Neon** (ücretsiz): parlayan çizgiler, neon raketler ve ışık izleri.
+- **Neon**: parlayan çizgiler, neon raketler ve ışık izleri.
 - **Su Stadyumu** (ücretsiz): masanın yerinde gerçek zamanlı simüle edilen bir havuz.
   - **Fizik**: su yüzeyi dalga denklemiyle hesaplanır; dalgalar yayılır, havuz duvarlarından yansır, viskozite ve sürtünmeyle söner.
   - **Etkileşim**: raketler ve paklar suyu hacimleriyle iter; önlerinde kabarma, arkalarında V biçimli iz ve dalga halkaları oluşur. Hızlı hareket köpük bırakır; çarpışmalar ve goller sıçrama ve halka dalgaları üretir.
