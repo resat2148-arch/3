@@ -310,6 +310,17 @@
       </button>
       <input id="volRange" class="vol-range" type="range" min="0" max="100" step="1" value="100" aria-label="Ses seviyesi" data-i18n-aria="v.level">
     </div>
+    <div id="musHead" class="vol-head vol-head-music">
+      <span data-i18n="v.music">Müzik</span>
+      <b id="musPct">60%</b>
+    </div>
+    <div id="musRow" class="vol-row">
+      <button id="musBtn" class="vol-mute" type="button" aria-label="Müziği kapat">
+        <svg class="on" viewBox="0 0 24 24"><path d="M9 18.2a3 3 0 1 1-2-2.83V5.6l12-2.3v11.9a3 3 0 1 1-2-2.83V7.7l-8 1.55z"/></svg>
+        <svg class="off" viewBox="0 0 24 24"><path d="M9 18.2a3 3 0 1 1-2-2.83V5.6l12-2.3v11.9a3 3 0 1 1-2-2.83V7.7l-8 1.55z" opacity=".45"/><path class="wave" d="M4 4l16 16" fill="none" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
+      <input id="musRange" class="vol-range" type="range" min="0" max="100" step="1" value="60" aria-label="Müzik seviyesi" data-i18n-aria="v.musicLevel">
+    </div>
     <div class="vol-hint" data-i18n-html="v.hint">Klavye: <b>−</b> / <b>+</b> seviye, <b>M</b> sessiz</div>
   </div>
 

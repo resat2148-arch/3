@@ -1147,8 +1147,20 @@ body.skills.pvp #stage {
   box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(25, 230, 255, 0.8);
 }
 
-.vol-pop.off .vol-range {
+.vol-pop.off .vol-range,
+.vol-row.off .vol-range {
   opacity: 0.45;
+}
+
+.vol-head-music {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.vol-head.off b {
+  color: var(--muted);
+  text-shadow: none;
 }
 
 .vol-hint {

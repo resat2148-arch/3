@@ -143,7 +143,10 @@
     // Ses
     'v.title': ['Ses', 'Sound'], 'v.off': ['Kapalı', 'Off'], 'v.mute': ['Sesi kapat', 'Mute'], 'v.unmute': ['Sesi aç', 'Unmute'],
     'v.level': ['Ses seviyesi', 'Volume'],
-    'v.hint': ['Klavye: <b>−</b> / <b>+</b> seviye, <b>M</b> sessiz', 'Keyboard: <b>−</b> / <b>+</b> volume, <b>M</b> mute'],
+    'v.music': ['Müzik', 'Music'], 'v.musicLevel': ['Müzik seviyesi', 'Music volume'],
+    'v.musicOff': ['Müziği kapat', 'Turn music off'], 'v.musicOn': ['Müziği aç', 'Turn music on'],
+    'v.toastMusicOn': ['Müzik açık (%{n})', 'Music on ({n}%)'], 'v.toastMusicOff': ['Müzik kapalı', 'Music off'],
+    'v.hint': ['Klavye: <b>−</b> / <b>+</b> seviye, <b>M</b> sessiz, <b>N</b> müzik', 'Keyboard: <b>−</b> / <b>+</b> volume, <b>M</b> mute, <b>N</b> music'],
     'v.platformMuted': ['Ses, CrazyGames ayarlarından kapatılmış.', 'Sound is muted in the CrazyGames settings.'],
     'v.toast': ['Ses: %{n}', 'Volume: {n}%'], 'v.toastOff': ['Ses kapalı', 'Sound off'], 'v.toastOn': ['Ses açık (%{n})', 'Sound on ({n}%)'],
     // Mağaza
@@ -307,6 +310,8 @@
     difficulty: store.get('difficulty', 'medium'),
     sound: store.get('sound', true),
     volume: clamp(Number(store.get('volume', 1)) || 0, 0, 1),
+    music: store.get('music', true),
+    musicVol: clamp(Number(store.get('musicVol', 0.6)), 0, 1) || 0,
     theme: isUnlocked(savedTheme) ? savedTheme : 'water',
     lang: LANG,
   };
@@ -373,6 +378,7 @@
       for (let i = 0; i < nlen; i++) d[i] = Math.random() * 2 - 1;
       this.noiseBuf = buf;
       this.ambient(settings.theme);
+      Music.init(c, this.master, ir, buf);
     },
     // Temaya göre döngüsel ambiyans: su → havuz uğultusu; buz → arena uğultusu + diskin kayma sesi
     ambient(theme) {
@@ -1058,6 +1064,412 @@
       } else {
         this.tone({ f0: 98, f1: 60, dur: 1.2, type: 'sawtooth', vol: 0.18, delay: end, lp: 600, rev: 0.3 });
       }
+    },
+  };
+
+  // ---------------------------------------------------------------------------
+  // Müzik: her temanın kendi parçası, Web Audio ile anlık üretilir (ses dosyası yok).
+  // 16'lık adımlı bir sıralayıcı: akorlar ikişer ölçü sürer, dizi 8 ölçüde bir döner; her ikinci
+  // turda (B bölümü) ezgi ve farklı arpej girer. Maç sürerken davul ve arpej tam açılır, menüde ve
+  // duraklatmada yalnızca yumuşak katmanlar çalar; son 15 saniyede (ikinci pak) tempo hissi artar.
+  // Kalıplar: davulda x tam, o hafif vuruş; basta R kök, 5 beşli, O oktav, b yedili, 3 üçlü;
+  // arpej / ezgide rakam akorun notası (4-7 bir oktav üstü); '.' sus.
+  // ---------------------------------------------------------------------------
+  const MUSIC = {
+    // Su: berrak, sakin bir chill parçası (Re majör)
+    water: {
+      bpm: 92, swing: 0.1,
+      chords: [[62, 66, 69, 73], [59, 62, 66, 69], [55, 59, 62, 66], [57, 61, 64, 67]],
+      bass: [38, 35, 31, 33],
+      pad: 'soft', keys: 'ep', keysPat: 'x.....x...x.....',
+      bassInst: 'round', bassPat: 'R.....R...5...O.',
+      arp: 'drop', arpPat: '4...6...5...7...', arpB: '4.6.5...7.6.5...',
+      lead: 'drop', leadPat: '7.......6...5...',
+      kick: 'x.......x.x.....', snare: '....o.......o...', hat: '..o...o...o...oo', drum: 'soft',
+    },
+    // Neon: synthwave (La minör)
+    neon: {
+      bpm: 108, swing: 0, gain: 1.35,
+      chords: [[57, 60, 64, 67], [57, 60, 64, 65], [55, 60, 64, 67], [55, 59, 62, 67]],
+      bass: [33, 29, 36, 31],
+      pad: 'saw', keys: null,
+      bassInst: 'saw', bassPat: 'R.R.O.R.R.R.O.R.',
+      arp: 'square', arpPat: '0123012301230123', arpB: '0124012401240124',
+      lead: 'lead', leadPat: '6.......5...4...',
+      kick: 'x...x...x...x...', snare: '....x.......x...', hat: '..x...x...x...x.', drum: 'synth', fill: true,
+    },
+    // Buz: kristal çanlar, seyrek ve geniş (Mi minör)
+    ice: {
+      bpm: 76, swing: 0,
+      chords: [[64, 67, 71, 74], [60, 64, 67, 71], [59, 62, 67, 71], [57, 62, 66, 69]],
+      bass: [40, 36, 43, 38],
+      pad: 'glass', keys: null,
+      bassInst: 'round', bassPat: 'R...............',
+      arp: 'bell', arpPat: '4...5...6...5...', arpB: '4..56..74..65...',
+      lead: 'bell', leadPat: '7.......6.......',
+      kick: 'x.........x.....', snare: '................', hat: '....o.......o...', drum: 'soft',
+    },
+    // Lav: ağır, karanlık ritim (Do minör)
+    lava: {
+      bpm: 88, swing: 0, gain: 1.3,
+      chords: [[60, 63, 67, 70], [56, 60, 63, 67], [53, 56, 60, 63], [55, 59, 62, 65]],
+      bass: [36, 32, 29, 31],
+      pad: 'dark', keys: null,
+      bassInst: 'saw', bassPat: 'R..R..R...R.R..O',
+      arp: 'lead', arpPat: '0..2..1...3.....', arpB: '0..2..1...3.2.1.',
+      lead: 'lead', leadPat: '6.......5...4...',
+      kick: 'x..x..x...x.....', snare: '....x.......x..o', hat: 'x.o.x.o.x.o.x.o.', drum: 'heavy', fill: true,
+    },
+    // Kum: hicaz makamında ud ve darbuka (Re hicaz)
+    sand: {
+      bpm: 100, swing: 0.08,
+      chords: [[62, 66, 69, 74], [63, 67, 70, 75], [62, 66, 69, 74], [60, 63, 67, 72]],
+      bass: [38, 39, 38, 36],
+      pad: 'soft', keys: null,
+      bassInst: 'round', bassPat: 'R.....R...R.....',
+      arp: 'oud', arpPat: '0.1.2.1.0..2.3.2', arpB: '4.3.2.1.2..1.0..',
+      lead: 'oud', leadPat: '6.5.4...5.4.3...',
+      kick: 'x.....x...x.....', snare: '...o..o.x...o.o.', hat: '..o.......o.....', drum: 'hand',
+    },
+    // Uzay: rüya gibi geniş tınılar (Fa lidya)
+    space: {
+      bpm: 80, swing: 0, gain: 1.12,
+      chords: [[57, 60, 64, 65], [59, 62, 65, 67], [55, 59, 62, 64], [57, 60, 64, 67]],
+      bass: [29, 31, 28, 33],
+      pad: 'wide', keys: null,
+      bassInst: 'sub', bassPat: 'R.......R.......',
+      arp: 'drop', arpPat: '0.1.2.3.4.3.2.1.', arpB: '4.5.6.7.6.5.4.5.',
+      lead: 'glide', leadPat: '6.......7.......',
+      kick: 'x.........x.....', snare: '................', hat: 'o.o.o.o.o.o.o.o.', drum: 'soft',
+    },
+    // Kristal: vuruşların çaldığı Do pentatoniğe uyan yumuşak bir zemin; ezgiyi vuruşlar çalar
+    crystal: {
+      bpm: 84, swing: 0,
+      chords: [[60, 62, 64, 67], [57, 60, 64, 67], [53, 57, 60, 64], [55, 59, 62, 64]],
+      bass: [36, 33, 29, 31],
+      pad: 'glass', keys: null,
+      bassInst: 'round', bassPat: 'R.......5.......',
+      arp: 'bell', arpPat: '4.......6.......', arpB: '4.......6...5...',
+      lead: null,
+      kick: '................', snare: '................', hat: '....o.......o...', drum: 'soft',
+    },
+    // Bataklık: ağır aksak bir blues (Mi)
+    mud: {
+      bpm: 72, swing: 0.3,
+      chords: [[52, 56, 59, 62], [57, 61, 64, 67], [52, 56, 59, 62], [59, 63, 66, 69]],
+      bass: [40, 45, 40, 47],
+      pad: null, keys: 'ep', keysPat: '..x.....x.x.....',
+      bassInst: 'round', bassPat: 'R...5...b...5...',
+      arp: 'twang', arpPat: '0..2..1...3.....', arpB: '0..2..3..2..1...',
+      lead: 'twang', leadPat: '6...5.4...3.....',
+      kick: 'x.....x...x.....', snare: '....x.......x...', hat: 'x.x.x.x.x.x.x.x.', drum: 'soft',
+    },
+  };
+  const BASS_INT = { R: 0, '5': 7, O: 12, b: 10, '3': 4 };
+  const mtof = (n) => 440 * Math.pow(2, (n - 69) / 12);
+
+  const Music = {
+    styles: MUSIC, c: null, style: null, theme: null, pending: null, switchAt: 0,
+    step: 0, nextT: 0, timer: 0, mode: '', hype: false,
+    // Ses bağlamı kurulunca çağrılır. `c` OfflineAudioContext de olabilir (deneme kaydı için).
+    init(c, dest, irBuf, noiseBuf) {
+      this.c = c;
+      this.noise = noiseBuf;
+      // tema → katmanlar → mix (geçişlerde kısılır) → hafif sıkıştırıcı → vol (oyuncu ayarı) → dest
+      this.vol = c.createGain();
+      this.vol.gain.value = this.level();
+      this.mix = c.createGain();
+      this.mix.gain.value = 0;
+      const comp = c.createDynamicsCompressor();
+      comp.threshold.value = -16;
+      comp.knee.value = 10;
+      comp.ratio.value = 3;
+      comp.attack.value = 0.01;
+      comp.release.value = 0.25;
+      this.mix.connect(comp);
+      comp.connect(this.vol);
+      this.vol.connect(dest);
+      const conv = c.createConvolver();
+      conv.buffer = irBuf;
+      this.revIn = c.createGain();
+      this.revIn.gain.value = 0.55;
+      this.revIn.connect(conv);
+      conv.connect(this.mix);
+      this.layers = {};
+      for (const k of ['base', 'arp', 'beat']) {
+        const g = c.createGain();
+        g.connect(this.mix);
+        this.layers[k] = g;
+      }
+      this.setMode('calm', true);
+      if (!(c instanceof (window.OfflineAudioContext || Object))) {
+        this.timer = setInterval(() => this.tick(), 50);
+      }
+      const th = this.theme || settings.theme;
+      this.theme = null;
+      this.setTheme(th);
+    },
+    level() {
+      return settings.music ? settings.musicVol * settings.musicVol * 0.8 : 0;
+    },
+    playing() {
+      return !!this.c && this.level() > 0 && Sound.level() > 0 && !document.hidden;
+    },
+    applyVolume() {
+      if (!this.vol) return;
+      const t = this.c.currentTime;
+      this.vol.gain.cancelScheduledValues(t);
+      this.vol.gain.setTargetAtTime(document.hidden ? 0 : this.level(), t, 0.08);
+    },
+    setTheme(th) {
+      if (th === this.theme && !this.pending) return;
+      this.theme = th;
+      if (!this.c) return;
+      const t = this.c.currentTime;
+      this.mix.gain.cancelScheduledValues(t);
+      this.mix.gain.setTargetAtTime(0, t, 0.12);
+      this.pending = th;
+      this.switchAt = t + (this.style ? 0.5 : 0);
+    },
+    // Oyunun durumuna göre katmanlar: 'play' tam, 'calm' (menü, maç sonu) yumuşak, 'pause' kısık
+    setMode(mode, now) {
+      if (mode === this.mode) return;
+      this.mode = mode;
+      const L = { play: [1, 1, 1], calm: [1, 0.55, 0], pause: [0.55, 0.3, 0] }[mode];
+      const t = this.c.currentTime;
+      ['base', 'arp', 'beat'].forEach((k, i) => {
+        const g = this.layers[k].gain;
+        g.cancelScheduledValues(t);
+        if (now) g.setValueAtTime(L[i], t);
+        else g.setTargetAtTime(L[i], t, k === 'beat' && L[i] > 0 ? 0.05 : 0.35);
+      });
+    },
+    // Her karede: oyun durumunu katmanlara yansıt
+    update() {
+      if (!this.c) return;
+      const st = game.state;
+      this.setMode(st === 'play' || st === 'countdown' || st === 'goal' ? 'play' : st === 'paused' ? 'pause' : 'calm');
+      this.hype = st === 'play' && game.frenzy;
+    },
+    tick() {
+      const c = this.c;
+      if (!c || !this.playing()) {
+        this.nextT = 0; // yeniden açılınca ölçü başından, şimdiden başla
+        return;
+      }
+      const now = c.currentTime;
+      if (this.pending && now >= this.switchAt) {
+        this.style = MUSIC[this.pending] || MUSIC.water;
+        this.pending = null;
+        this.step = 0;
+        this.nextT = now + 0.06;
+        this.mix.gain.cancelScheduledValues(now);
+        this.mix.gain.setTargetAtTime(this.style.gain || 1, now, 0.3); // temalar aynı yükseklikte duyulsun
+      }
+      if (!this.style || this.pending) return;
+      if (this.nextT < now) { // sekme arka plandaydı ya da yeni açıldı: kaldığı ölçünün başından
+        this.step -= this.step % 16;
+        this.nextT = now + 0.06;
+      }
+      const spb = 60 / this.style.bpm / 4;
+      while (this.nextT < now + 0.3) {
+        this.playStep(this.step, this.nextT);
+        this.nextT += spb;
+        this.step++;
+      }
+    },
+    // Bir 16'lık adımı t anına yerleştirir
+    playStep(i, t) {
+      const S = this.style, spb = 60 / S.bpm / 4;
+      const bar = Math.floor(i / 16), s = i % 16, n = S.chords.length;
+      const ci = Math.floor(bar / 2) % n, chord = S.chords[ci], root = S.bass[ci];
+      const B = Math.floor(bar / (2 * n)) % 2 === 1; // B bölümü
+      if (s % 2 === 1) t += S.swing * spb;
+      const L = this.layers;
+      const lenOf = (pat) => { let k = 1; while (k < 16 && pat[(s + k) % 16] === '.') k++; return k * spb; };
+
+      if (s === 0 && bar % 2 === 0 && S.pad) for (const m of chord) this.pad(S.pad, t, m, spb * 32, L.base);
+      if (S.keys && S.keysPat[s] === 'x') for (const m of chord) this.voice(S.keys, t, m, lenOf(S.keysPat) * 0.9, 0.5, L.base);
+      const bc = S.bassPat[s];
+      if (bc !== '.') this.voice(S.bassInst, t, root + BASS_INT[bc], lenOf(S.bassPat) * 0.92, 1, L.base);
+
+      const ap = (B && S.arpB) || S.arpPat;
+      if (S.arp && ap[s] !== '.') {
+        const d = +ap[s];
+        this.voice(S.arp, t, chord[d % 4] + 12 * Math.floor(d / 4), Math.min(lenOf(ap), spb * 6), 0.8, L.arp);
+      }
+      if (B && S.lead && S.leadPat[s] !== '.') {
+        const d = +S.leadPat[s];
+        this.voice(S.lead, t, chord[d % 4] + 12 * Math.floor(d / 4), lenOf(S.leadPat) * 0.95, 0.75, L.arp);
+      }
+
+      const D = S.drum;
+      const hit = (pat) => (pat[s] === 'x' ? 1 : pat[s] === 'o' ? 0.55 : 0);
+      if (hit(S.kick)) this.kick(t, hit(S.kick), D);
+      let sn = hit(S.snare);
+      if (!sn && S.fill && bar % 4 === 3 && s >= 12) sn = 0.25 + (s - 12) * 0.12; // dört ölçüde bir geçiş
+      if (sn) this.snare(t, sn, D);
+      let hh = hit(S.hat);
+      if (!hh && this.hype && s % 2 === 1) hh = 0.35;
+      if (hh) this.hat(t, hh, D);
+    },
+
+    // --- Tınılar ---
+    // Tek osilatörlü nota: zarf + isteğe bağlı süzgeç; `rev` yankı payı
+    osc(t, f, { type = 'sine', dur, vol, attack = 0.005, release = 0, lp = 0, lpTo = 0, q = 0.7, detune = 0, glide = 0, dest, rev = 0 }) {
+      const c = this.c;
+      const o = c.createOscillator();
+      o.type = type;
+      o.detune.value = detune;
+      if (glide) {
+        o.frequency.setValueAtTime(f * glide, t);
+        o.frequency.exponentialRampToValueAtTime(f, t + 0.12);
+      } else o.frequency.value = f;
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + attack);
+      if (release) { // sürdürülen nota (yüzey): sonda yavaşça söner
+        g.gain.setValueAtTime(vol, t + Math.max(attack, dur - release));
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      } else g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      let node = o;
+      if (lp) {
+        const fl = c.createBiquadFilter();
+        fl.type = 'lowpass';
+        fl.Q.value = q;
+        fl.frequency.setValueAtTime(lp, t);
+        if (lpTo) fl.frequency.exponentialRampToValueAtTime(lpTo, t + Math.min(dur, 0.6));
+        o.connect(fl);
+        node = fl;
+      }
+      node.connect(g);
+      g.connect(dest);
+      if (rev) {
+        const r = c.createGain();
+        r.gain.value = rev;
+        g.connect(r);
+        r.connect(this.revIn);
+      }
+      o.start(t);
+      o.stop(t + dur + 0.05);
+    },
+    pad(kind, t, m, dur, dest) {
+      const f = mtof(m), A = 0.9, R = 1.4;
+      if (kind === 'soft') {
+        for (const dt of [-7, 7]) this.osc(t, f, { type: 'sawtooth', dur, vol: 0.022, attack: A, release: R, lp: 900, detune: dt, dest, rev: 0.5 });
+      } else if (kind === 'saw') {
+        for (const dt of [-10, 10]) this.osc(t, f, { type: 'sawtooth', dur, vol: 0.024, attack: 0.4, release: R, lp: 1600, detune: dt, dest, rev: 0.4 });
+      } else if (kind === 'dark') {
+        for (const dt of [-6, 6]) this.osc(t, f * 0.5, { type: 'sawtooth', dur, vol: 0.03, attack: A, release: R, lp: 520, q: 2, detune: dt, dest, rev: 0.4 });
+      } else if (kind === 'glass') {
+        this.osc(t, f, { type: 'sine', dur, vol: 0.04, attack: 1.2, release: 1.8, dest, rev: 0.7 });
+        this.osc(t, f * 2, { type: 'triangle', dur, vol: 0.012, attack: 1.6, release: 1.8, dest, rev: 0.8 });
+      } else { // wide
+        for (const dt of [-12, 0, 12]) this.osc(t, f, { type: 'triangle', dur, vol: 0.024, attack: 1.4, release: 2, lp: 2200, detune: dt, dest, rev: 0.8 });
+      }
+    },
+    voice(kind, t, m, dur, v, dest) {
+      const f = mtof(m);
+      switch (kind) {
+        case 'ep': // elektrik piyano
+          this.osc(t, f, { dur: dur + 0.3, vol: 0.05 * v, attack: 0.006, dest, rev: 0.3 });
+          this.osc(t, f * 2, { dur: 0.35, vol: 0.016 * v, attack: 0.004, dest });
+          this.osc(t, f, { type: 'triangle', dur: dur * 0.6 + 0.1, vol: 0.02 * v, detune: 5, dest, rev: 0.3 });
+          break;
+        case 'round': // yuvarlak bas
+          this.osc(t, f, { dur: dur + 0.05, vol: 0.2 * v, attack: 0.01, release: 0.08, dest });
+          this.osc(t, f * 2, { type: 'triangle', dur: Math.min(dur, 0.25), vol: 0.03 * v, dest });
+          break;
+        case 'sub':
+          this.osc(t, f, { dur: dur + 0.1, vol: 0.2 * v, attack: 0.08, release: 0.5, dest });
+          break;
+        case 'saw': // süzgeçli testere bas
+          this.osc(t, f, { type: 'sawtooth', dur: dur + 0.04, vol: 0.09 * v, attack: 0.005, release: 0.05, lp: 1100, lpTo: 260, q: 3, dest });
+          this.osc(t, f * 0.5, { dur: dur + 0.04, vol: 0.12 * v, attack: 0.005, release: 0.05, dest });
+          break;
+        case 'drop': // su damlası gibi yumuşak, tok nota
+          this.osc(t, f, { dur: 0.5, vol: 0.07 * v, attack: 0.003, dest, rev: 0.45 });
+          this.osc(t, f * 3, { dur: 0.08, vol: 0.012 * v, attack: 0.002, dest, rev: 0.3 });
+          break;
+        case 'square':
+          this.osc(t, f, { type: 'square', dur: 0.16, vol: 0.026 * v, lp: 3200, lpTo: 900, dest, rev: 0.35 });
+          break;
+        case 'lead':
+          this.osc(t, f, { type: 'sawtooth', dur: dur + 0.1, vol: 0.03 * v, attack: 0.02, release: 0.15, lp: 2400, detune: -6, dest, rev: 0.4 });
+          this.osc(t, f, { type: 'square', dur: dur + 0.1, vol: 0.016 * v, attack: 0.02, release: 0.15, lp: 2000, detune: 6, dest, rev: 0.4 });
+          break;
+        case 'bell':
+          this.osc(t, f, { dur: 1.6, vol: 0.045 * v, attack: 0.003, dest, rev: 0.6 });
+          this.osc(t, f * 2.76, { dur: 0.45, vol: 0.012 * v, attack: 0.002, dest, rev: 0.6 });
+          break;
+        case 'oud': // mızrapla çalınan ud
+          this.osc(t, f, { type: 'sawtooth', dur: 0.55, vol: 0.05 * v, attack: 0.003, lp: 2600, lpTo: 600, q: 1.5, glide: 1.012, dest, rev: 0.3 });
+          this.osc(t, f * 2, { type: 'triangle', dur: 0.2, vol: 0.015 * v, attack: 0.002, dest });
+          break;
+        case 'twang': // gevşek telli gitar
+          this.osc(t, f, { type: 'sawtooth', dur: 0.7, vol: 0.04 * v, attack: 0.003, lp: 1800, lpTo: 400, q: 2, glide: 0.985, dest, rev: 0.35 });
+          break;
+        case 'glide': // uzay ezgisi: aşağıdan kayarak gelen yumuşak nota
+          this.osc(t, f, { type: 'triangle', dur: dur + 0.4, vol: 0.05 * v, attack: 0.08, release: 0.5, glide: 0.94, dest, rev: 0.8 });
+          break;
+      }
+    },
+    noiseHit(t, { dur, vol, type, freq, q = 0.8, dest, rev = 0 }) {
+      const c = this.c;
+      const s = c.createBufferSource();
+      s.buffer = this.noise;
+      const fl = c.createBiquadFilter();
+      fl.type = type;
+      fl.frequency.value = freq;
+      fl.Q.value = q;
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.002);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      s.connect(fl);
+      fl.connect(g);
+      g.connect(dest);
+      if (rev) {
+        const r = this.c.createGain();
+        r.gain.value = rev;
+        g.connect(r);
+        r.connect(this.revIn);
+      }
+      s.start(t, Math.random() * 1.2);
+      s.stop(t + dur + 0.05);
+    },
+    kick(t, v, D) {
+      const c = this.c, dest = this.layers.beat;
+      const o = c.createOscillator(), g = c.createGain();
+      const top = D === 'hand' ? 110 : D === 'heavy' ? 140 : 120, low = D === 'hand' ? 62 : 44;
+      o.frequency.setValueAtTime(top, t);
+      o.frequency.exponentialRampToValueAtTime(low, t + 0.12);
+      const vol = (D === 'soft' ? 0.22 : D === 'heavy' ? 0.42 : 0.34) * v;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + (D === 'hand' ? 0.3 : 0.38));
+      o.connect(g);
+      g.connect(dest);
+      o.start(t);
+      o.stop(t + 0.45);
+    },
+    snare(t, v, D) {
+      const dest = this.layers.beat;
+      if (D === 'hand') { // darbuka "tek": kuru, tiz
+        this.noiseHit(t, { dur: 0.06, vol: 0.09 * v, type: 'bandpass', freq: 3400, q: 1.6, dest, rev: 0.2 });
+        this.osc(t, 520, { dur: 0.05, vol: 0.05 * v, dest });
+      } else if (D === 'soft') { // kenar vuruşu
+        this.noiseHit(t, { dur: 0.05, vol: 0.05 * v, type: 'bandpass', freq: 2400, q: 2, dest, rev: 0.3 });
+        this.osc(t, 820, { dur: 0.04, vol: 0.03 * v, dest });
+      } else {
+        this.noiseHit(t, { dur: D === 'heavy' ? 0.26 : 0.2, vol: 0.12 * v, type: 'bandpass', freq: 1900, q: 0.7, dest, rev: 0.35 });
+        this.osc(t, D === 'heavy' ? 160 : 190, { dur: 0.1, vol: 0.08 * v, dest });
+      }
+    },
+    hat(t, v, D) {
+      const dest = this.layers.beat;
+      if (D === 'hand') this.noiseHit(t, { dur: 0.04, vol: 0.04 * v, type: 'bandpass', freq: 5200, q: 1.2, dest });
+      else this.noiseHit(t, { dur: D === 'heavy' ? 0.06 : 0.035, vol: (D === 'soft' ? 0.028 : 0.04) * v, type: 'highpass', freq: 7500, dest });
     },
   };
 
@@ -6325,12 +6737,17 @@
       return;
     }
     if (e.code === 'Minus' || e.code === 'NumpadSubtract' || e.code === 'Equal' || e.code === 'NumpadAdd') {
-      if (e.target && e.target.id === 'volRange') return; // kaydırıcı kendi tuşlarını işler
+      if (e.target && (e.target.id === 'volRange' || e.target.id === 'musRange')) return; // kaydırıcı kendi tuşlarını işler
       const up = e.code === 'Equal' || e.code === 'NumpadAdd';
       const base = settings.sound ? settings.volume : 0;
       setVolume(Math.round((base + (up ? 0.1 : -0.1)) * 10) / 10, true);
       toast(Sound.platformMute ? tl('v.platformMuted')
         : settings.sound && settings.volume > 0 ? tl('v.toast', { n: Math.round(settings.volume * 100) }) : tl('v.toastOff'));
+      return;
+    }
+    if (e.code === 'KeyN') {
+      toggleMusic();
+      toast(settings.music ? tl('v.toastMusicOn', { n: Math.round(settings.musicVol * 100) }) : tl('v.toastMusicOff'));
       return;
     }
     if (e.code === 'KeyM') {
@@ -7064,6 +7481,7 @@
   // Ses seviyesi
   // ---------------------------------------------------------------------------
   const volPop = $('volPop'), volRange = $('volRange'), volPct = $('volPct'), muteBtn = $('muteBtn');
+  const musRange = $('musRange'), musPct = $('musPct'), musBtn = $('musBtn'), musHead = $('musHead'), musRow = $('musRow');
 
   function syncVolumeUI() {
     const pct = Math.round(settings.volume * 100);
@@ -7078,6 +7496,42 @@
     muteBtn.classList.toggle('muted', !on);
     muteBtn.setAttribute('aria-label', on ? tl('v.mute') : tl('v.unmute'));
     muteBtn.title = `${on ? tl('v.mute') : tl('v.unmute')} (M)`;
+    const mp = Math.round(settings.musicVol * 100);
+    const mOn = settings.music && mp > 0;
+    musRange.value = String(mp);
+    musRange.style.setProperty('--v', mp + '%');
+    musRange.setAttribute('aria-valuetext', mOn ? tl('pct', { n: mp }) : tl('v.off'));
+    musPct.textContent = mOn ? tl('pct', { n: mp }) : tl('v.off');
+    musHead.classList.toggle('off', !mOn);
+    musRow.classList.toggle('off', !mOn);
+    musBtn.classList.toggle('muted', !mOn);
+    musBtn.setAttribute('aria-label', mOn ? tl('v.musicOff') : tl('v.musicOn'));
+    musBtn.title = `${mOn ? tl('v.musicOff') : tl('v.musicOn')} (N)`;
+  }
+
+  function setMusicVolume(v) {
+    settings.musicVol = clamp(v, 0, 1);
+    // Kaydırıcıyı sıfırdan yukarı çekmek müziği yeniden açar
+    if (settings.musicVol > 0 && !settings.music) {
+      settings.music = true;
+      store.set('music', true);
+    }
+    store.set('musicVol', settings.musicVol);
+    Sound.init();
+    Music.applyVolume();
+    syncVolumeUI();
+  }
+
+  function toggleMusic() {
+    settings.music = !settings.music;
+    if (settings.music && settings.musicVol <= 0) {
+      settings.musicVol = 0.6;
+      store.set('musicVol', settings.musicVol);
+    }
+    store.set('music', settings.music);
+    Sound.init();
+    Music.applyVolume();
+    syncVolumeUI();
   }
 
   function setVolume(v, preview) {
@@ -7122,6 +7576,8 @@
   }
 
   volRange.addEventListener('input', () => setVolume(Number(volRange.value) / 100, true));
+  musRange.addEventListener('input', () => setMusicVolume(Number(musRange.value) / 100));
+  musBtn.addEventListener('click', toggleMusic);
   muteBtn.addEventListener('click', () => {
     toggleSound();
     if (settings.sound) Sound.preview();
@@ -7816,6 +8272,7 @@
     if (t === 'crystal') Crystal.reset();
     resize();
     Sound.ambient(t);
+    Music.setTheme(t);
   }
 
   // Menü seçimleri
@@ -8301,6 +8758,7 @@
     }
     if (game.state !== 'demo') updateSkillUI();
     syncGameplay();
+    Music.update();
     requestAnimationFrame(frame);
   }
 
@@ -8351,6 +8809,7 @@
   }
   // Gizli sekmede kare döngüsü durur: durdurma bildirimi hemen gitsin
   document.addEventListener('visibilitychange', syncGameplay);
+  document.addEventListener('visibilitychange', () => Music.applyVolume()); // arka planda müzik susar
 
   applyLang();
   applyTheme();
@@ -8365,5 +8824,5 @@
   }
 
   // Test ve hata ayıklama için
-  window.__airHockey = { saveTarget: cloudData ? 'crazygames' : 'local', wallet, Ads, THEME_INFO, matchReward, adsLeft, Water, Ice, Lava, Sand, Space, Crystal, Swamp, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update };
+  window.__airHockey = { saveTarget: cloudData ? 'crazygames' : 'local', wallet, Ads, THEME_INFO, matchReward, adsLeft, Water, Ice, Lava, Sand, Space, Crystal, Swamp, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update, Music };
 });
