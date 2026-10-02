@@ -5335,7 +5335,7 @@
       tx: W / 2, ty: homeY(i),
       ai: true, level: AI_LEVELS.medium,
       aiTx: W / 2, aiTy: homeY(i), avx: 0, avy: 0,
-      aiTimer: 0, aiMode: '', aimX: W / 2, charge: false,
+      aiTimer: 0, aiMode: '', aimX: W / 2, charge: false, tap: false, digSide: 1, clearUntil: 0,
       glow: 0, hitCool: 0,
     };
   }
@@ -5358,6 +5358,8 @@
     m.vx = m.vy = m.avx = m.avy = 0;
     m.aiMode = '';
     m.charge = false;
+    m.clearUntil = 0;
+    m.tap = false;
   }
 
   function placePuck(p, side) {
@@ -5647,6 +5649,11 @@
   }
 
   function onMalletHit(m, imp) {
+    if (m.ai && m.tap) {
+      let near = null, nd = Infinity;
+      for (const p of pucks) if (p.active && Math.hypot(p.x - m.x, p.y - m.y) < nd) { nd = Math.hypot(p.x - m.x, p.y - m.y); near = p; }
+      if (near) startClear(m, near);
+    }
     const k = clamp(imp / 1800, 0, 1);
     m.glow = Math.max(m.glow, 0.35 + k * 0.65);
     if (m.hitCool > 0) return;
@@ -6061,6 +6068,30 @@
     return best;
   }
 
+  // Duvara dokundurulan pak raketin bulunduğu yere doğru geri seker (köşede tam geldiği yoldan).
+  // Raket, pakla arasındaki doğruya dik olarak merkeze doğru hızla yana çekilir.
+  function startClear(m, p) {
+    const flip = m.bottom;
+    const ly = flip ? H - m.y : m.y, py = flip ? H - p.y : p.y; // raketin yarısı üstteymiş gibi
+    let dx = m.x - p.x, dy = ly - py;
+    const dl = Math.hypot(dx, dy) || 1;
+    dx /= dl;
+    dy /= dl;
+    let sx = -dy, sy = dx; // dönüş yoluna dik
+    if (sx * (W / 2 - m.x) < 0) { sx = -sx; sy = -sy; } // merkeze doğru olan taraf
+    const cx = clamp(m.x + sx * (MIN_D + 30) + dx * 20, MALLET_R, W - MALLET_R);
+    const cy = clamp(ly + sy * (MIN_D + 30) + dy * 20, MALLET_R, H / 2 - CENTER_GAP);
+    m.clearUntil = game.time + 0.3;
+    m.clearX = cx;
+    m.clearY = cy;
+    m.aiTx = cx;
+    m.aiTy = flip ? H - cy : cy;
+    m.aiMode = 'clear';
+    m.charge = false;
+    m.tap = false;
+    m.aiTimer = Math.max(m.aiTimer, 0.08);
+  }
+
   // Hesaplar raketin kendi yarısı üstteymiş gibi yapılır; alttaki AI için y aynalanır.
   function aiThink(m) {
     const L = m.level;
@@ -6072,7 +6103,7 @@
     const mx = m.x, my = Y(m.y);
     const guardY = 92;
     const limitY = H / 2 - CENTER_GAP;
-    let tx, ty, mode, charge = false;
+    let tx, ty, mode, charge = false, tap = false;
 
     const noise = rand(-1, 1) * L.noise;
     const inOurHalf = py < H / 2 + PUCK_R * 0.5;
@@ -6099,7 +6130,35 @@
       const qx = foldX(px + pvx * lead);
       const qy = clamp(py + pvy * lead, PUCK_R, H / 2 + PUCK_R);
 
-      if (P.stuck > 1.4) {
+      if (game.time < m.clearUntil) {
+        // Duvara dokundurulan pak geri dönüyor: yolundan yana çekil (yoksa rakete çarpıp köşede kalır)
+        mode = 'clear';
+        tx = m.clearX;
+        ty = m.clearY;
+      } else if (py < MIN_D + 6 && Math.hypot(pvx, pvy) < 220) {
+        // Pak arka duvara / köşeye yapışmış: arkasına geçilemez, üzerine bastırılırsa köşede sıkışır.
+        // Biraz yandan, ölçülü bir hızla duvara doğru dokundur; değer değmez yana çekil (startClear),
+        // duvardan seken pak sahaya döner.
+        mode = 'dig';
+        if (m.aiMode !== 'dig') m.digSide = px < W / 2 ? 1 : -1; // merkez tarafı
+        const a = 0.36; // dokunuş açısı (~20°)
+        const nx = m.digSide * Math.sin(a), ny = Math.cos(a);
+        const ax = clamp(px + nx * (MIN_D + 22), MALLET_R, W - MALLET_R);
+        const ay = clamp(py + ny * (MIN_D + 22), MALLET_R, limitY);
+        const dist = Math.hypot(mx - px, my - py);
+        if (m.tap && dist < MIN_D + 2) {
+          startClear(m, P);
+          return;
+        }
+        if (Math.hypot(mx - ax, my - ay) < 14 || (m.aiMode === 'dig' && m.tap)) {
+          tx = px - nx * 14;
+          ty = py - ny * 14;
+          tap = true;
+        } else {
+          tx = ax;
+          ty = dist < MIN_D + 12 ? Math.max(ay, my + 20) : ay; // yerleşirken pakı itme
+        }
+      } else if (P.stuck > 1.4) {
         // Pak uzun süredir yavaş: doğrudan üzerine git
         mode = 'poke';
         tx = qx;
@@ -6155,6 +6214,7 @@
 
     m.aiMode = mode;
     m.charge = charge;
+    m.tap = tap;
     m.aiTx = clamp(tx, MALLET_R, W - MALLET_R);
     m.aiTy = Y(clamp(ty, MALLET_R, limitY));
   }
@@ -6163,7 +6223,9 @@
     const L = m.level;
     const dx = m.aiTx - m.x, dy = m.aiTy - m.y;
     const d = Math.hypot(dx, dy);
-    const maxV = L.speed * (m.charge ? L.strike : 1);
+    const clearing = game.time < m.clearUntil;
+    // Duvara dokunuş ölçülü hızda; dokunuştan sonra yana çekilme her seviyede çevik
+    const maxV = m.tap ? Math.min(L.speed, 430) : clearing ? Math.max(L.speed, 900) : L.speed * (m.charge ? L.strike : 1);
     let dvx = 0, dvy = 0;
     if (d > 0.5) {
       const sp = Math.min(maxV, d * 9);
@@ -6171,7 +6233,7 @@
       dvy = (dy / d) * sp;
     }
     let ax = dvx - m.avx, ay = dvy - m.avy;
-    const al = Math.hypot(ax, ay), maxA = L.accel * dt;
+    const al = Math.hypot(ax, ay), maxA = Math.max(L.accel, clearing ? 9000 : 0) * dt;
     if (al > maxA) { ax *= maxA / al; ay *= maxA / al; }
     m.avx += ax;
     m.avy += ay;
