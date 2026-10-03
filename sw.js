@@ -1,5 +1,5 @@
 // Önce ağ, çevrimdışıysa önbellek: güncellemeler hemen gelir, oyun internetsiz de açılır.
-const CACHE = 'aqua-hockey-v29';
+const CACHE = 'aqua-hockey-v30';
 const ASSETS = ['./', 'index.html', 'css/style.css', 'js/game.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {

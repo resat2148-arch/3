@@ -2940,3 +2940,128 @@ body.pvp .hs small {
   font-size: 15px;
   color: #ffe08a;
 }
+
+/* Raket görünümü önizlemesi (mağaza) */
+.product[data-kind="skin"] {
+  --sc: 25, 230, 255;
+}
+
+.product[data-kind="skin"] .product-ico {
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.skin-prev {
+  width: 40px;
+  height: 40px;
+}
+
+.store-tabs {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* ---------- Günlük görevler (menü) ---------- */
+.missions {
+  margin-top: 14px;
+  padding: 10px 12px 9px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.32);
+  box-shadow: inset 0 0 0 1px rgba(25, 200, 255, 0.28);
+  text-align: left;
+}
+
+.mi-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.mi-head span {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  color: #9fe9ff;
+}
+
+.mi-head small {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.mi {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.mi + .mi {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mi-chk {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.3);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.mi.done .mi-chk {
+  background: #2bd97a;
+  box-shadow: 0 0 10px rgba(43, 217, 122, 0.6);
+  color: #062a14;
+}
+
+.mi-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.mi.done .mi-text {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.mi-prog {
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+  color: #9fe9ff;
+  font-variant-numeric: tabular-nums;
+}
+
+.mi-reward {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #ffe7a3;
+}
+
+.mi.done .mi-reward {
+  opacity: 0.45;
+}
+
+.mi-bonus {
+  margin-top: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #ffd67a;
+}
+
+html[data-build="showcase"] #missions,
+html[data-build="showcase"] #miOver {
+  display: none;
+}

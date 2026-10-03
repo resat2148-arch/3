@@ -93,6 +93,19 @@
     'diffl.easy': ['kolay', 'easy'], 'diffl.medium': ['orta', 'medium'], 'diffl.hard': ['zor', 'hard'],
     'm.play': ['OYNA', 'PLAY'], 'm.store': ['Mağaza', 'Store'],
     'm.level': ['Rakip', 'Opponent'],
+    's.mallets': ['Raketler', 'Mallets'], 's.skinD': ['Raketinin görünümü', 'Your mallet look'],
+    'skin.classic': ['Klasik', 'Classic'], 'skin.frost': ['Kırağı', 'Frost'], 'skin.lime': ['Zehir Yeşili', 'Toxic Lime'],
+    'skin.violet': ['Ametist', 'Amethyst'], 'skin.fire': ['Alev', 'Blaze'], 'skin.gold': ['Altın', 'Gold'],
+    'skin.galaxy': ['Galaksi', 'Galaxy'], 'skin.rainbow': ['Gökkuşağı', 'Rainbow'],
+    'mi.title': ['GÜNLÜK GÖREVLER', 'DAILY MISSIONS'], 'mi.done': ['GÖREV TAMAMLANDI', 'MISSION COMPLETE'],
+    'mi.reset': ['Yenilenmesine {h} sa {m} dk', 'New in {h}h {m}m'],
+    'mi.bonus': ['Üçünü de bitir: +{n} bonus', 'Finish all three: +{n} bonus'], 'mi.bonusDone': ['Bugünün görevleri tamam! Yarın yenileri gelir.', "All done for today! New ones tomorrow."],
+    'mi.allName': ['Tüm günlük görevler', 'All daily missions'], 'mi.over': ['📋 Günlük görevler: {n}/3', '📋 Daily missions: {n}/3'],
+    'mi.goals': ['{n} gol at', 'Score {n} goals'], 'mi.wins': ['{n} maç kazan', 'Win {n} matches'], 'mi.wins1': ['Bir maç kazan', 'Win a match'],
+    'mi.matches': ['{n} maç oyna', 'Play {n} matches'], 'mi.skills': ['{n} kez yetenek kullan', 'Use skills {n} times'],
+    'mi.themeWin': ['{t}: bir maç kazan', 'Win a match in {t}'], 'mi.clean': ['Gol yemeden bir maç kazan', 'Win without conceding'],
+    'mi.late': ['Son 15 saniyede gol at', 'Score in the last 15 seconds'],
+    'a.style': ['Tarz Sahibi', 'Stylish'], 'a.style.d': ['Yeni bir raket görünümü al', 'Get a new mallet look'],
     'a.title': ['BAŞARIMLAR', 'ACHIEVEMENTS'], 'a.btn': ['Başarımlar', 'Achievements'], 'a.close': ['Kapat', 'Close'],
     'a.unlocked': ['BAŞARIM AÇILDI', 'ACHIEVEMENT UNLOCKED'], 'a.done': ['Tamamlandı', 'Completed'],
     'a.count': ['{n}/{t} tamamlandı', '{n}/{t} completed'],
@@ -325,6 +338,18 @@
   // Su Stadyumu herkese açık; diğer temalar ve ek yetenek hakları mağazada altınla alınır. Altın her tamamlanan maçtan
   // sonra ve ödüllü reklam izleyerek kazanılır. Bakiye ve açılan temalar cihazda saklanır.
   // ---------------------------------------------------------------------------
+  // Oyuncunun (alt, Mavi) raket görünümleri: renk seti + isteğe bağlı desen. Rakip hep pembe kalır.
+  const SKINS = {
+    classic: { price: 0, main: '#19e6ff', light: '#c4faff', dark: '#064a74', rgb: '25,230,255' },
+    frost: { price: 150, main: '#dfe9f5', light: '#ffffff', dark: '#56677d', rgb: '220,235,255' },
+    lime: { price: 150, main: '#7dff3a', light: '#e6ffd0', dark: '#1f5a08', rgb: '125,255,58' },
+    violet: { price: 200, main: '#a66bff', light: '#eadcff', dark: '#3a1677', rgb: '166,107,255' },
+    fire: { price: 300, main: '#ff5a1e', light: '#ffd27a', dark: '#5a0e02', rgb: '255,110,40', deco: 'flame' },
+    gold: { price: 350, main: '#ffc83a', light: '#fff4c4', dark: '#7a4e06', rgb: '255,200,58', deco: 'shine' },
+    galaxy: { price: 400, main: '#6a48ff', light: '#c9b8ff', dark: '#120a3a', rgb: '130,100,255', deco: 'stars' },
+    rainbow: { price: 500, main: '#ff6ad5', light: '#ffffff', dark: '#3a1060', rgb: '255,255,255', deco: 'rainbow' },
+  };
+
   const THEME_INFO = {
     water: { price: 0, get name() { return tl('th.water'); }, get desc() { return tl('th.water.d'); } },
     neon: { price: 150, get name() { return tl('th.neon'); }, get desc() { return tl('th.neon.d'); } },
@@ -346,6 +371,7 @@
       adDay: String(v.adDay || ''),
       adCount: n(v.adCount),
       welcomed: !!v.welcomed,      // hoş geldin hediyesi verildi mi
+      skins: Array.isArray(v.skins) ? v.skins.filter((k) => SKINS[k]) : [], // alınan raket görünümleri
       dailyDay: String(v.dailyDay || ''), // son günlük ödülün günü
       streak: n(v.streak),         // art arda gelinen gün sayısı
     };
@@ -354,8 +380,12 @@
   function saveWallet() {
     store.set('wallet', {
       coins: wallet.coins, unlocked: wallet.unlocked, adDay: wallet.adDay, adCount: wallet.adCount,
-      welcomed: wallet.welcomed, dailyDay: wallet.dailyDay, streak: wallet.streak,
+      welcomed: wallet.welcomed, dailyDay: wallet.dailyDay, streak: wallet.streak, skins: wallet.skins,
     });
+  }
+
+  function hasSkin(k) {
+    return !!SKINS[k] && (isShowcase || SKINS[k].price === 0 || wallet.skins.includes(k));
   }
 
   function isUnlocked(t) {
@@ -387,6 +417,7 @@
     sound: store.get('sound', true),
     volume: clamp(Number(store.get('volume', 1)) || 0, 0, 1),
     music: store.get('music', true),
+    skin: hasSkin(store.get('skin', 'classic')) ? store.get('skin', 'classic') : 'classic',
     maxLevel: maxLevel0,
     level: clamp(Math.floor(Number(store.get('level', maxLevel0))) || maxLevel0, 1, maxLevel0),
     musicVol: clamp(Number(store.get('musicVol', 0.6)), 0, 1) || 0,
@@ -2886,8 +2917,9 @@
   const PS_PAD = 28, PS = (PUCK_R + PS_PAD) * 2;
 
   function buildSprites() {
-    malletSprites = COLORS.map((col) => buildMallet(col, settings.theme));
-    glowSprites = COLORS.map((col) => {
+    malletSprites = COLORS.map((col, i) => buildMallet(malletCol(i), settings.theme));
+    glowSprites = COLORS.map((c0, i) => {
+      const col = malletCol(i);
       const [c, g] = makeLayer(MS, MS);
       const r = MS / 2;
       const gr = g.createRadialGradient(r, r, MALLET_R * 0.6, r, r, r);
@@ -2899,6 +2931,71 @@
       return c;
     });
     puckSprite = buildPuck(settings.theme);
+  }
+
+  // Raketin renk seti: alttaki oyuncu seçtiği görünümle, üstteki hep pembe
+  function malletCol(i) {
+    return i === 0 ? SKINS[settings.skin] || SKINS.classic : COLORS[i];
+  }
+
+  // Görünüm deseni: raketin dış halkasına (iç çukurun dışına) çizilir
+  function malletDeco(g, R, deco) {
+    const inner = R * 0.68;
+    if (deco === 'flame') {
+      // Halka boyunca dışa doğru yalazlanan alev dilleri
+      for (let k = 0; k < 11; k++) {
+        const a = (k / 11) * TAU + 0.2, w = 0.2, len = R * (0.93 - (k % 2) * 0.08);
+        const gr = g.createRadialGradient(0, 0, inner, 0, 0, len);
+        gr.addColorStop(0, 'rgba(255,240,150,0.95)');
+        gr.addColorStop(1, 'rgba(255,90,20,0.2)');
+        g.fillStyle = gr;
+        g.beginPath();
+        g.moveTo(Math.cos(a - w) * inner, Math.sin(a - w) * inner);
+        g.quadraticCurveTo(Math.cos(a - w * 0.2) * len * 0.95, Math.sin(a - w * 0.2) * len * 0.95, Math.cos(a + w * 0.35) * len, Math.sin(a + w * 0.35) * len);
+        g.quadraticCurveTo(Math.cos(a + w * 0.5) * inner * 1.08, Math.sin(a + w * 0.5) * inner * 1.08, Math.cos(a + w) * inner, Math.sin(a + w) * inner);
+        g.fill();
+      }
+    } else if (deco === 'shine') {
+      // Altın: ışınsal ince yivler
+      g.strokeStyle = 'rgba(255,255,255,0.35)';
+      g.lineWidth = 1.2;
+      for (let k = 0; k < 24; k++) {
+        const a = (k / 24) * TAU;
+        g.beginPath();
+        g.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
+        g.lineTo(Math.cos(a) * R * 0.95, Math.sin(a) * R * 0.95);
+        g.stroke();
+      }
+    } else if (deco === 'stars') {
+      // Galaksi: sabit (her seferinde aynı) yıldız serpintisi
+      let seed = 7;
+      const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      for (let k = 0; k < 26; k++) {
+        const a = rnd() * TAU, r = inner + rnd() * (R * 0.95 - inner), s = 0.5 + rnd() * 1.3;
+        g.fillStyle = `rgba(255,255,255,${0.5 + rnd() * 0.5})`;
+        g.beginPath();
+        g.arc(Math.cos(a) * r, Math.sin(a) * r, s, 0, TAU);
+        g.fill();
+      }
+    } else if (deco === 'rainbow') {
+      // Gökkuşağı: halkayı renk çemberi kaplar, üstüne hafif derinlik
+      const cg = g.createConicGradient ? g.createConicGradient(0, 0, 0) : null;
+      if (cg) {
+        ['#ff4d4d', '#ffb13d', '#ffe94d', '#4dff88', '#3dd8ff', '#6a6bff', '#d65cff', '#ff4d4d'].forEach((c, i, a) => cg.addColorStop(i / (a.length - 1), c));
+        g.fillStyle = cg;
+        g.beginPath();
+        g.arc(0, 0, R * 0.97, 0, TAU);
+        g.fill();
+      }
+      const sh = g.createRadialGradient(-R * 0.35, -R * 0.4, R * 0.1, 0, 0, R);
+      sh.addColorStop(0, 'rgba(255,255,255,0.45)');
+      sh.addColorStop(0.5, 'rgba(255,255,255,0)');
+      sh.addColorStop(1, 'rgba(20,0,40,0.45)');
+      g.fillStyle = sh;
+      g.beginPath();
+      g.arc(0, 0, R * 0.97, 0, TAU);
+      g.fill();
+    }
   }
 
   // neon: parlak hale + gölge; su: hale yok, suyla temas çizgisi (menisküs); buz: yalnızca gölge
@@ -2955,6 +3052,7 @@
     g.beginPath();
     g.arc(0, 0, R, 0, TAU);
     g.fill();
+    if (col.deco) malletDeco(g, R, col.deco);
     g.lineWidth = 2.5;
     g.strokeStyle = 'rgba(255,255,255,0.6)';
     g.beginPath();
@@ -6149,7 +6247,7 @@
     m.glow = Math.max(m.glow, 0.35 + k * 0.65);
     if (m.hitCool > 0) return;
     m.hitCool = 0.06;
-    const col = COLORS[m.i];
+    const col = malletCol(m.i);
     const dir = Math.atan2(m.hy - m.y, m.hx - m.x);
     spawn(m.hx, m.hy, col.rgb, 6 + Math.round(k * 18), 260 + k * 700, 0.45, 3, { dir, spread: 1.1, spark: true });
     spawn(m.hx, m.hy, '255,255,255', 3 + Math.round(k * 6), 200 + k * 300, 0.3, 2.2, { dir, spread: 0.8, spark: true });
@@ -6965,6 +7063,7 @@
     showOverlay(store.get('played', false) || isShowcase ? menuEl : introEl);
     checkDaily();
     checkAchievements(); // eski ilerlemeden (seviye, açılan temalar) hak edilmiş olanlar
+    renderMissions();
   }
 
   // İlk açılış ekranı: ekranın herhangi bir yerine dokunmak maçı başlatır
@@ -7970,11 +8069,57 @@
     toast(tl('s.chosen', { name: THEME_INFO[th].name }));
   }
 
+  // Raket görünümleri: önizleme, gerçek raket çiziminin küçültülmüş kopyasıdır
+  const skinPreview = {};
+  function renderSkins() {
+    const list = $('skinList');
+    list.textContent = '';
+    for (const k of Object.keys(SKINS)) {
+      const sk = SKINS[k], own = hasSkin(k), sel = settings.skin === k;
+      let right;
+      if (!own) right = priceChip(sk.price);
+      else {
+        right = document.createElement('span');
+        right.className = 'product-price state' + (sel ? ' selected' : '');
+        right.textContent = sel ? tl('s.selected') : tl('s.select');
+      }
+      const name = tl('skin.' + k);
+      const b = productButton('skin', name, tl('s.skinD'), '', right);
+      if (!skinPreview[k]) {
+        const c = document.createElement('canvas');
+        c.width = c.height = 96;
+        c.getContext('2d').drawImage(buildMallet(sk, 'ice'), 0, 0, 96, 96);
+        skinPreview[k] = c;
+      }
+      const img = document.createElement('img');
+      img.className = 'skin-prev';
+      img.alt = '';
+      img.src = skinPreview[k].toDataURL();
+      b.querySelector('.product-ico').appendChild(img);
+      if (!own) b.classList.add('locked');
+      b.setAttribute('aria-label', tl(own ? (sel ? 's.ariaSel' : 's.ariaOwn') : 's.ariaPrice', { name, p: sk.price }));
+      b.addEventListener('click', () => {
+        if (!own) askPurchase({ kind: 'skin', skin: k, name, price: sk.price });
+        else if (!sel) selectSkin(k);
+      });
+      list.appendChild(b);
+    }
+  }
+
+  function selectSkin(k) {
+    settings.skin = k;
+    store.set('skin', k);
+    buildSprites();
+    renderSkins();
+    toast(tl('s.chosen', { name: tl('skin.' + k) }));
+  }
+
   function setTab(tab) {
     storeState.tab = tab;
     $('tabThemes').classList.toggle('hidden', tab !== 'themes');
+    $('tabMallets').classList.toggle('hidden', tab !== 'mallets');
     $('tabSkills').classList.toggle('hidden', tab !== 'skills');
-    for (const id of ['tabBtnThemes', 'tabBtnSkills']) {
+    for (const id of ['tabBtnThemes', 'tabBtnMallets', 'tabBtnSkills']) {
       const b = $(id), on = b.dataset.tab === tab;
       b.classList.toggle('active', on);
       b.setAttribute('aria-selected', on ? 'true' : 'false');
@@ -8007,6 +8152,7 @@
     setTab(tab || (focus ? 'skills' : 'themes'));
     renderProducts();
     renderThemes();
+    renderSkins();
     renderInventory();
     showStoreBody(false);
     showOverlay(storeEl);
@@ -8074,6 +8220,12 @@
       skillUI.dirty = true;
       const got = Object.keys(it.pr.give).map((k) => `${SKILLS[k].label} +${it.pr.give[k]}`).join(', ');
       toast(tl('s.bought', { x: got }));
+    } else if (it.kind === 'skin') {
+      if (!wallet.skins.includes(it.skin)) wallet.skins.push(it.skin);
+      settings.skin = it.skin; // yeni görünüm hemen takılır
+      store.set('skin', it.skin);
+      buildSprites();
+      toast(tl('s.unlockedSel', { name: it.name }));
     } else {
       if (!wallet.unlocked.includes(it.theme)) wallet.unlocked.push(it.theme);
       if (!storeState.fromGame) {
@@ -8098,6 +8250,7 @@
     }
     renderProducts();
     renderThemes();
+    renderSkins();
     showStoreBody(false);
   }
 
@@ -8149,9 +8302,12 @@
   $('confirmPreview').addEventListener('click', previewTheme);
   $('tabBtnThemes').addEventListener('click', () => setTab('themes'));
   $('tabBtnSkills').addEventListener('click', () => setTab('skills'));
+  $('tabBtnMallets').addEventListener('click', () => setTab('mallets'));
   $('storeClose').addEventListener('click', closeStore);
   $('menuStoreBtn').addEventListener('click', () => openStore());
   $('menuAchBtn').addEventListener('click', openAchievements);
+  // Menü açıkken kalan süre (ve gece yarısı yenilenen görevler) güncel kalsın
+  setInterval(() => { if (menuEl.classList.contains('show')) renderMissions(); }, 30000);
   $('achClose').addEventListener('click', () => showOverlay(achBack || menuEl));
   $('overStoreBtn').addEventListener('click', () => openStore());
 
@@ -8291,6 +8447,7 @@
     ['frenzy', '🎱', 50, () => [stats.frenzy, 1]],
     ['rocket', '🚀', 40, () => [stats.rocket, 1]],
     ['skills', '✨', 30, () => [stats.skills, 10]],
+    ['style', '🖌️', 30, () => [wallet.skins.length, 1]],
     ['pvp', '🤝', 30, () => [stats.pvp, 1]],
     ['tour', '🏟️', 50, () => [stats.themes.length, 3]],
     ['all', '🎨', 250, () => [Object.keys(THEME_INFO).filter((t) => isUnlocked(t)).length, Object.keys(THEME_INFO).length]],
@@ -8338,16 +8495,18 @@
     }
     achShowing = true;
     $('achPopIcon').textContent = a.icon;
-    $('achPopName').textContent = tl('a.' + a.id);
+    $('achPopLabel').textContent = a.label || tl('a.unlocked');
+    $('achPopName').textContent = a.name || tl('a.' + a.id);
     $('achPopReward').textContent = '+' + fmt(a.reward);
     el.classList.remove('show');
     void el.offsetWidth;
     el.classList.add('show');
     Sound.ready();
+    // Sırada başkası varsa daha kısa göster (bir maçta birkaç başarım / görev birden açılabilir)
     setTimeout(() => {
       el.classList.remove('show');
-      setTimeout(nextAchPop, 350);
-    }, 2600);
+      setTimeout(nextAchPop, 300);
+    }, achQueue.length ? 1700 : 2600);
   }
 
   function renderAchBtn() {
@@ -8419,6 +8578,8 @@
     if (scorer === 0) {
       m.g++;
       stats.goals++;
+      missionAdd('goals');
+      if (game.clock <= 15) missionAdd('late');
       if (game.frenzy) m.fg++;
       if (game.clock <= 3) stats.buzzer = 1;
       if (m.fg >= 2) stats.frenzy = 1;
@@ -8433,9 +8594,15 @@
   function achMatchEnd(win) {
     const m = game.m || { g: 0, c: 0, def: 0 };
     stats.matches++;
+    missionAdd('matches');
     if (settings.mode === 'pvp') stats.pvp++;
     else {
-      if (win) stats.wins++;
+      if (win) {
+        stats.wins++;
+        missionAdd('wins');
+        missionAdd('themeWin', settings.theme);
+        if (m.c === 0) missionAdd('clean');
+      }
       if (win && m.c === 0) stats.clean = 1;
       if (m.g >= 5) stats.five = 1;
       if (win && m.def >= 2) stats.comeback = 1;
@@ -8447,6 +8614,7 @@
 
   function achSkill() {
     stats.skills++;
+    missionAdd('skills');
     saveStats();
     checkAchievements();
   }
@@ -8464,6 +8632,118 @@
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Günlük görevler: her gün tarihten türetilen 3 görev (herkeste aynı), her biri altın verir;
+  // üçü de bitince bonus. İlerleme maç içinde işler, gece yarısı yenilenir.
+  // ---------------------------------------------------------------------------
+  // tür, hedefler, ödüller (aynı sırayla)
+  const MISSION_TYPES = {
+    goals: [[3, 5, 8], [30, 40, 60]],
+    wins: [[1, 2, 3], [30, 50, 70]],
+    matches: [[2, 3, 4], [25, 35, 45]],
+    skills: [[2, 3, 4], [25, 35, 45]],
+    themeWin: [[1], [50]],
+    clean: [[1], [60]],
+    late: [[1], [40]],
+  };
+  const MISSION_BONUS = 50;
+  let missions = null;
+
+  function genMissions(day) {
+    let h = 2166136261;
+    for (const ch of day) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+    const rnd = () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909), (h >>> 0) / 4294967296));
+    const types = Object.keys(MISSION_TYPES);
+    for (let i = types.length - 1; i > 0; i--) { // karıştır
+      const j = Math.floor(rnd() * (i + 1));
+      [types[i], types[j]] = [types[j], types[i]];
+    }
+    const open = Object.keys(THEME_INFO).filter((t) => isUnlocked(t));
+    return types.slice(0, 3).map((type) => {
+      const [ns, rs] = MISSION_TYPES[type];
+      const k = Math.floor(rnd() * ns.length);
+      const m = { type, n: ns[k], r: rs[k], prog: 0, done: false };
+      if (type === 'themeWin') m.theme = open[Math.floor(rnd() * open.length)] || 'water';
+      return m;
+    });
+  }
+
+  function ensureMissions() {
+    const d = today();
+    if (missions && missions.day === d) return;
+    const v = store.get('missions', null);
+    missions = v && v.day === d && Array.isArray(v.list) ? v : { day: d, list: genMissions(d), bonus: false };
+    store.set('missions', missions);
+  }
+
+  function missionText(m) {
+    if (m.type === 'themeWin') return tl('mi.themeWin', { t: THEME_INFO[m.theme] ? THEME_INFO[m.theme].name : '' });
+    if (m.type === 'wins' && m.n === 1) return tl('mi.wins1');
+    return tl('mi.' + m.type, { n: m.n });
+  }
+
+  // Bir görev türüne ilerleme ekler; tamamlananın ödülü hemen verilir
+  function missionAdd(type, theme) {
+    if (isShowcase) return;
+    ensureMissions();
+    let gained = 0;
+    for (const m of missions.list) {
+      if (m.done || m.type !== type || (type === 'themeWin' && m.theme !== theme)) continue;
+      m.prog = Math.min(m.n, m.prog + 1);
+      if (m.prog >= m.n) {
+        m.done = true;
+        gained += m.r;
+        achQueue.push({ icon: '📋', label: tl('mi.done'), name: missionText(m), reward: m.r });
+      }
+    }
+    if (!gained) {
+      store.set('missions', missions);
+      return;
+    }
+    if (!missions.bonus && missions.list.every((m) => m.done)) {
+      missions.bonus = true;
+      gained += MISSION_BONUS;
+      achQueue.push({ icon: '🎉', label: tl('mi.done'), name: tl('mi.allName'), reward: MISSION_BONUS });
+    }
+    store.set('missions', missions);
+    addCoins(gained);
+    renderMissions();
+    flushAchPops();
+  }
+
+  function renderMissions() {
+    if (isShowcase) return;
+    ensureMissions();
+    const list = $('miList');
+    list.textContent = '';
+    for (const m of missions.list) {
+      const row = document.createElement('div');
+      row.className = 'mi' + (m.done ? ' done' : '');
+      const chk = document.createElement('span');
+      chk.className = 'mi-chk';
+      chk.textContent = m.done ? '✓' : '';
+      const txt = document.createElement('span');
+      txt.className = 'mi-text';
+      txt.textContent = missionText(m);
+      const prog = document.createElement('em');
+      prog.className = 'mi-prog';
+      prog.textContent = !m.done && m.n > 1 ? `${m.prog}/${m.n}` : '';
+      const rw = document.createElement('span');
+      rw.className = 'mi-reward';
+      const c = document.createElement('i');
+      c.className = 'coin';
+      rw.append(c, document.createTextNode(' ' + m.r));
+      row.append(chk, txt, prog, rw);
+      list.append(row);
+    }
+    const now = new Date(), next = new Date(now);
+    next.setHours(24, 0, 0, 0);
+    const mins = Math.max(0, Math.ceil((next - now) / 60000));
+    $('miTimer').textContent = tl('mi.reset', { h: Math.floor(mins / 60), m: mins % 60 });
+    $('miBonus').textContent = missions.bonus ? tl('mi.bonusDone') : tl('mi.bonus', { n: MISSION_BONUS });
+    $('miOver').textContent = tl('mi.over', { n: missions.list.filter((m) => m.done).length });
+  }
+
   function renderTomorrow() {
     const el = $('dailyNext');
     el.classList.toggle('hidden', isShowcase);
@@ -8475,6 +8755,7 @@
   function renderReward() {
     renderNextUnlock();
     renderTomorrow();
+    renderMissions();
     const btn = $('doubleBtn');
     const left = adsLeft();
     btn.classList.toggle('hidden', lastReward.doubled || lastReward.total <= 0);
@@ -8525,6 +8806,7 @@
     if (storeEl.classList.contains('show')) {
       renderProducts();
       renderThemes();
+      renderSkins();
     }
   }
 
@@ -8790,6 +9072,7 @@
     syncMenu();
     syncIntro();
     renderAchBtn();
+    renderMissions();
     if (achEl.classList.contains('show')) renderAchList();
     syncVolumeUI();
     renderInventory();

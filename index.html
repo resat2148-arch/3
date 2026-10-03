@@ -123,6 +123,12 @@
         </button>
       </div>
 
+      <div id="missions" class="missions">
+        <div class="mi-head"><span data-i18n="mi.title">GÜNLÜK GÖREVLER</span><small id="miTimer"></small></div>
+        <div id="miList"></div>
+        <div id="miBonus" class="mi-bonus"></div>
+      </div>
+
       <div class="menu-opts">
       <div class="field">
         <div class="label" data-i18n="m.mode">Mod</div>
@@ -183,7 +189,7 @@
   <!-- Başarım açıldı bildirimi -->
   <div id="achPop" class="ach-pop" role="status" aria-live="polite">
     <span id="achPopIcon" class="ach-pop-ico"></span>
-    <span class="ach-pop-text"><small data-i18n="a.unlocked">BAŞARIM AÇILDI</small><b id="achPopName"></b></span>
+    <span class="ach-pop-text"><small id="achPopLabel">BAŞARIM AÇILDI</small><b id="achPopName"></b></span>
     <span class="ach-pop-reward"><i class="coin" aria-hidden="true"></i> <b id="achPopReward"></b></span>
   </div>
 
@@ -227,6 +233,7 @@
         <button id="doubleBtn" class="earn-btn ad-inline" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span>Reklam izle, ödülü 2 katına çıkar</span></button>
         <div class="reward-bal"><span data-i18n="r.balance">Bakiye</span> <i class="coin" aria-hidden="true"></i><b id="coinOver" class="coin-val">0</b></div>
         <button id="nextUnlock" class="next-unlock hidden" type="button"><span id="nextUnlockText"></span><i class="nu-bar"><i id="nextUnlockBar"></i></i></button>
+        <div id="miOver" class="daily-next"></div>
         <div id="dailyNext" class="daily-next"></div>
       </div>
 
@@ -290,10 +297,14 @@
       <p class="coin-note" data-i18n="s.note">Altın her maçtan sonra ve reklam izleyerek kazanılır.</p>
       <div class="store-tabs" role="tablist">
         <button id="tabBtnThemes" data-tab="themes" role="tab" type="button" data-i18n="s.themes">Temalar</button>
+        <button id="tabBtnMallets" data-tab="mallets" role="tab" type="button" data-i18n="s.mallets">Raketler</button>
         <button id="tabBtnSkills" data-tab="skills" role="tab" type="button" data-i18n="s.skills">Yetenekler</button>
       </div>
       <div id="tabThemes" class="store-tab" role="tabpanel">
         <div id="themeList" class="store-list"></div>
+      </div>
+      <div id="tabMallets" class="store-tab hidden" role="tabpanel">
+        <div id="skinList" class="store-list"></div>
       </div>
       <div id="tabSkills" class="store-tab" role="tabpanel">
         <p id="storeMsg" class="sub"></p>
