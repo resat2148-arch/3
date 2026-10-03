@@ -29,6 +29,15 @@
     <div class="board">
       <canvas id="water" aria-hidden="true"></canvas>
       <canvas id="game" aria-label="Air hockey masası" data-i18n-aria="board.aria"></canvas>
+      <!-- İlk maç: kontrolleri gösteren görsel rehber (raket hareket edince kaybolur) -->
+      <div id="coach0" class="coach hidden" aria-hidden="true">
+        <div class="coach-arrows"><i>‹</i><span class="coach-drag"><svg class="coach-hand" viewBox="0 0 48 56" aria-hidden="true"><path d="M17 30V9.5a3.5 3.5 0 0 1 7 0V26l.4-2.6a3.4 3.4 0 0 1 6.7.4l-.1 3.4.5-1.8a3.3 3.3 0 0 1 6.4 1.4l-.3 2.6.5-1a3 3 0 0 1 5.6 2c-.6 6-2 11.6-4.6 15.4A12 12 0 0 1 29 52h-4.6a11 11 0 0 1-8.8-4.4l-7.3-9.8a3.5 3.5 0 0 1 5.3-4.6z" fill="#fff" stroke="#0a2a4a" stroke-width="2.4" stroke-linejoin="round"/></svg><svg class="coach-mouse" viewBox="0 0 32 48" aria-hidden="true"><rect x="3" y="3" width="26" height="42" rx="13" fill="#fff" stroke="#0a2a4a" stroke-width="2.4"/><path d="M16 3v14M3 17h26" stroke="#0a2a4a" stroke-width="2"/><rect x="14" y="8" width="4" height="7" rx="2" fill="#19c8ff"/></svg></span><i>›</i></div>
+        <div class="coach-keys"><span class="coach-or" data-i18n="ob.or">veya</span><span class="kc-grid"><b class="kc kc-u">↑</b><b class="kc">←</b><b class="kc">↓</b><b class="kc">→</b></span></div>
+      </div>
+      <div id="coach1" class="coach top hidden" aria-hidden="true">
+        <div class="coach-arrows"><i>‹</i><span class="coach-drag"><svg class="coach-hand" viewBox="0 0 48 56" aria-hidden="true"><path d="M17 30V9.5a3.5 3.5 0 0 1 7 0V26l.4-2.6a3.4 3.4 0 0 1 6.7.4l-.1 3.4.5-1.8a3.3 3.3 0 0 1 6.4 1.4l-.3 2.6.5-1a3 3 0 0 1 5.6 2c-.6 6-2 11.6-4.6 15.4A12 12 0 0 1 29 52h-4.6a11 11 0 0 1-8.8-4.4l-7.3-9.8a3.5 3.5 0 0 1 5.3-4.6z" fill="#fff" stroke="#0a2a4a" stroke-width="2.4" stroke-linejoin="round"/></svg></span><i>›</i></div>
+        <div class="coach-keys"><span class="kc-grid"><b class="kc kc-u" data-kc="w">W</b><b class="kc" data-kc="a">A</b><b class="kc" data-kc="s">S</b><b class="kc" data-kc="d">D</b></span></div>
+      </div>
     </div>
   </main>
 
@@ -187,7 +196,7 @@
       <div id="reward" class="reward">
         <div class="reward-main"><i class="coin" aria-hidden="true"></i><b id="rewardAmt">+0</b></div>
         <div id="rewardWhy" class="reward-why"></div>
-        <button id="doubleBtn" class="earn-btn wide" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span>Reklam izle, ödülü 2 katına çıkar</span></button>
+        <button id="doubleBtn" class="earn-btn ad-inline" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span>Reklam izle, ödülü 2 katına çıkar</span></button>
         <div class="reward-bal"><span data-i18n="r.balance">Bakiye</span> <i class="coin" aria-hidden="true"></i><b id="coinOver" class="coin-val">0</b></div>
         <button id="nextUnlock" class="next-unlock hidden" type="button"><span id="nextUnlockText"></span><i class="nu-bar"><i id="nextUnlockBar"></i></i></button>
         <div id="dailyNext" class="daily-next"></div>
@@ -273,7 +282,7 @@
         </div>
         <p class="unlock-bal"><span data-i18n="s.bal">Bakiyen</span> <i class="coin" aria-hidden="true"></i><b id="coinConfirm" class="coin-val">0</b> <span id="confirmNeed" class="need"></span></p>
         <button id="confirmBuy" class="btn" type="button" data-i18n="s.buy">SATIN AL</button>
-        <button id="confirmAd" class="earn-btn wide hidden" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span data-i18n="ad.watch">Reklam izle</span><b>+50</b></button>
+        <button id="confirmAd" class="earn-btn ad-inline hidden" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span data-i18n="ad.watch">Reklam izle</span><b>+50</b></button>
         <button id="confirmPreview" class="btn ghost hidden" type="button" data-i18n="s.preview">Önizle</button>
         <button id="confirmCancel" class="btn ghost" type="button" data-i18n="s.cancel">Vazgeç</button>
       </div>

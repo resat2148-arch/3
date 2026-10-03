@@ -2503,3 +2503,152 @@ html[data-build="showcase"] #doubleBtn,
 html[data-build="showcase"] #confirmAd {
   display: none !important;
 }
+
+/* ---------- İlk maç rehberi (kontroller) ---------- */
+.coach {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 76%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  line-height: 1;
+  animation: coach-in 0.4s ease-out;
+}
+
+.coach.top {
+  top: 26%;
+}
+
+/* Dokunmatikte iki oyuncu karşılıklı oturur: üstteki rehber ona dönük */
+.coach.top.touch {
+  transform: translate(-50%, -50%) rotate(180deg);
+}
+
+@keyframes coach-in {
+  from { opacity: 0; }
+}
+
+.coach-arrows {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 30px;
+  font-weight: 900;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+.coach-drag {
+  display: block;
+  width: 110px;
+  height: 56px;
+  position: relative;
+}
+
+.coach-hand,
+.coach-mouse {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  height: 52px;
+  margin-left: -20px;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.6));
+  animation: coach-swipe 1.4s ease-in-out infinite alternate;
+}
+
+.coach-mouse {
+  height: 44px;
+  margin-left: -14px;
+}
+
+@keyframes coach-swipe {
+  from { transform: translateX(-38px); }
+  to { transform: translateX(38px); }
+}
+
+/* Dokunmatikte el; masaüstünde fare + tuşlar */
+.coach .coach-hand,
+.coach.touch .coach-mouse,
+.coach.touch .coach-keys {
+  display: none;
+}
+
+.coach.touch .coach-hand {
+  display: block;
+}
+
+/* Üstteki (Pembe) oyuncu masaüstünde yalnızca tuşları görür */
+.coach.top:not(.touch) .coach-arrows {
+  display: none;
+}
+
+.coach-keys {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.coach-or {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.kc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 26px);
+  gap: 3px;
+}
+
+.kc {
+  display: grid;
+  place-items: center;
+  height: 26px;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 3px 0 #9fb4c8, 0 4px 10px rgba(0, 0, 0, 0.5);
+  color: #0a2a4a;
+  font: 900 13px "Exo 2", system-ui, sans-serif;
+}
+
+.kc-u {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.kc:not(.kc-u) {
+  grid-row: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-hand,
+  .coach-mouse {
+    animation: none;
+  }
+}
+
+/* Reklam düğmeleri ikincil: tam genişlik değil, oyunun ana düğmesinden küçük */
+.earn-btn.ad-inline {
+  display: flex;
+  margin: 10px auto 0;
+  padding: 7px 12px;
+  font-size: 13px;
+}
+
+.earn-btn.ad-inline.hidden {
+  display: none;
+}
+
+/* Masaüstünde iki oyuncu aynı klavyenin başında: üstteki yetenek düğmeleri ters çevrilmez */
+@media (pointer: fine) {
+  .skillbar.top {
+    transform: translateX(-50%);
+  }
+}

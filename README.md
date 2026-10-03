@@ -116,13 +116,18 @@ Menüdeki **Tema** seçiminden ya da Mağaza'nın Temalar sekmesinden değiştir
 |---|---|---|
 | Mavi (alt) | Fare veya ok tuşları | Alt yarıda parmakla sürükle |
 | Pembe (üst, 2 oyunculu) | W A S D | Üst yarıda parmakla sürükle |
-| Duraklat | `Esc` / `P` | ⏸ düğmesi |
+| Duraklat | `P` (pencere odağı kaçınca kendiliğinden) | ⏸ düğmesi |
 | Ses aç/kapa | `M` | 🔊 düğmesi → sessiz |
 | Müzik aç/kapa | `N` | 🔊 düğmesi → müzik |
 | Ses seviyesi | `−` / `+` veya 🔊 düğmesi | 🔊 düğmesi → kaydırıcı |
-| Skiller (Mavi) | `1` Dev Kale, `2` Kale Kilidi (veya düğmeler) | Alttaki düğmeler |
+| Yetenekler (Mavi) | `1` Dev Kale, `2` Kale Kilidi (veya düğmeler) | Alttaki düğmeler |
 | Mağaza | Menüde veya maç sonunda "Mağaza" | Aynı |
-| Skiller (Pembe, 2 oyunculu) | `Q` Dev Kale, `E` Kale Kilidi | Üstteki düğmeler |
+| Yetenekler (Pembe, 2 oyunculu) | `Q` Dev Kale, `E` Kale Kilidi | Üstteki düğmeler |
+
+- **Escape** duraklatmaya bağlı değildir (tarayıcıda tam ekrandan çıkarır); yalnızca açık paneli (ses, mağaza, önizleme) kapatır.
+- **Klavye düzeni**: hareket ve yetenek tuşları fiziksel konumla okunur; AZERTY klavyede W A S D yerine aynı yerdeki Z Q S D tuşları çalışır ve menüdeki ipucu ile ilk maç rehberi tuşları oyuncunun klavyesindeki adlarıyla gösterir (tarayıcı izin veriyorsa). `P`, `M`, `N` kısayolları ise üzerinde o harf yazan tuşla çalışır.
+- **İlk maç rehberi**: her modda ilk maçta oyuncunun raketinin yanında kontroller görsel olarak gösterilir (dokunmatikte sürükleyen el, bilgisayarda fare + ok tuşları; iki oyunculuda Pembe için W A S D). Raket hareket edince ya da 8 saniye sonra kaybolur, oyunu engellemez. Yetenek ipucu ikinci maçta bir kez çıkar.
+- İki oyunculu modda üstteki düğmeler ve rehber yalnızca dokunmatik cihazlarda (karşılıklı oturulduğu için) ters çevrilir; bilgisayarda iki oyuncu aynı klavyenin başında olduğundan düz durur.
 
 ## Çalıştırma
 

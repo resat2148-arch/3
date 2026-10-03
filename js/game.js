@@ -71,16 +71,16 @@
     'sk.shrinkSub': ['Kalen küçülür', 'Shrinks your goal'],
     'sk.growAria': ['Dev Kale: rakibin kalesi 5 saniye büyür', 'Big Goal: the rival goal grows for 5 seconds'],
     'sk.shrinkAria': ['Kale Kilidi: kendi kalen 5 saniye küçülür', 'Goal Lock: your own goal shrinks for 5 seconds'],
-    'sk.bar0': ['Mavi oyuncunun skilleri', "Blue player's skills"],
-    'sk.bar1': ['Pembe oyuncunun skilleri', "Pink player's skills"],
+    'sk.bar0': ['Mavi oyuncunun yetenekleri', "Blue player's skills"],
+    'sk.bar1': ['Pembe oyuncunun yetenekleri', "Pink player's skills"],
     'sk.active': ['Aktif · {n} sn', 'Active · {n} s'],
     'sk.owned': ['Envanter: {n}', 'Owned: {n}'],
     'sk.buy': ['Satın al', 'Buy'],
     'sk.free': ['ÜCRETSİZ', 'FREE'],
-    'sk.introTouch': ['Her skillden 1 ücretsiz hakkın var! Alttaki düğmelerle kullan.', 'You get 1 free use of each skill! Use them with the buttons below.'],
-    'sk.introKeys': ['Her skillden 1 ücretsiz hakkın var! 1 ve 2 tuşlarıyla ya da düğmelerle kullan.', 'You get 1 free use of each skill! Use them with keys 1 and 2 or the buttons.'],
+    'sk.introTouch': ['Her yetenekten 1 ücretsiz hakkın var! Alttaki düğmelerle kullan.', 'You get 1 free use of each skill! Use them with the buttons below.'],
+    'sk.introKeys': ['Her yetenekten 1 ücretsiz hakkın var! 1 ve 2 tuşlarıyla ya da düğmelerle kullan.', 'You get 1 free use of each skill! Use them with keys 1 and 2 or the buttons.'],
     // HUD
-    'hud.pause': ['Duraklat', 'Pause'], 'hud.pauseT': ['Duraklat (Esc)', 'Pause (Esc)'],
+    'hud.pause': ['Duraklat', 'Pause'], 'hud.pauseT': ['Duraklat (P)', 'Pause (P)'],
     'hud.fs': ['Tam ekran', 'Fullscreen'],
     'hud.sound': ['Ses ayarı', 'Sound settings'],
     'clock.two': ['2 TOP', '2 PUCKS'], 'clock.soon': ['2. TOP GELİYOR', '2ND PUCK SOON'],
@@ -92,7 +92,8 @@
     'diff.easy': ['Kolay', 'Easy'], 'diff.medium': ['Orta', 'Medium'], 'diff.hard': ['Zor', 'Hard'],
     'diffl.easy': ['kolay', 'easy'], 'diffl.medium': ['orta', 'medium'], 'diffl.hard': ['zor', 'hard'],
     'm.play': ['OYNA', 'PLAY'], 'm.store': ['Mağaza', 'Store'],
-    'm.level': ['Rakip', 'Opponent'], 'lv.prev': ['Önceki seviye', 'Previous level'], 'lv.next': ['Sonraki seviye', 'Next level'],
+    'm.level': ['Rakip', 'Opponent'],
+    'ob.or': ['veya', 'or'], 'ob.drag': ['Sürükle', 'Drag'], 'ob.move': ['Fareyle yönet', 'Move with the mouse'], 'lv.prev': ['Önceki seviye', 'Previous level'], 'lv.next': ['Sonraki seviye', 'Next level'],
     'lvl.name': ['Seviye {n}', 'Level {n}'], 'lvl.of': ['{n}.', 'level {n}'],
     'lvl.locked': ['Kazanınca açılır', 'Win to unlock'],
     'tier.1': ['Acemi', 'Rookie'], 'tier.2': ['Kolay', 'Easy'], 'tier.3': ['Orta', 'Medium'], 'tier.4': ['Zor', 'Hard'],
@@ -110,10 +111,10 @@
     'd.tomorrow': ['🎁 Yarın gel: +{n} altın günlük ödül', '🎁 Come back tomorrow: +{n} gold daily reward'],
     'm.inv': ['Envanter: {g} Dev Kale · {s} Kale Kilidi', 'Owned: {g} Big Goal · {s} Goal Lock'],
     'm.wallet': ['Altın bakiyen', 'Your gold'],
-    'hint.pvpTouch': ['Telefonu masaya koyun: <b class="c">alt yarı</b> ve <b class="p">üst yarı</b> kendi raketini parmağıyla sürükler, skiller kendi tarafındaki düğmelerde.', 'Put the phone on the table: the <b class="c">bottom half</b> and the <b class="p">top half</b> each drag their own mallet, with skill buttons on each side.'],
-    'hint.pvpKeys': ['<b class="c">Mavi</b>: fare veya ok tuşları, skiller <b>1</b>/<b>2</b> · <b class="p">Pembe</b>: W A S D, skiller <b>Q</b>/<b>E</b><br>Dokunmatik ekranda iki parmakla da oynanır.', '<b class="c">Blue</b>: mouse or arrow keys, skills <b>1</b>/<b>2</b> · <b class="p">Pink</b>: W A S D, skills <b>Q</b>/<b>E</b><br>On a touch screen, play with two fingers.'],
-    'hint.aiTouch': ['Raketi parmağınla sürükle, skilleri alttaki düğmelerle kullan!', 'Drag your mallet with your finger and use skills with the buttons below!'],
-    'hint.aiKeys': ['Raketi <b>fare</b> (veya ok tuşları) ile yönet, skiller <b>1</b>/<b>2</b>. <b>Esc</b> duraklatır, <b>M</b> sesi kapatır, <b>−</b>/<b>+</b> ses seviyesini değiştirir.', 'Control your mallet with the <b>mouse</b> (or arrow keys), skills <b>1</b>/<b>2</b>. <b>Esc</b> pauses, <b>M</b> mutes, <b>−</b>/<b>+</b> change the volume.'],
+    'hint.pvpTouch': ['Telefonu masaya koyun: <b class="c">alt yarı</b> ve <b class="p">üst yarı</b> kendi raketini parmağıyla sürükler, yetenekler kendi tarafındaki düğmelerde.', 'Put the phone on the table: the <b class="c">bottom half</b> and the <b class="p">top half</b> each drag their own mallet, with skill buttons on each side.'],
+    'hint.pvpKeys': ['<b class="c">Mavi</b>: fare veya ok tuşları, yetenekler <b>1</b>/<b>2</b> · <b class="p">Pembe</b>: {w} {a} {s} {d}, yetenekler <b>{q}</b>/<b>{e}</b><br>Dokunmatik ekranda iki parmakla da oynanır.', '<b class="c">Blue</b>: mouse or arrow keys, skills <b>1</b>/<b>2</b> · <b class="p">Pink</b>: {w} {a} {s} {d}, skills <b>{q}</b>/<b>{e}</b><br>On a touch screen, play with two fingers.'],
+    'hint.aiTouch': ['Raketi parmağınla sürükle, yetenekleri alttaki düğmelerle kullan!', 'Drag your mallet with your finger and use skills with the buttons below!'],
+    'hint.aiKeys': ['Raketi <b>fare</b> (veya ok tuşları) ile yönet, yetenekler <b>1</b>/<b>2</b>. <b>P</b> duraklatır, <b>M</b> sesi, <b>N</b> müziği kapatır, <b>−</b>/<b>+</b> ses seviyesini değiştirir.', 'Control your mallet with the <b>mouse</b> (or arrow keys), skills <b>1</b>/<b>2</b>. <b>P</b> pauses, <b>M</b> mutes, <b>N</b> toggles music, <b>−</b>/<b>+</b> change the volume.'],
     // Duraklatma
     'p.title': ['DURAKLATILDI', 'PAUSED'], 'p.resume': ['DEVAM', 'RESUME'], 'p.restart': ['Yeniden Başla', 'Restart'], 'p.menu': ['Ana Menü', 'Main Menu'],
     // Maç sonu
@@ -122,7 +123,7 @@
     'r.subPvp': ['Rövanş?', 'Rematch?'],
     'r.subLose': ['Bir dahaki sefere! Tekrar dene.', 'Next time! Try again.'],
     'r.balance': ['Bakiye', 'Balance'],
-    'r.double': ['Reklam izle, ödülü 2 katına çıkar (+{n})', 'Watch an ad to double your reward (+{n})'],
+    'r.double': ['Reklam izle: ödül 2 kat (+{n})', 'Watch ad: 2× reward (+{n})'],
     'r.win2': ['Galibiyet', 'Win'], 'r.draw2': ['Beraberlik', 'Draw'], 'r.match': ['Maç', 'Match'],
     'r.goals': ['{n} gol +{b}', '{n} goals +{b}'],
     'r.again': ['TEKRAR OYNA', 'PLAY AGAIN'],
@@ -172,9 +173,9 @@
     's.preview': ['Önizle', 'Preview'], 's.cancel': ['Vazgeç', 'Cancel'], 's.close': ['Kapat', 'Close'], 's.bal': ['Bakiyen', 'Balance'],
     's.selected': ['Seçili', 'Selected'], 's.owned': ['Açık', 'Owned'], 's.select': ['Seç', 'Select'], 's.free': ['Ücretsiz', 'Free'],
     's.best': ['En avantajlı', 'Best value'],
-    's.uses3': ['3 kullanım', '3 uses'], 's.bundle': ['Skill Paketi', 'Skill Bundle'], 's.bundleD': ['5 Dev Kale + 5 Kale Kilidi', '5 Big Goal + 5 Goal Lock'],
+    's.uses3': ['3 kullanım', '3 uses'], 's.bundle': ['Yetenek Paketi', 'Skill Bundle'], 's.bundleD': ['5 Dev Kale + 5 Kale Kilidi', '5 Big Goal + 5 Goal Lock'],
     's.msgFocus': ['Bu maçtaki ücretsiz {s} hakkını kullandın. Devam etmek için altınla paket al.', "You've used your free {s} for this match. Buy a pack with gold to keep going."],
-    's.msg': ['Her maçta her skillden 1 ücretsiz hakkın var. Fazlası için altınla paket al.', 'You get 1 free use of each skill per match. Buy packs with gold for more.'],
+    's.msg': ['Her maçta her yetenekten 1 ücretsiz hakkın var. Fazlası için altınla paket al.', 'You get 1 free use of each skill per match. Buy packs with gold for more.'],
     's.ariaItem': ['{name}, {desc}, {p} altın', '{name}, {desc}, {p} gold'],
     's.ariaSel': ['{name}, seçili', '{name}, selected'], 's.ariaOwn': ['{name}, açık', '{name}, owned'], 's.ariaPrice': ['{name}, {p} altın', '{name}, {p} gold'],
     's.ariaLocked': ['{name}, kilitli, {p} altın', '{name}, locked, {p} gold'],
@@ -6766,6 +6767,30 @@
 
   const KEY_MOVE = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD'];
 
+  // Hareket ve yetenek tuşları fiziksel konumla (e.code) okunur: AZERTY'de WASD yerindeki Z Q S D
+  // tuşları kendiliğinden çalışır. Ekranda o tuşların oyuncunun klavyesindeki adı gösterilir.
+  const KEYCAP = { w: 'W', a: 'A', s: 'S', d: 'D', q: 'Q', e: 'E' };
+  try {
+    if (navigator.keyboard && navigator.keyboard.getLayoutMap) {
+      navigator.keyboard.getLayoutMap().then((map) => {
+        for (const k of Object.keys(KEYCAP)) {
+          const v = map.get('Key' + k.toUpperCase());
+          if (v) KEYCAP[k] = v.toLocaleUpperCase();
+        }
+        syncMenu();
+      }).catch(() => {});
+    }
+  } catch (e) { /* çerçevede izin yoksa varsayılan adlar kalır */ }
+
+  // Anlamlı kısayollar (P duraklat, M ses, N müzik) harfle okunur, klavye düzeni ne olursa olsun
+  // üzerinde o harf yazan tuş çalışır; Latin olmayan düzenlerde fiziksel konuma düşer.
+  function isLetter(e, ch) {
+    const k = (e.key || '').toLowerCase();
+    if (/^[a-z]$/.test(k)) return k === ch;
+    // Kiril, Yunan vb. harf: Latin karşılığı yok, fiziksel konuma bak. Noktalama vb. hiçbir kısayol değil.
+    return k.length === 1 && /\p{L}/u.test(k) && e.code === 'Key' + ch.toUpperCase();
+  }
+
   window.addEventListener('keydown', (e) => {
     if (Ads.playing) return; // reklam oynarken girişler engellenir
     if (e.code === 'Escape' && !volPop.classList.contains('hidden')) {
@@ -6785,7 +6810,8 @@
       else closeStore();
       return;
     }
-    if (e.code === 'Escape' || e.code === 'KeyP') {
+    // Escape tarayıcıda tam ekrandan çıkar: duraklatmaya bağlanmaz (P ya da ekrandaki düğme)
+    if (isLetter(e, 'p')) {
       togglePause();
       return;
     }
@@ -6798,12 +6824,12 @@
         : settings.sound && settings.volume > 0 ? tl('v.toast', { n: Math.round(settings.volume * 100) }) : tl('v.toastOff'));
       return;
     }
-    if (e.code === 'KeyN') {
+    if (isLetter(e, 'n')) {
       toggleMusic();
       toast(settings.music ? tl('v.toastMusicOn', { n: Math.round(settings.musicVol * 100) }) : tl('v.toastMusicOff'));
       return;
     }
-    if (e.code === 'KeyM') {
+    if (isLetter(e, 'm')) {
       if (Sound.platformMute) {
         toggleSound(); // uyarıyı gösterir
         return;
@@ -6833,7 +6859,10 @@
     }
   });
   window.addEventListener('keyup', (e) => keys.delete(e.code));
-  window.addEventListener('blur', () => keys.clear());
+  window.addEventListener('blur', () => {
+    keys.clear();
+    if (inputActive()) togglePause(); // pencere odağı kaçtı (sayfanın başka yerine tıklandı)
+  });
 
   function applyKeyboard(m, dt) {
     let dx = 0, dy = 0;
@@ -6882,6 +6911,8 @@
 
   function startDemo() {
     game.state = 'demo';
+    hideCoach(0);
+    hideCoach(1);
     mallets.forEach((m) => {
       m.ai = true;
       m.level = AI_LEVELS.medium;
@@ -6943,12 +6974,52 @@
     showSkillBars(true);
     showOverlay(null);
     store.set('played', true);
-    if (!store.get('skillsSeen', false)) {
+    startCoach();
+    // Yetenek ipucu ilk maçta değil (önce temel kontrol), sonraki maçta bir kez gösterilir
+    if (!store.get('skillsSeen', false) && !coach.on[0]) {
       store.set('skillsSeen', true);
       const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
       setTimeout(() => toast(touch ? tl('sk.introTouch') : tl('sk.introKeys')), 1800);
     }
     serve(Math.random() < 0.5 ? 0 : 1);
+  }
+
+  // İlk maç rehberi: her mod için ilk maçta oyuncunun raketinin yanında hareket ettirme hareketi
+  // (dokunmatikte sürükleyen el, masaüstünde fare + ok tuşları). Raket ~45 birim hareket edince ya
+  // da oyun 8 saniye akınca kaybolur; oyunu hiç engellemez.
+  const coach = { on: [false, false], t: 0, from: [[0, 0], [0, 0]], key: '' };
+
+  function startCoach() {
+    const pvp = settings.mode === 'pvp';
+    coach.key = pvp ? 'coachPvp' : 'coachAi';
+    const show = !isShowcase && !store.get(coach.key, false);
+    coach.on = [show, show && pvp];
+    coach.t = 0;
+    const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+    for (let i = 0; i < 2; i++) {
+      coach.from[i] = [mallets[i].x, mallets[i].y];
+      const el = $('coach' + i);
+      el.classList.toggle('hidden', !coach.on[i]);
+      el.classList.toggle('touch', touch);
+    }
+    document.querySelectorAll('[data-kc]').forEach((b) => { b.textContent = KEYCAP[b.dataset.kc]; });
+  }
+
+  function hideCoach(i) {
+    if (!coach.on[i]) return;
+    coach.on[i] = false;
+    $('coach' + i).classList.add('hidden');
+    if (!coach.on[0] && !coach.on[1]) store.set(coach.key, true);
+  }
+
+  function updateCoach(dt) {
+    if (!coach.on[0] && !coach.on[1]) return;
+    if (game.state === 'play') coach.t += dt;
+    for (let i = 0; i < 2; i++) {
+      if (!coach.on[i]) continue;
+      const m = mallets[i], [x0, y0] = coach.from[i];
+      if (Math.hypot(m.x - x0, m.y - y0) > 45 || coach.t > 8) hideCoach(i);
+    }
   }
 
   function serve(side) {
@@ -7027,6 +7098,7 @@
     updateGoals(dt);
     const st = game.state;
     if (st === 'paused' || st === 'over') return;
+    updateCoach(dt);
 
     if (st === 'countdown') {
       game.timer -= dt;
@@ -7122,6 +7194,8 @@
 
   function endMatch() {
     game.state = 'over';
+    hideCoach(0);
+    hideCoach(1);
     pucks.forEach((p) => { p.active = false; });
     const [a, b] = game.score;
     const draw = a === b;
@@ -8428,7 +8502,7 @@
     $('playSub').textContent = pvp ? tl('m.pvp') : `${tl('lvl.name', { n: settings.level })} · ${tl('tier.' + tierOf(settings.level))}`;
     const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
     $('hint').innerHTML = settings.mode === 'pvp'
-      ? tl(touch ? 'hint.pvpTouch' : 'hint.pvpKeys')
+      ? tl(touch ? 'hint.pvpTouch' : 'hint.pvpKeys', KEYCAP)
       : tl(touch ? 'hint.aiTouch' : 'hint.aiKeys');
   }
 
