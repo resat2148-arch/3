@@ -5,6 +5,7 @@ Tarayıcıda ve telefonda çalışan, su stadyumunda geçen bir air hockey oyunu
 ## Kurallar
 
 - Maç **60 saniye** sürer. Süre yalnızca oyun akarken işler (gol kutlaması ve geri sayımda durur).
+- Skor, üstteki süre göstergesinin iki yanında durur (solda Sen / Mavi, sağda CPU / Pembe); gol atan tarafın sayısı kısa süre büyür. Masanın zemininde skor yazmaz.
 - **45. saniyede ikinci top** ortadan oyuna girer. Bu son 15 saniyede oyun gollerde durmaz: gol olan top kısa süre sonra yiyen tarafın yarısından geri gelir.
 - Süre bitince çok gol atan kazanır; eşitlikte maç berabere biter.
 

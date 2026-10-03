@@ -6353,6 +6353,7 @@
 
     game.score[scorer]++;
     game.pulse[scorer] = 1;
+    updateScoreHud(scorer);
     game.lastScorer = scorer;
     Sound.goal(settings.mode === 'pvp' || scorer === 0, gx);
     vibrate([40, 40, 80]);
@@ -6971,6 +6972,7 @@
     ripples.length = 0;
     clockEl.classList.remove('hidden');
     updateClock();
+    updateScoreHud();
     showSkillBars(true);
     showOverlay(null);
     store.set('played', true);
@@ -7052,6 +7054,22 @@
     game.shake = 8;
     Sound.frenzy();
     vibrate([30, 30, 30, 30, 60]);
+  }
+
+  // Skor sayacın iki yanında gösterilir (zeminde değil). `bump`: gol atan taraf kısa süre büyür.
+  function updateScoreHud(bump = -1) {
+    const pvp = settings.mode === 'pvp';
+    const labels = pvp ? [COLORS[0].name, COLORS[1].name] : [tl('you'), 'CPU'];
+    for (let i = 0; i < 2; i++) {
+      $('hs' + i).textContent = game.score[i];
+      $('hsLab' + i).textContent = labels[i];
+      const box = $('hsBox' + i);
+      if (i === bump) {
+        box.classList.remove('bump');
+        void box.offsetWidth;
+        box.classList.add('bump');
+      }
+    }
   }
 
   function updateClock() {
@@ -8529,7 +8547,10 @@
     renderStoreMsg();
     updateCoins(false);
     skillUI.dirty = true;
-    if (game.state !== 'demo') updateClock();
+    if (game.state !== 'demo') {
+      updateClock();
+      updateScoreHud();
+    }
     $('againBtn').textContent = tl(...(game.again || ['r.again']));
   }
 
@@ -8624,31 +8645,6 @@
     } else {
       g.fillStyle = `rgb(${rgb})`;
     }
-    g.fillText(text, w / 2, h / 2);
-    sp = { c, w, h };
-    textCache.set(key, sp);
-    return sp;
-  }
-
-  // Zemindeki skor: koyu dış çizgili renkli yazı; açık (su, buz, kum) ve koyu zeminlerde okunur
-  function scoreSprite(text, font, size, rgb) {
-    const key = `sc|${text}|${font}|${rgb}`;
-    let sp = textCache.get(key);
-    if (sp) return sp;
-    if (textCache.size > 60) textCache.clear();
-    const m = document.createElement('canvas').getContext('2d');
-    m.font = font;
-    const pad = size * 0.2;
-    const w = m.measureText(text).width + pad * 2, h = size * 1.25 + pad * 2;
-    const [c, g] = makeLayer(w, h);
-    g.font = font;
-    g.textAlign = 'center';
-    g.textBaseline = 'middle';
-    g.lineJoin = 'round';
-    g.strokeStyle = 'rgba(2, 10, 28, 0.9)';
-    g.lineWidth = Math.max(3, size * 0.09);
-    g.strokeText(text, w / 2, h / 2);
-    g.fillStyle = `rgb(${rgb})`;
     g.fillText(text, w / 2, h / 2);
     sp = { c, w, h };
     textCache.set(key, sp);
@@ -8834,7 +8830,6 @@
     else if (isCrystal()) Crystal.drawOver(ctx);
     else if (isMud()) Swamp.drawOver(ctx);
     drawGoals();
-    drawScores();
     drawRipples();
     drawPucks();
     drawMallets();
@@ -8850,29 +8845,6 @@
     }
     drawFloaters();
     drawBanner();
-  }
-
-  function drawScores() {
-    if (game.state === 'demo') return;
-    const pvp = settings.mode === 'pvp';
-    const labels = pvp ? [COLORS[0].name, COLORS[1].name] : [tl('you'), 'CPU'];
-    for (let i = 0; i < 2; i++) {
-      const p = game.pulse[i];
-      const col = COLORS[i];
-      const num = scoreSprite(String(game.score[i]), `italic 900 170px ${FONT}`, 170, col.rgb);
-      const lab = scoreSprite(labels[i], `800 20px ${FONT}`, 20, col.rgb);
-      ctx.save();
-      ctx.translate(W / 2, i === 0 ? H * 0.75 : H * 0.25);
-      if (i === 1 && pvp) ctx.rotate(Math.PI);
-      const sc = 1 + p * p * 0.35;
-      ctx.scale(sc, sc);
-      // Belirgin ama oyunun önüne geçmeyen bir yarı saydamlık; gol anında tam parlar
-      ctx.globalAlpha = Math.min(1, 0.42 + p * 0.55);
-      drawSprite(num, 0, 0);
-      ctx.globalAlpha = Math.min(1, 0.62 + p * 0.38);
-      drawSprite(lab, 0, 100);
-      ctx.restore();
-    }
   }
 
   function drawRipples() {

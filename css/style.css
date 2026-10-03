@@ -849,10 +849,10 @@ body.skills.pvp #stage {
   top: 0;
   transform: translateX(-50%);
   display: flex;
-  flex-direction: column;
   align-items: center;
+  gap: 12px;
   min-width: 100px;
-  padding: 3px 16px 4px;
+  padding: 3px 14px 4px;
   border-radius: 16px;
   background: rgba(16, 20, 46, 0.7);
   -webkit-backdrop-filter: blur(10px);
@@ -860,6 +860,59 @@ body.skills.pvp #stage {
   border: 1px solid rgba(155, 107, 255, 0.35);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), 0 0 18px rgba(155, 107, 255, 0.25);
   transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.clock-mid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 62px;
+}
+
+/* Skor: sayacın iki yanında (sol Mavi / Sen, sağ Pembe / CPU) */
+.hs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 34px;
+  line-height: 1;
+}
+
+.hs b {
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.hs small {
+  margin-top: 2px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hs0 b {
+  color: #c9fbff;
+  text-shadow: 0 0 10px rgba(25, 230, 255, 0.85);
+}
+
+.hs1 b {
+  color: #ffd6ea;
+  text-shadow: 0 0 10px rgba(255, 61, 154, 0.85);
+}
+
+.hs.bump b {
+  animation: hs-bump 0.6s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+@keyframes hs-bump {
+  from {
+    transform: scale(1.9);
+  }
 }
 
 .clock-time {
@@ -2650,5 +2703,47 @@ html[data-build="showcase"] #confirmAd {
 @media (pointer: fine) {
   .skillbar.top {
     transform: translateX(-50%);
+  }
+}
+
+/* Dar ekranda skorlu sayaç sağdaki düğmelere taşmasın */
+@media (max-width: 440px) {
+  .clock {
+    gap: 7px;
+    padding: 3px 10px 4px;
+  }
+
+  .clock-mid {
+    min-width: 52px;
+  }
+
+  .clock-time,
+  .hs b {
+    font-size: 21px;
+  }
+
+  .hs {
+    min-width: 26px;
+  }
+}
+
+/* İki oyunculu modda renkler oyuncuyu gösterir: etiket yer kaplamasın */
+body.pvp .hs small {
+  display: none;
+}
+
+@media (max-width: 380px) {
+  .clock {
+    gap: 5px;
+    padding: 3px 8px 4px;
+  }
+
+  .clock-mid {
+    min-width: 48px;
+  }
+
+  .clock-time,
+  .hs b {
+    font-size: 19px;
   }
 }
