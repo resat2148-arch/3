@@ -7305,20 +7305,24 @@
   function prepareShare(result) {
     share.result = result;
     share.url = shareLink();
-    const t = encodeURIComponent(shareText());
-    const u = encodeURIComponent(share.url);
-    const all = encodeURIComponent(fullText());
-    $('shareX').href = `https://twitter.com/intent/tweet?text=${t}${share.url ? `&url=${u}` : ''}`;
-    $('shareWa').href = `https://wa.me/?text=${all}`;
-    $('shareTg').href = share.url
-      ? `https://t.me/share/url?url=${u}&text=${t}`
-      : `https://t.me/share/url?url=${all}`;
-    // Facebook yalnızca bir bağlantı paylaşabilir
-    $('shareFb').classList.toggle('hidden', !share.url);
-    if (share.url) $('shareFb').href = `https://www.facebook.com/sharer/sharer.php?u=${u}&quote=${t}`;
+    if (!$('shareX')) { // CrazyGames sürümü: sosyal paylaşım düğmeleri yok (yalnızca skor kartı)
+      share.url = '';
+    } else {
+      const t = encodeURIComponent(shareText());
+      const u = encodeURIComponent(share.url);
+      const all = encodeURIComponent(fullText());
+      $('shareX').href = `https://twitter.com/intent/tweet?text=${t}${share.url ? `&url=${u}` : ''}`;
+      $('shareWa').href = `https://wa.me/?text=${all}`;
+      $('shareTg').href = share.url
+        ? `https://t.me/share/url?url=${u}&text=${t}`
+        : `https://t.me/share/url?url=${all}`;
+      // Facebook yalnızca bir bağlantı paylaşabilir
+      $('shareFb').classList.toggle('hidden', !share.url);
+      if (share.url) $('shareFb').href = `https://www.facebook.com/sharer/sharer.php?u=${u}&quote=${t}`;
+    }
     // Gömülü görünümde tarayıcı paylaşım menüsü engellidir; orada düğmeyi gösterme.
-    const canNative = !!navigator.share && !isFramed();
-    $('shareNative').classList.toggle('hidden', !canNative);
+    const canNative = !!navigator.share && !isFramed() && BUILD !== 'crazygames';
+    if ($('shareNative')) $('shareNative').classList.toggle('hidden', !canNative);
 
     share.blob = null;
     updateSaveUI();
@@ -7334,7 +7338,7 @@
         img.src = url;
         thumb.src = url;
         const canFile = canNative && !!(navigator.canShare && navigator.canShare({ files: [cardFile()] }));
-        $('cardShare').classList.toggle('hidden', !canFile);
+        if ($('cardShare')) $('cardShare').classList.toggle('hidden', !canFile);
         updateSaveUI();
       }, 'image/jpeg', 0.9);
     });
@@ -8626,6 +8630,31 @@
     return sp;
   }
 
+  // Zemindeki skor: koyu dış çizgili renkli yazı; açık (su, buz, kum) ve koyu zeminlerde okunur
+  function scoreSprite(text, font, size, rgb) {
+    const key = `sc|${text}|${font}|${rgb}`;
+    let sp = textCache.get(key);
+    if (sp) return sp;
+    if (textCache.size > 60) textCache.clear();
+    const m = document.createElement('canvas').getContext('2d');
+    m.font = font;
+    const pad = size * 0.2;
+    const w = m.measureText(text).width + pad * 2, h = size * 1.25 + pad * 2;
+    const [c, g] = makeLayer(w, h);
+    g.font = font;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.lineJoin = 'round';
+    g.strokeStyle = 'rgba(2, 10, 28, 0.9)';
+    g.lineWidth = Math.max(3, size * 0.09);
+    g.strokeText(text, w / 2, h / 2);
+    g.fillStyle = `rgb(${rgb})`;
+    g.fillText(text, w / 2, h / 2);
+    sp = { c, w, h };
+    textCache.set(key, sp);
+    return sp;
+  }
+
   function drawSprite(sp, x, y) {
     ctx.drawImage(sp.c, x - sp.w / 2, y - sp.h / 2, sp.w, sp.h);
   }
@@ -8830,16 +8859,17 @@
     for (let i = 0; i < 2; i++) {
       const p = game.pulse[i];
       const col = COLORS[i];
-      const num = textSprite(String(game.score[i]), `italic 900 170px ${FONT}`, 170, col.rgb, false);
-      const lab = textSprite(labels[i], `800 18px ${FONT}`, 18, col.rgb, false);
+      const num = scoreSprite(String(game.score[i]), `italic 900 170px ${FONT}`, 170, col.rgb);
+      const lab = scoreSprite(labels[i], `800 20px ${FONT}`, 20, col.rgb);
       ctx.save();
       ctx.translate(W / 2, i === 0 ? H * 0.75 : H * 0.25);
       if (i === 1 && pvp) ctx.rotate(Math.PI);
       const sc = 1 + p * p * 0.35;
       ctx.scale(sc, sc);
-      ctx.globalAlpha = 0.1 + p * 0.55;
+      // Belirgin ama oyunun önüne geçmeyen bir yarı saydamlık; gol anında tam parlar
+      ctx.globalAlpha = Math.min(1, 0.42 + p * 0.55);
       drawSprite(num, 0, 0);
-      ctx.globalAlpha = 0.28 + p * 0.5;
+      ctx.globalAlpha = Math.min(1, 0.62 + p * 0.38);
       drawSprite(lab, 0, 100);
       ctx.restore();
     }
@@ -9037,6 +9067,12 @@
   // Gizli sekmede kare döngüsü durur: durdurma bildirimi hemen gitsin
   document.addEventListener('visibilitychange', syncGameplay);
   document.addEventListener('visibilitychange', () => Music.applyVolume()); // arka planda müzik susar
+
+  // CrazyGames sürümü: platform kuralı gereği oyunun dışına götüren sosyal paylaşım düğmeleri ve
+  // bağlantıları sayfadan tamamen çıkarılır (yalnızca gizlemek yetmez); skor kartı görseli kalır.
+  if (BUILD === 'crazygames') {
+    for (const el of [document.querySelector('.share-label'), $('shareRow'), $('cardShare')]) if (el) el.remove();
+  }
 
   applyLang();
   applyTheme();
