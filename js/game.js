@@ -92,6 +92,22 @@
     'diff.easy': ['Kolay', 'Easy'], 'diff.medium': ['Orta', 'Medium'], 'diff.hard': ['Zor', 'Hard'],
     'diffl.easy': ['kolay', 'easy'], 'diffl.medium': ['orta', 'medium'], 'diffl.hard': ['zor', 'hard'],
     'm.play': ['OYNA', 'PLAY'], 'm.store': ['Mağaza', 'Store'],
+    'm.level': ['Rakip', 'Opponent'], 'lv.prev': ['Önceki seviye', 'Previous level'], 'lv.next': ['Sonraki seviye', 'Next level'],
+    'lvl.name': ['Seviye {n}', 'Level {n}'], 'lvl.of': ['{n}.', 'level {n}'],
+    'lvl.locked': ['Kazanınca açılır', 'Win to unlock'],
+    'tier.1': ['Acemi', 'Rookie'], 'tier.2': ['Kolay', 'Easy'], 'tier.3': ['Orta', 'Medium'], 'tier.4': ['Zor', 'Hard'],
+    'tier.5': ['Uzman', 'Expert'], 'tier.6': ['Efsane', 'Legend'],
+    'in.tap': ['OYNAMAK İÇİN DOKUN', 'TAP TO PLAY'], 'in.click': ['OYNAMAK İÇİN TIKLA', 'CLICK TO PLAY'],
+    'in.howTouch': ['Raketini parmağınla sürükle, pakı rakibin kalesine gönder!', 'Drag your mallet with your finger and send the puck into the goal!'],
+    'in.howMouse': ['Raketini fareyle yönet, pakı rakibin kalesine gönder!', 'Move your mallet with the mouse and send the puck into the goal!'],
+    'r.next': ['SEVİYE {n} ▶', 'LEVEL {n} ▶'], 'r.retry': ['TEKRAR DENE', 'TRY AGAIN'],
+    'r.subLevel': ['Seviye {n} açıldı! Hazır mısın?', 'Level {n} unlocked! Ready?'],
+    'r.subRetry': ['Seviye {n} seni bekliyor. Bir daha dene!', 'Level {n} is waiting. Try again!'],
+    'r.gift': ['Hoş geldin hediyesi', 'Welcome gift'],
+    'r.canUnlock': ['🔓 {t} temasını açabilirsin!', '🔓 You can unlock {t}!'],
+    'r.toUnlock': ['{t}: {n} altın kaldı', '{t}: {n} gold to go'],
+    'd.toast': ['🎁 Günlük ödül · {d}. gün: +{n} altın!', '🎁 Daily reward · day {d}: +{n} gold!'],
+    'd.tomorrow': ['🎁 Yarın gel: +{n} altın günlük ödül', '🎁 Come back tomorrow: +{n} gold daily reward'],
     'm.inv': ['Envanter: {g} Dev Kale · {s} Kale Kilidi', 'Owned: {g} Big Goal · {s} Goal Lock'],
     'm.wallet': ['Altın bakiyen', 'Your gold'],
     'hint.pvpTouch': ['Telefonu masaya koyun: <b class="c">alt yarı</b> ve <b class="p">üst yarı</b> kendi raketini parmağıyla sürükler, skiller kendi tarafındaki düğmelerde.', 'Put the phone on the table: the <b class="c">bottom half</b> and the <b class="p">top half</b> each drag their own mallet, with skill buttons on each side.'],
@@ -104,8 +120,6 @@
     'r.draw': ['BERABERE', 'DRAW'], 'r.wins': ['{name} KAZANDI!', '{name} WINS!'], 'r.win': ['KAZANDIN!', 'YOU WIN!'], 'r.lose': ['KAYBETTİN', 'YOU LOSE'],
     'r.subDraw': ['Süre bitti, kimse üstün gelemedi. Rövanş?', "Time's up and nobody pulled ahead. Rematch?"],
     'r.subPvp': ['Rövanş?', 'Rematch?'],
-    'r.subHard': ['Efsane! Zor yapay zekâyı yendin.', 'Legendary! You beat the hard AI.'],
-    'r.subWin': ['{d} seviyeyi geçtin. Bir üst seviyeyi dene!', 'You beat {d}. Try the next level!'],
     'r.subLose': ['Bir dahaki sefere! Tekrar dene.', 'Next time! Try again.'],
     'r.balance': ['Bakiye', 'Balance'],
     'r.double': ['Reklam izle, ödülü 2 katına çıkar (+{n})', 'Watch an ad to double your reward (+{n})'],
@@ -226,6 +240,29 @@
     hard:   { speed: 1380, accel: 11000, think: 0.035, predict: 0.36, aimErr: 0.2,  noise: 6,  strike: 1.3,  bank: 0.3,  counter: true,  skillSmart: 0.95, skillRandom: 0 },
   };
 
+  // Seviyeye göre yapay zekâ: ara seviyeler komşu çapalar arasında doğrusal karıştırılır; 12'den sonrası sabit.
+  const AI_ANCHORS = [
+    [1, { speed: 430, accel: 2400, think: 0.28, predict: 0.05, aimErr: 1.2, noise: 95, strike: 0.95, bank: 0, skillSmart: 0.15, skillRandom: 0.008 }],
+    [2, AI_LEVELS.easy],
+    [4, AI_LEVELS.medium],
+    [8, AI_LEVELS.hard],
+    [12, { speed: 1600, accel: 13000, think: 0.028, predict: 0.42, aimErr: 0.12, noise: 3, strike: 1.36, bank: 0.35, skillSmart: 1, skillRandom: 0 }],
+  ];
+  function aiForLevel(n) {
+    n = Math.max(1, Math.min(12, n));
+    let i = 0;
+    while (i < AI_ANCHORS.length - 2 && n > AI_ANCHORS[i + 1][0]) i++;
+    const [l0, a] = AI_ANCHORS[i], [l1, b] = AI_ANCHORS[i + 1];
+    const k = Math.max(0, Math.min(1, (n - l0) / (l1 - l0)));
+    const o = { counter: n >= 3 };
+    for (const key of Object.keys(a)) if (typeof a[key] === 'number') o[key] = a[key] + (b[key] - a[key]) * k;
+    return o;
+  }
+  // Seviyenin adı: 1 Acemi, 2-3 Kolay, 4-6 Orta, 7-9 Zor, 10-11 Uzman, 12+ Efsane
+  const tierOf = (n) => (n <= 1 ? 1 : n <= 3 ? 2 : n <= 6 ? 3 : n <= 9 ? 4 : n <= 11 ? 5 : 6);
+  // Ödül çarpanı: seviye başına %15, en çok ×2,65
+  const levelMult = (n) => Math.round(Math.min(2.65, 1 + (n - 1) * 0.15) * 100) / 100;
+
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
   const lerp = (a, b, t) => a + (b - a) * t;
   const rand = (a, b) => a + Math.random() * (b - a);
@@ -265,7 +302,7 @@
   // ---------------------------------------------------------------------------
   const THEME_INFO = {
     water: { price: 0, get name() { return tl('th.water'); }, get desc() { return tl('th.water.d'); } },
-    neon: { price: 200, get name() { return tl('th.neon'); }, get desc() { return tl('th.neon.d'); } },
+    neon: { price: 150, get name() { return tl('th.neon'); }, get desc() { return tl('th.neon.d'); } },
     ice: { price: 250, get name() { return tl('th.ice'); }, get desc() { return tl('th.ice.d'); } },
     sand: { price: 300, get name() { return tl('th.sand'); }, get desc() { return tl('th.sand.d'); } },
     lava: { price: 400, get name() { return tl('th.lava'); }, get desc() { return tl('th.lava.d'); } },
@@ -283,11 +320,17 @@
       unlocked: Array.isArray(v.unlocked) ? v.unlocked.filter((t) => THEME_INFO[t]) : [],
       adDay: String(v.adDay || ''),
       adCount: n(v.adCount),
+      welcomed: !!v.welcomed,      // hoş geldin hediyesi verildi mi
+      dailyDay: String(v.dailyDay || ''), // son günlük ödülün günü
+      streak: n(v.streak),         // art arda gelinen gün sayısı
     };
   })();
 
   function saveWallet() {
-    store.set('wallet', { coins: wallet.coins, unlocked: wallet.unlocked, adDay: wallet.adDay, adCount: wallet.adCount });
+    store.set('wallet', {
+      coins: wallet.coins, unlocked: wallet.unlocked, adDay: wallet.adDay, adCount: wallet.adCount,
+      welcomed: wallet.welcomed, dailyDay: wallet.dailyDay, streak: wallet.streak,
+    });
   }
 
   function isUnlocked(t) {
@@ -305,12 +348,22 @@
 
   const savedTheme = store.get('theme', 'water');
 
+  // Tek oyunculu mod bir seviye merdivenidir: her galibiyet bir sonraki rakibi açar. Eski "zorluk"
+  // seçimi yapmış oyuncular o zorluğa denk seviyeden başlar.
+  const maxLevel0 = (() => {
+    const v = Math.floor(Number(store.get('maxLevel', 0)));
+    if (v >= 1) return v;
+    const d = store.get('difficulty', null);
+    return d === 'hard' ? 8 : d === 'medium' ? 4 : 1;
+  })();
+
   const settings = {
     mode: store.get('mode', 'ai'),
-    difficulty: store.get('difficulty', 'medium'),
     sound: store.get('sound', true),
     volume: clamp(Number(store.get('volume', 1)) || 0, 0, 1),
     music: store.get('music', true),
+    maxLevel: maxLevel0,
+    level: clamp(Math.floor(Number(store.get('level', maxLevel0))) || maxLevel0, 1, maxLevel0),
     musicVol: clamp(Number(store.get('musicVol', 0.6)), 0, 1) || 0,
     theme: isUnlocked(savedTheme) ? savedTheme : 'water',
     lang: LANG,
@@ -6759,7 +6812,7 @@
       toast(settings.sound ? tl('v.toastOn', { n: Math.round(settings.volume * 100) }) : tl('v.toastOff'));
       return;
     }
-    if ((e.code === 'Enter' || e.code === 'Space') && menuEl.classList.contains('show')) {
+    if ((e.code === 'Enter' || e.code === 'Space') && (menuEl.classList.contains('show') || introEl.classList.contains('show'))) {
       e.preventDefault();
       startMatch();
       return;
@@ -6808,14 +6861,14 @@
   // ---------------------------------------------------------------------------
   const $ = (id) => document.getElementById(id);
   const menuEl = $('menu'), pauseEl = $('pauseMenu'), overEl = $('overMenu');
-  const unlockEl = $('unlockMenu'), adEl = $('adMenu');
+  const unlockEl = $('unlockMenu'), adEl = $('adMenu'), introEl = $('introMenu');
   const pauseBtn = $('pauseBtn'), soundBtn = $('soundBtn'), fsBtn = $('fsBtn');
 
   const clockEl = $('clock'), clockTime = $('clockTime'), clockTag = $('clockTag');
   let clockShown = '';
 
   function showOverlay(el) {
-    [menuEl, pauseEl, overEl, cardEl, storeEl, unlockEl, adEl].forEach((o) => o.classList.toggle('show', o === el));
+    [menuEl, pauseEl, overEl, cardEl, storeEl, unlockEl, adEl, introEl].forEach((o) => o.classList.toggle('show', o === el));
     const inGame = !el;
     pauseBtn.classList.toggle('hidden', !inGame);
     document.body.classList.toggle('playing', inGame);
@@ -6845,8 +6898,20 @@
     game.banner = null;
     clockEl.classList.add('hidden');
     showSkillBars(false);
-    showOverlay(menuEl);
+    // İlk açılışta menü yerine "oynamak için dokun" ekranı: tek dokunuşla ilk maça girilir
+    showOverlay(store.get('played', false) || isShowcase ? menuEl : introEl);
+    checkDaily();
   }
+
+  // İlk açılış ekranı: ekranın herhangi bir yerine dokunmak maçı başlatır
+  function syncIntro() {
+    const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+    $('introTap').textContent = tl(touch ? 'in.tap' : 'in.click');
+    $('introHow').textContent = tl(touch ? 'in.howTouch' : 'in.howMouse');
+  }
+  introEl.addEventListener('click', () => {
+    if (introEl.classList.contains('show')) startMatch();
+  });
 
   function startMatch() {
     Sound.init();
@@ -6868,7 +6933,8 @@
     mallets.forEach(resetMallet);
     mallets[0].ai = false;
     mallets[1].ai = settings.mode === 'ai';
-    mallets[1].level = AI_LEVELS[settings.difficulty] || AI_LEVELS.medium;
+    game.level = settings.level; // bu maçın seviyesi (galibiyette settings.level ilerler)
+    mallets[1].level = aiForLevel(game.level);
     pointerOwner.clear();
     particles.length = 0;
     ripples.length = 0;
@@ -6876,6 +6942,7 @@
     updateClock();
     showSkillBars(true);
     showOverlay(null);
+    store.set('played', true);
     if (!store.get('skillsSeen', false)) {
       store.set('skillsSeen', true);
       const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
@@ -7073,17 +7140,23 @@
     }
     $('finalP1').textContent = a;
     $('finalP2').textContent = b;
-    const diffName = tl('diff.' + settings.difficulty);
-    $('resultSub').textContent = draw
-      ? tl('r.subDraw')
-      : pvp
-        ? tl('r.subPvp')
-        : win
-          ? (settings.difficulty === 'hard' ? tl('r.subHard') : tl('r.subWin', { d: diffName }))
-          : tl('r.subLose');
+    const level = game.level || settings.level;
+    if (!pvp && win) { // galibiyet bir sonraki seviyeyi açar ve onu seçer
+      settings.maxLevel = Math.max(settings.maxLevel, level + 1);
+      settings.level = level + 1;
+      store.set('maxLevel', settings.maxLevel);
+      store.set('level', settings.level);
+      syncMenu();
+    }
+    $('resultSub').textContent = pvp
+      ? (draw ? tl('r.subDraw') : tl('r.subPvp'))
+      : win ? tl('r.subLevel', { n: level + 1 }) : tl('r.subRetry', { n: level });
+    // Ana düğme: galibiyette sonraki seviye, yenilgide aynı seviyeyi yeniden dene
+    game.again = pvp ? ['r.again'] : win ? ['r.next', { n: level + 1 }] : ['r.retry'];
+    $('againBtn').textContent = tl(...game.again);
 
-    prepareShare({ a, b, draw, w, win, pvp, difficulty: settings.difficulty });
-    grantMatchReward({ a, b, draw, win, pvp, difficulty: settings.difficulty });
+    prepareShare({ a, b, draw, w, win, pvp, level });
+    grantMatchReward({ a, b, draw, win, pvp, level });
     banner(tl('b.time'), '255,255,255', 1.3, 84);
     Sound.buzzer();
     // Konfeti
@@ -7145,7 +7218,7 @@
         ? tl('sh.pvpDraw', { s })
         : tl('sh.pvpWin', { w: COLORS[r.w].label, l: COLORS[1 - r.w].label, hi, lo });
     } else {
-      const d = tl('diffl.' + r.difficulty);
+      const d = tl('lvl.of', { n: r.level });
       line = r.draw ? tl('sh.aiDraw', { d, s }) : r.win ? tl('sh.aiWin', { d, s }) : tl('sh.aiLose', { d, s });
     }
     return `🏒 ${line} ${tl('sh.tail')} #AquaHockey`;
@@ -7197,11 +7270,11 @@
     return new File([share.blob || new Blob()], 'aqua-hockey-skor.jpg', { type: 'image/jpeg' });
   }
 
-  function toast(msg) {
+  function toast(msg, ms = 2600) {
     toastEl.textContent = msg;
     toastEl.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), ms);
   }
 
   // Tıklama anında çağrılmalı (pano izni kullanıcı etkileşimi ister).
@@ -7425,7 +7498,7 @@
     });
 
     // Oyuncu etiketleri
-    const labels = r.pvp ? [COLORS[0].name, COLORS[1].name] : [tl('me'), `CPU · ${up(tl('diffl.' + r.difficulty))}`];
+    const labels = r.pvp ? [COLORS[0].name, COLORS[1].name] : [tl('me'), `CPU · ${up(tl('lvl.name', { n: r.level }))}`];
     spacing('6px');
     g.font = `800 36px ${FONT}`;
     g.shadowBlur = 16;
@@ -7963,11 +8036,12 @@
   // ---------------------------------------------------------------------------
   // Altın: maç ödülü, ödüllü reklam ve tema kilitleri
   // ---------------------------------------------------------------------------
-  const DIFF_MULT = { easy: 1, medium: 1.5, hard: 2 };
+  const WELCOME_GIFT = 100; // ilk maçın sonunda bir kez
+  const DAILY = [30, 40, 50, 60, 80, 100, 150]; // art arda 1.–7. gün (sonrası 7. gün)
   const fmt = (n) => n.toLocaleString(LOCALE());
   const lastReward = { total: 0, doubled: true };
 
-  // Maç ödülü: sonuç (galibiyet 35, beraberlik 20, yenilgi 10) × zorluk (Kolay 1, Orta 1,5, Zor 2)
+  // Maç ödülü: sonuç (galibiyet 35, beraberlik 20, yenilgi 10) × seviye çarpanı (levelMult)
   // + attığın her gol için 2 (en fazla 10 gol). İki oyunculu modda sabit 15 + gol başına 1.
   function matchReward(r) {
     if (r.pvp) {
@@ -7975,29 +8049,89 @@
       return { total: 15 + g, why: `${tl('r.match')} 15 · ${tl('r.goals', { n: g, b: g })}` };
     }
     const base = r.win ? 35 : r.draw ? 20 : 10;
-    const mult = DIFF_MULT[r.difficulty] || 1;
+    const mult = levelMult(r.level);
     const goals = Math.min(10, r.a) * 2;
     const label = tl(r.win ? 'r.win2' : r.draw ? 'r.draw2' : 'r.match');
-    const diff = tl('diff.' + r.difficulty);
     const parts = [`${label} ${base}`];
-    if (mult !== 1) parts.push(`${diff} ×${mult.toLocaleString(LOCALE())}`);
+    if (mult !== 1) parts.push(`${tl('lvl.name', { n: r.level })} ×${mult.toLocaleString(LOCALE())}`);
     if (goals) parts.push(tl('r.goals', { n: r.a, b: goals }));
     return { total: Math.round(base * mult) + goals, why: parts.join(' · ') };
   }
 
   function grantMatchReward(r) {
     const rw = matchReward(r);
-    lastReward.total = rw.total;
+    lastReward.total = rw.total; // reklamla ikiye katlanan kısım (hediye hariç)
     lastReward.doubled = false;
-    addCoins(rw.total, false);
-    $('rewardWhy').textContent = rw.why;
+    let shown = rw.total, why = rw.why;
+    if (!wallet.welcomed && !isShowcase) { // ilk maç: hoş geldin hediyesi
+      wallet.welcomed = true;
+      shown += WELCOME_GIFT;
+      why += ` · ${tl('r.gift')} ${WELCOME_GIFT}`;
+    }
+    addCoins(shown, false);
+    $('rewardWhy').textContent = why;
     $('rewardAmt').textContent = '+0';
     renderReward();
     // Sonuç ekranı açılınca sayaç yükselerek dolsun
-    setTimeout(() => countUp($('rewardAmt'), 0, rw.total, '+'), 1450);
+    setTimeout(() => countUp($('rewardAmt'), 0, shown, '+'), 1450);
+  }
+
+  // Maç sonunda bir sonraki hedef: en ucuz kilitli tema (alınabiliyorsa mağazaya kısayol)
+  function cheapestLocked() {
+    let best = null;
+    for (const t of Object.keys(THEME_INFO)) {
+      if (!isUnlocked(t) && (!best || THEME_INFO[t].price < THEME_INFO[best].price)) best = t;
+    }
+    return best;
+  }
+
+  function renderNextUnlock() {
+    const el = $('nextUnlock'), t = cheapestLocked();
+    el.classList.toggle('hidden', !t);
+    if (!t) return;
+    const info = THEME_INFO[t], left = info.price - wallet.coins;
+    el.dataset.theme = t;
+    el.classList.toggle('ready', left <= 0);
+    $('nextUnlockText').textContent = left <= 0 ? tl('r.canUnlock', { t: info.name }) : tl('r.toUnlock', { t: info.name, n: fmt(left) });
+    $('nextUnlockBar').style.width = Math.round(clamp(wallet.coins / info.price, 0, 1) * 100) + '%';
+  }
+
+  // Günlük ödül: her gün ilk açılışta kendiliğinden verilir; art arda gelinen günlerde artar.
+  function dayKey(offset) {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  }
+
+  const dailyAmount = (streak) => DAILY[Math.min(streak, DAILY.length) - 1];
+
+  function checkDaily() {
+    if (isShowcase) return;
+    const d = today();
+    if (wallet.dailyDay === d) return;
+    const first = !store.get('played', false);
+    wallet.streak = wallet.dailyDay === dayKey(-1) ? wallet.streak + 1 : 1;
+    wallet.dailyDay = d;
+    if (first) { // ilk gün hoş geldin hediyesi verilir; günlük ödül ertesi gün başlar
+      saveWallet();
+      return;
+    }
+    const n = dailyAmount(wallet.streak);
+    addCoins(n);
+    toast(tl('d.toast', { d: wallet.streak, n }), 4200);
+  }
+
+  function renderTomorrow() {
+    const el = $('dailyNext');
+    el.classList.toggle('hidden', isShowcase);
+    // Bugün alındıysa yarın seri bir artar; alınmadıysa (gece yarısı geçtiyse) sıradaki gün
+    const next = wallet.dailyDay === today() ? wallet.streak + 1 : 1;
+    el.textContent = tl('d.tomorrow', { n: dailyAmount(next) });
   }
 
   function renderReward() {
+    renderNextUnlock();
+    renderTomorrow();
     const btn = $('doubleBtn');
     const left = adsLeft();
     btn.classList.toggle('hidden', lastReward.doubled || lastReward.total <= 0);
@@ -8283,7 +8417,15 @@
         b.classList.toggle('active', String(settings[key]) === b.dataset.value);
       });
     });
-    $('diffField').classList.toggle('disabled', settings.mode === 'pvp');
+    // Rakip seviyesi (tek oyunculu): oynanacak seviye, en yüksek açılan seviyeye kadar seçilebilir
+    const pvp = settings.mode === 'pvp';
+    $('levelField').classList.toggle('disabled', pvp);
+    $('lvName').textContent = tl('lvl.name', { n: settings.level });
+    $('lvSub').textContent = tl('tier.' + tierOf(settings.level));
+    $('lvPrev').disabled = settings.level <= 1;
+    $('lvNext').disabled = settings.level >= settings.maxLevel;
+    $('lvNext').title = settings.level >= settings.maxLevel ? tl('lvl.locked') : tl('lv.next');
+    $('playSub').textContent = pvp ? tl('m.pvp') : `${tl('lvl.name', { n: settings.level })} · ${tl('tier.' + tierOf(settings.level))}`;
     const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
     $('hint').innerHTML = settings.mode === 'pvp'
       ? tl(touch ? 'hint.pvpTouch' : 'hint.pvpKeys')
@@ -8303,12 +8445,14 @@
     textCache.clear();
     goalSprites[0] = goalSprites[1] = null;
     syncMenu();
+    syncIntro();
     syncVolumeUI();
     renderInventory();
     renderStoreMsg();
     updateCoins(false);
     skillUI.dirty = true;
     if (game.state !== 'demo') updateClock();
+    $('againBtn').textContent = tl(...(game.again || ['r.again']));
   }
 
   document.querySelectorAll('.seg').forEach((seg) => {
@@ -8331,6 +8475,15 @@
       }
     });
   });
+
+  function setLevel(n) {
+    settings.level = clamp(n, 1, settings.maxLevel);
+    store.set('level', settings.level);
+    syncMenu();
+  }
+  $('lvPrev').addEventListener('click', () => setLevel(settings.level - 1));
+  $('lvNext').addEventListener('click', () => setLevel(settings.level + 1));
+  $('nextUnlock').addEventListener('click', (e) => openStore({ tab: 'themes', theme: e.currentTarget.dataset.theme }));
 
   updateCoins(false);
   $('startBtn').addEventListener('click', startMatch);

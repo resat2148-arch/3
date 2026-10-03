@@ -31,7 +31,7 @@ Oyunda gerçek parayla satış yoktur. Altınla alınabilen her şey **Mağaza**
 | Tema | Fiyat |
 |---|---|
 | Su Stadyumu | Ücretsiz |
-| Neon | 200 |
+| Neon | 150 |
 | Buz Stadyumu | 250 |
 | Kum Stadyumu | 300 |
 | Lav Stadyumu | 400 |
@@ -48,12 +48,14 @@ Oyunda gerçek parayla satış yoktur. Altınla alınabilen her şey **Mağaza**
 Altın kazanma yolları:
 
 - **Her maçtan sonra** (maç süre bitene kadar oynanmalı; yarıda bırakılan maç ödül vermez):
-  - Tek oyuncu: sonuç (galibiyet 35, beraberlik 20, yenilgi 10) × zorluk (Kolay 1, Orta 1,5, Zor 2) + attığın her gol için 2 (en fazla 10 gol). Örnek: Orta seviyede 3-1 galibiyet = 35 × 1,5 + 6 = 59.
+  - Tek oyuncu: sonuç (galibiyet 35, beraberlik 20, yenilgi 10) × seviye çarpanı (seviye başına %15: Seviye 1 ×1, Seviye 4 ×1,45, Seviye 8 ×2,05, en çok ×2,65) + attığın her gol için 2 (en fazla 10 gol). Örnek: Seviye 4'te 3-1 galibiyet = 35 × 1,45 + 6 = 57.
   - İki oyuncu: 15 + atılan her gol için 1 (en fazla 10).
   - Maç sonunda reklam izleyerek o maçın ödülü **2 katına** çıkarılabilir.
+- **Hoş geldin hediyesi**: ilk maçın sonunda bir kez +100 altın. İlk galibiyetten sonra Neon'a çok az kalır; maç sonu ekranı en ucuz kilitli temaya ne kadar altın kaldığını gösterir, yetiyorsa mağazaya kısayol olur.
+- **Günlük ödül**: her gün ilk açılışta kendiliğinden verilir ve art arda gelinen günlerde artar: 30, 40, 50, 60, 80, 100, 150 altın (7. günden sonra 150). Bir gün atlanırsa seri baştan başlar. Maç sonu ekranı yarınki ödülü hatırlatır. İlk gün hoş geldin hediyesi verildiği için günlük ödül ertesi gün başlar.
 - **Reklam izleyerek**: menüde ve mağazada "Reklam izle" ile her reklam için +50 altın (altın yetmediğinde satın alma adımında da çıkar). Günde en fazla 10 ödüllü reklam izlenebilir; reklam sonuna kadar izlenmezse ödül verilmez. Reklam oynarken oyun sesi kısılır.
 
-Fiyatlar ve ödüller `js/game.js` içindeki `THEME_INFO`, `PRODUCTS`, `COIN` ve `matchReward()` ile ayarlanır.
+Fiyatlar ve ödüller `js/game.js` içindeki `THEME_INFO`, `PRODUCTS`, `COIN`, `WELCOME_GIFT`, `DAILY`, `levelMult()` ve `matchReward()` ile ayarlanır.
 
 > **Kendi sitendeki sürümde reklamlar şu an TEST MODUNDA** (CrazyGames sürümü gerçek CrazyGames reklamlarını kullanır): gerçek reklam yerine 5 saniyelik örnek bir gösterim oynatılır. Gerçek reklam için `Ads.showRewarded()` bir reklam altyapısına bağlanmalıdır — web için Google H5 Games Ads (Ad Placement API, ödüllü reklam), mobil uygulama için AdMob ödüllü reklam gibi. Gerçek sistemde ödül, reklam sağlayıcısının sunucu tarafı doğrulamasından (SSV) sonra bir sunucuda eklenmelidir; tarayıcıda (localStorage) tutulan bakiye, envanter ve açılan temalar kullanıcı tarafından değiştirilebilir.
 
@@ -98,7 +100,8 @@ Menüdeki **Tema** seçiminden ya da Mağaza'nın Temalar sekmesinden değiştir
 
 ## Özellikler
 
-- **Tek oyuncu**: üç zorluk seviyesinde yapay zekâya karşı (Kolay / Orta / Zor). Yapay zekâ pakın yolunu tahmin eder, bant vuruşu yapar ve karşı atağa geçer.
+- **Tek oyuncu**: seviye merdiveni. Seviye 1 çok kolay bir rakiple başlar, her galibiyet bir sonraki seviyeyi açar ve seçer (maç sonundaki ana düğme "Seviye N ▶"; yenilgide "Tekrar dene"). Rakip zorlaştıkça hızlanır, daha isabetli vurur ve daha iyi tahmin eder: Seviye 2 eski Kolay, 4 Orta, 8 Zor düzeyindedir, 12'den sonrası en zorudur (`aiForLevel()`). Menüdeki **Rakip** seçicisiyle açılmış seviyeler arasında geri dönülebilir. Eski sürümde Orta/Zor seçmiş oyuncular Seviye 4/8'den başlar. Yapay zekâ pakın yolunu tahmin eder, bant vuruşu yapar ve karşı atağa geçer.
+- **İlk açılış**: menü yerine tam ekran "Oynamak için dokun" gösterilir; ekranın herhangi bir yerine dokunmak (ya da tıklamak, Enter/Boşluk) Seviye 1'de ilk maçı başlatır. Sonraki açılışlarda menü açılır; **Oyna** düğmesi her ekran boyutunda ilk bakışta görünür (logo kısa ekranlarda küçülür, ayarlar düğmenin altındadır).
 - **İki oyuncu**: aynı cihazda. Telefon/tablette iki kişi aynı anda dokunmatikle oynar (çoklu dokunma), bilgisayarda biri fare/ok tuşları, diğeri W A S D ile.
 - **Görseller**: neon masa, hava delikleri, parıldayan raketler, hıza göre renk değiştiren pak izi, vuruş kıvılcımları, duvar dalgaları, gol patlaması, ekran sarsıntısı, konfeti ve menünün arkasında kendi kendine oynayan bir tanıtım maçı.
 - **Skor paylaşımı**: maç sonunda sonuç X, WhatsApp, Telegram ve Facebook'ta paylaşılabilir ya da metin olarak kopyalanabilir. Oyun ayrıca 1080×1350 boyutunda neon bir skor kartı görseli üretir. Telefonda "Paylaş" düğmesi bu görseli sistemin paylaşım menüsüyle (Instagram, WhatsApp vb.) gönderir, bilgisayarda görsel indirilebilir.

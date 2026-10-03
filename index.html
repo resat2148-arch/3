@@ -96,11 +96,28 @@
         <button id="earnBtn" class="earn-btn" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span data-i18n="ad.watch">Reklam izle</span><b>+50</b></button>
       </div>
 
+      <button id="startBtn" class="btn play-btn"><span data-i18n="m.play">OYNA</span><small id="playSub"></small></button>
+      <button id="menuStoreBtn" class="btn ghost store-btn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11h10.2L20 8H6.2"/><circle cx="9.5" cy="19.5" r="1.4"/><circle cx="16.5" cy="19.5" r="1.4"/></svg>
+        <span data-i18n="m.store">Mağaza</span>
+        <small id="menuInv"></small>
+      </button>
+
+      <div class="menu-opts">
       <div class="field">
         <div class="label" data-i18n="m.mode">Mod</div>
         <div class="seg" data-group="mode">
           <button data-value="ai" data-i18n="m.ai">Tek Oyuncu</button>
           <button data-value="pvp" data-i18n="m.pvp">İki Oyuncu</button>
+        </div>
+      </div>
+
+      <div class="field" id="levelField">
+        <div class="label" data-i18n="m.level">Rakip</div>
+        <div class="level-pick">
+          <button id="lvPrev" class="lv-arrow" type="button" aria-label="Önceki seviye" data-i18n-aria="lv.prev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+          <div class="lv-mid"><b id="lvName">Seviye 1</b><small id="lvSub"></small></div>
+          <button id="lvNext" class="lv-arrow" type="button" aria-label="Sonraki seviye" data-i18n-aria="lv.next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
         </div>
       </div>
 
@@ -118,14 +135,6 @@
         </div>
       </div>
 
-      <div class="field" id="diffField">
-        <div class="label" data-i18n="m.diff">Zorluk</div>
-        <div class="seg" data-group="difficulty">
-          <button data-value="easy" data-i18n="diff.easy">Kolay</button>
-          <button data-value="medium" data-i18n="diff.medium">Orta</button>
-          <button data-value="hard" data-i18n="diff.hard">Zor</button>
-        </div>
-      </div>
 
       <div class="field">
         <div class="label" data-i18n="m.lang">Dil · Language</div>
@@ -135,14 +144,21 @@
         </div>
       </div>
 
-      <button id="startBtn" class="btn" data-i18n="m.play">OYNA</button>
-      <button id="menuStoreBtn" class="btn ghost store-btn" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11h10.2L20 8H6.2"/><circle cx="9.5" cy="19.5" r="1.4"/><circle cx="16.5" cy="19.5" r="1.4"/></svg>
-        <span data-i18n="m.store">Mağaza</span>
-        <small id="menuInv"></small>
-      </button>
+      </div>
 
       <p class="hint" id="hint"></p>
+    </div>
+  </section>
+
+  <!-- İlk açılış: tek dokunuşla maça gir -->
+  <section id="introMenu" class="overlay intro">
+    <div class="intro-box">
+      <div class="logo intro-logo">
+        <span class="l1">AQUA</span>
+        <span class="l2">HOCKEY</span>
+      </div>
+      <div id="introTap" class="intro-tap">OYNAMAK İÇİN DOKUN</div>
+      <p id="introHow" class="intro-how"></p>
     </div>
   </section>
 
@@ -173,7 +189,11 @@
         <div id="rewardWhy" class="reward-why"></div>
         <button id="doubleBtn" class="earn-btn wide" type="button"><svg class="tv" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.8v6.4l5.2-3.2z" fill="currentColor"/></svg><span>Reklam izle, ödülü 2 katına çıkar</span></button>
         <div class="reward-bal"><span data-i18n="r.balance">Bakiye</span> <i class="coin" aria-hidden="true"></i><b id="coinOver" class="coin-val">0</b></div>
+        <button id="nextUnlock" class="next-unlock hidden" type="button"><span id="nextUnlockText"></span><i class="nu-bar"><i id="nextUnlockBar"></i></i></button>
+        <div id="dailyNext" class="daily-next"></div>
       </div>
+
+      <button id="againBtn" class="btn">TEKRAR OYNA</button>
 
       <div class="share">
         <div class="share-label" data-i18n="sh.label">Skorunu paylaş</div>
@@ -204,7 +224,6 @@
         </button>
       </div>
 
-      <button id="againBtn" class="btn" data-i18n="r.again">TEKRAR OYNA</button>
       <button id="overStoreBtn" class="btn ghost" type="button" data-i18n="m.store">Mağaza</button>
       <button id="menuBtn" class="btn ghost" data-i18n="p.menu">Ana Menü</button>
     </div>

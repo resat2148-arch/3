@@ -1378,6 +1378,221 @@ body.skills.pvp #stage {
   z-index: 1;
 }
 
+/* Oyna düğmesi menünün üstünde: ilk bakışta görünür; altında seçili rakip seviyesi */
+.btn.play-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 0;
+  padding: 14px 16px 12px;
+  font-size: 26px;
+}
+
+.play-btn small {
+  font-size: 12.5px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  opacity: 0.9;
+}
+
+.play-btn small:empty {
+  display: none;
+}
+
+.menu-opts {
+  margin-top: 18px;
+}
+
+/* Rakip seviyesi seçici */
+.level-pick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px;
+  border-radius: 15px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.lv-arrow {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.lv-arrow svg {
+  width: 20px;
+  height: 20px;
+}
+
+.lv-arrow:hover:not(:disabled) {
+  background: rgba(25, 230, 255, 0.18);
+}
+
+.lv-arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.lv-mid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+}
+
+.lv-mid b {
+  font-size: 17px;
+  font-style: italic;
+  font-weight: 900;
+  color: #fff;
+}
+
+.lv-mid small {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+/* Kısa ekranlar (CrazyGames penceresi, yatay dizüstü, telefon): logo küçülür, Oyna düğmesi yukarı çıkar */
+@media (max-height: 820px) {
+  #menu .panel {
+    padding-top: 20px;
+  }
+
+  #menu .logo {
+    margin-bottom: 14px;
+  }
+
+  #menu .logo .l1 {
+    font-size: clamp(42px, 12vw, 54px);
+  }
+
+  #menu .logo .l2 {
+    margin-top: 2px;
+    font-size: 15px;
+  }
+
+  #menu .logo-rail {
+    margin-top: 8px;
+  }
+
+  #menu .wallet-row {
+    margin: -2px 0 12px;
+  }
+}
+
+/* İlk açılış: "oynamak için dokun" */
+.overlay.intro {
+  cursor: pointer;
+  background: radial-gradient(ellipse at center, rgba(2, 20, 40, 0.25), rgba(1, 10, 24, 0.7));
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.intro-box {
+  margin: auto;
+  text-align: center;
+  pointer-events: none;
+}
+
+.intro-logo {
+  margin-bottom: 34px;
+}
+
+.intro-tap {
+  display: inline-block;
+  padding: 16px 30px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #13c9e8, #1a6bff);
+  box-shadow: 0 12px 36px rgba(26, 120, 255, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  color: #fff;
+  font-size: clamp(18px, 5vw, 24px);
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  animation: intro-pulse 1.3s ease-in-out infinite;
+}
+
+@keyframes intro-pulse {
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 16px 46px rgba(26, 160, 255, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  }
+}
+
+.intro-how {
+  max-width: 300px;
+  margin: 18px auto 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #d9f8ff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+/* Maç sonu: bir sonraki tema hedefi ve yarınki günlük ödül */
+.next-unlock {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 205, 70, 0.3);
+  color: #ffe7a3;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.next-unlock.ready {
+  background: linear-gradient(135deg, rgba(255, 200, 60, 0.24), rgba(255, 120, 60, 0.18));
+  box-shadow: inset 0 0 0 1.5px rgba(255, 210, 90, 0.9), 0 0 16px rgba(255, 190, 40, 0.3);
+  color: #fff3d0;
+  animation: intro-pulse 1.6s ease-in-out infinite;
+}
+
+.nu-bar {
+  display: block;
+  height: 5px;
+  margin-top: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.nu-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #ffd54a, #ff9a3c);
+}
+
+.next-unlock.ready .nu-bar {
+  display: none;
+}
+
+.daily-next {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
 /* Form alanları */
 .field {
   margin-bottom: 16px;
@@ -1821,6 +2036,8 @@ body.skills .toast {
   .clock-tag,
   .vol-pop,
   .skill-btn.active,
+  .intro-tap,
+  .next-unlock.ready,
   body.theme-space .bg::after {
     animation: none;
   }
