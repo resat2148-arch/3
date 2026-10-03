@@ -54,6 +54,10 @@ Altın kazanma yolları:
   - Maç sonunda reklam izleyerek o maçın ödülü **2 katına** çıkarılabilir.
 - **Hoş geldin hediyesi**: ilk maçın sonunda bir kez +100 altın. İlk galibiyetten sonra Neon'a çok az kalır; maç sonu ekranı en ucuz kilitli temaya ne kadar altın kaldığını gösterir, yetiyorsa mağazaya kısayol olur.
 - **Günlük ödül**: her gün ilk açılışta kendiliğinden verilir ve art arda gelinen günlerde artar: 30, 40, 50, 60, 80, 100, 150 altın (7. günden sonra 150). Bir gün atlanırsa seri baştan başlar. Maç sonu ekranı yarınki ödülü hatırlatır. İlk gün hoş geldin hediyesi verildiği için günlük ödül ertesi gün başlar.
+- **Başarımlar**: 21 başarım, her biri bir kez altın verir (20–250). Menüdeki **Başarımlar** düğmesi listeyi ilerleme çubuklarıyla açar (tamamlanmamışlar, bitmeye en yakın olan önce). Açılan başarım ekranın üstünde kısa bir bildirimle duyurulur; oyun akarken açılanlar rakip kalenin önünü kapatmasın diye ilk duraklamada (gol, geri sayım, maç sonu) gösterilir. Başarımlar ve istatistikler (`stats`, `ach`) ilerlemeyle birlikte kaydedilir (CrazyGames'te bulutta). Liste `js/game.js` içindeki `ACH` dizisinde:
+  - İlk Gol, İlk Zafer; Seviye 5 / 10 / 12'yi yen; toplam 25 / 100 gol; 10 / 50 maç
+  - Maç içi: gol yemeden kazan, bir maçta 5 gol, 2 gol gerideyken kazan, son 3 saniyede gol, iki pak varken 2 gol, en yüksek hıza yakın şut
+  - Yetenekleri 10 kez kullan, iki kişilik maç oyna, 3 farklı stadyumda oyna, tüm stadyumları aç, 3 / 7 gün üst üste gel
 - **Reklam izleyerek**: menüde ve mağazada "Reklam izle" ile her reklam için +50 altın (altın yetmediğinde satın alma adımında da çıkar). Günde en fazla 10 ödüllü reklam izlenebilir; reklam sonuna kadar izlenmezse ödül verilmez. Reklam oynarken oyun sesi kısılır.
 
 Fiyatlar ve ödüller `js/game.js` içindeki `THEME_INFO`, `PRODUCTS`, `COIN`, `WELCOME_GIFT`, `DAILY`, `levelMult()` ve `matchReward()` ile ayarlanır.

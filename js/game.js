@@ -93,6 +93,30 @@
     'diffl.easy': ['kolay', 'easy'], 'diffl.medium': ['orta', 'medium'], 'diffl.hard': ['zor', 'hard'],
     'm.play': ['OYNA', 'PLAY'], 'm.store': ['Mağaza', 'Store'],
     'm.level': ['Rakip', 'Opponent'],
+    'a.title': ['BAŞARIMLAR', 'ACHIEVEMENTS'], 'a.btn': ['Başarımlar', 'Achievements'], 'a.close': ['Kapat', 'Close'],
+    'a.unlocked': ['BAŞARIM AÇILDI', 'ACHIEVEMENT UNLOCKED'], 'a.done': ['Tamamlandı', 'Completed'],
+    'a.count': ['{n}/{t} tamamlandı', '{n}/{t} completed'],
+    'a.goal1': ['İlk Gol', 'First Goal'], 'a.goal1.d': ['Yapay zekâya ilk golünü at', 'Score your first goal against the AI'],
+    'a.win1': ['İlk Zafer', 'First Victory'], 'a.win1.d': ['İlk maçını kazan', 'Win your first match'],
+    'a.lvl5': ['Merdiven', 'Climber'], 'a.lvl5.d': ["Seviye 5'e ulaş", 'Reach level 5'],
+    'a.lvl10': ['Zirveye Doğru', 'Almost There'], 'a.lvl10.d': ["Seviye 10'a ulaş", 'Reach level 10'],
+    'a.lvl13': ['Efsane', 'Legend'], 'a.lvl13.d': ["Seviye 12'yi yen", 'Beat level 12'],
+    'a.goals25': ['Golcü', 'Striker'], 'a.goals25.d': ['Toplam 25 gol at', 'Score 25 goals in total'],
+    'a.goals100': ['Gol Makinesi', 'Goal Machine'], 'a.goals100.d': ['Toplam 100 gol at', 'Score 100 goals in total'],
+    'a.m10': ['Isınma Turu', 'Warmed Up'], 'a.m10.d': ['10 maç oyna', 'Play 10 matches'],
+    'a.m50': ['Tutkulu', 'Dedicated'], 'a.m50.d': ['50 maç oyna', 'Play 50 matches'],
+    'a.clean': ['Geçit Yok', 'Clean Sheet'], 'a.clean.d': ['Hiç gol yemeden bir maç kazan', 'Win a match without conceding'],
+    'a.five': ['Gol Yağmuru', 'Goal Rush'], 'a.five.d': ['Bir maçta 5 gol at', 'Score 5 goals in one match'],
+    'a.comeback': ['Geri Dönüş', 'Comeback'], 'a.comeback.d': ['2 gol gerideyken maçı kazan', 'Win after being 2 goals down'],
+    'a.buzzer': ['Son Saniye', 'Buzzer Beater'], 'a.buzzer.d': ['Son 3 saniyede gol at', 'Score in the final 3 seconds'],
+    'a.frenzy': ['Çifte Pak', 'Double Trouble'], 'a.frenzy.d': ['İki pak varken 2 gol at', 'Score 2 goals while two pucks are in play'],
+    'a.rocket': ['Roket Şut', 'Rocket Shot'], 'a.rocket.d': ['Pakı en yüksek hıza yakın vur', 'Hit the puck at near top speed'],
+    'a.skills': ['Yetenek Ustası', 'Skill Master'], 'a.skills.d': ['Yetenekleri 10 kez kullan', 'Use skills 10 times'],
+    'a.pvp': ['Dostluk Maçı', 'Friendly Match'], 'a.pvp.d': ['Bir arkadaşınla iki kişilik maç oyna', 'Play a two-player match with a friend'],
+    'a.tour': ['Gezgin', 'Explorer'], 'a.tour.d': ['3 farklı stadyumda maç oyna', 'Play in 3 different stadiums'],
+    'a.all': ['Koleksiyoncu', 'Collector'], 'a.all.d': ['Tüm stadyumları aç', 'Unlock every stadium'],
+    'a.s3': ['Sadık Oyuncu', 'Regular'], 'a.s3.d': ['3 gün üst üste gel', 'Play 3 days in a row'],
+    'a.s7': ['Vazgeçilmez', 'Unstoppable'], 'a.s7.d': ['7 gün üst üste gel', 'Play 7 days in a row'],
     'ob.or': ['veya', 'or'], 'ob.drag': ['Sürükle', 'Drag'], 'ob.move': ['Fareyle yönet', 'Move with the mouse'], 'lv.prev': ['Önceki seviye', 'Previous level'], 'lv.next': ['Sonraki seviye', 'Next level'],
     'lvl.name': ['Seviye {n}', 'Level {n}'], 'lvl.of': ['{n}.', 'level {n}'],
     'lvl.locked': ['Kazanınca açılır', 'Win to unlock'],
@@ -6115,6 +6139,7 @@
   }
 
   function onMalletHit(m, imp) {
+    achShot(m);
     if (m.ai && m.tap) {
       let near = null, nd = Infinity;
       for (const p of pucks) if (p.active && Math.hypot(p.x - m.x, p.y - m.y) < nd) { nd = Math.hypot(p.x - m.x, p.y - m.y); near = p; }
@@ -6354,6 +6379,7 @@
     game.score[scorer]++;
     game.pulse[scorer] = 1;
     updateScoreHud(scorer);
+    achGoal(scorer);
     game.lastScorer = scorer;
     Sound.goal(settings.mode === 'pvp' || scorer === 0, gx);
     vibrate([40, 40, 80]);
@@ -6459,6 +6485,7 @@
     }
     Sound.skill(key);
     if (human) vibrate(25);
+    if (human && st !== 'demo') achSkill();
     skillUI.dirty = true;
     return true;
   }
@@ -6806,6 +6833,10 @@
       endPreview(false);
       return;
     }
+    if (e.code === 'Escape' && achEl.classList.contains('show')) {
+      showOverlay(achBack || menuEl);
+      return;
+    }
     if (e.code === 'Escape' && storeEl.classList.contains('show')) {
       if (storeState.pending) cancelPurchase();
       else closeStore();
@@ -6891,14 +6922,14 @@
   // ---------------------------------------------------------------------------
   const $ = (id) => document.getElementById(id);
   const menuEl = $('menu'), pauseEl = $('pauseMenu'), overEl = $('overMenu');
-  const unlockEl = $('unlockMenu'), adEl = $('adMenu'), introEl = $('introMenu');
+  const unlockEl = $('unlockMenu'), adEl = $('adMenu'), introEl = $('introMenu'), achEl = $('achMenu');
   const pauseBtn = $('pauseBtn'), soundBtn = $('soundBtn'), fsBtn = $('fsBtn');
 
   const clockEl = $('clock'), clockTime = $('clockTime'), clockTag = $('clockTag');
   let clockShown = '';
 
   function showOverlay(el) {
-    [menuEl, pauseEl, overEl, cardEl, storeEl, unlockEl, adEl, introEl].forEach((o) => o.classList.toggle('show', o === el));
+    [menuEl, pauseEl, overEl, cardEl, storeEl, unlockEl, adEl, introEl, achEl].forEach((o) => o.classList.toggle('show', o === el));
     const inGame = !el;
     pauseBtn.classList.toggle('hidden', !inGame);
     document.body.classList.toggle('playing', inGame);
@@ -6933,6 +6964,7 @@
     // İlk açılışta menü yerine "oynamak için dokun" ekranı: tek dokunuşla ilk maça girilir
     showOverlay(store.get('played', false) || isShowcase ? menuEl : introEl);
     checkDaily();
+    checkAchievements(); // eski ilerlemeden (seviye, açılan temalar) hak edilmiş olanlar
   }
 
   // İlk açılış ekranı: ekranın herhangi bir yerine dokunmak maçı başlatır
@@ -6966,6 +6998,7 @@
     mallets[0].ai = false;
     mallets[1].ai = settings.mode === 'ai';
     game.level = settings.level; // bu maçın seviyesi (galibiyette settings.level ilerler)
+    achMatchStart();
     mallets[1].level = aiForLevel(game.level);
     pointerOwner.clear();
     particles.length = 0;
@@ -7249,6 +7282,7 @@
 
     prepareShare({ a, b, draw, w, win, pvp, level });
     grantMatchReward({ a, b, draw, win, pvp, level });
+    achMatchEnd(win);
     banner(tl('b.time'), '255,255,255', 1.3, 84);
     Sound.buzzer();
     // Konfeti
@@ -8056,6 +8090,7 @@
     saveWallet();
     updateCoins(true);
     Sound.ready();
+    checkAchievements(); // Koleksiyoncu
     storeState.pending = null;
     if (storeState.fromGame && it.kind === 'skill') {
       closeStore();
@@ -8116,6 +8151,8 @@
   $('tabBtnSkills').addEventListener('click', () => setTab('skills'));
   $('storeClose').addEventListener('click', closeStore);
   $('menuStoreBtn').addEventListener('click', () => openStore());
+  $('menuAchBtn').addEventListener('click', openAchievements);
+  $('achClose').addEventListener('click', () => showOverlay(achBack || menuEl));
   $('overStoreBtn').addEventListener('click', () => openStore());
 
   function skillKey(code) {
@@ -8215,6 +8252,216 @@
     const n = dailyAmount(wallet.streak);
     addCoins(n);
     toast(tl('d.toast', { d: wallet.streak, n }), 4200);
+    checkAchievements();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Başarımlar: istatistikler (bulutta / cihazda saklanır) belirli eşiğe ulaşınca açılır, altın
+  // ödülü hemen bakiyeye eklenir ve ekranın üstünde kısa bir bildirim çıkar.
+  // ---------------------------------------------------------------------------
+  const stats = (() => {
+    const v = store.get('stats', null) || {};
+    const n = (x) => Math.max(0, Math.floor(Number(x) || 0));
+    return {
+      matches: n(v.matches), wins: n(v.wins), goals: n(v.goals), skills: n(v.skills), pvp: n(v.pvp),
+      clean: n(v.clean), five: n(v.five), comeback: n(v.comeback), buzzer: n(v.buzzer), frenzy: n(v.frenzy), rocket: n(v.rocket),
+      themes: Array.isArray(v.themes) ? v.themes.filter((t) => THEME_INFO[t]) : [],
+    };
+  })();
+  const achDone = (() => {
+    const v = store.get('ach', null);
+    return v && typeof v === 'object' ? v : {};
+  })();
+
+  // [kimlik, simge, ödül, ilerleme → [şimdiki, hedef]]
+  const ACH = [
+    ['goal1', '🥅', 20, () => [stats.goals, 1]],
+    ['win1', '🏆', 30, () => [stats.wins, 1]],
+    ['lvl5', '🪜', 50, () => [settings.maxLevel, 5]],
+    ['lvl10', '🧗', 100, () => [settings.maxLevel, 10]],
+    ['lvl13', '👑', 200, () => [settings.maxLevel, 13]],
+    ['goals25', '🎯', 40, () => [stats.goals, 25]],
+    ['goals100', '💯', 120, () => [stats.goals, 100]],
+    ['m10', '⏱️', 40, () => [stats.matches, 10]],
+    ['m50', '🔥', 150, () => [stats.matches, 50]],
+    ['clean', '🧤', 60, () => [stats.clean, 1]],
+    ['five', '🌧️', 60, () => [stats.five, 1]],
+    ['comeback', '🔄', 80, () => [stats.comeback, 1]],
+    ['buzzer', '⏰', 50, () => [stats.buzzer, 1]],
+    ['frenzy', '🎱', 50, () => [stats.frenzy, 1]],
+    ['rocket', '🚀', 40, () => [stats.rocket, 1]],
+    ['skills', '✨', 30, () => [stats.skills, 10]],
+    ['pvp', '🤝', 30, () => [stats.pvp, 1]],
+    ['tour', '🏟️', 50, () => [stats.themes.length, 3]],
+    ['all', '🎨', 250, () => [Object.keys(THEME_INFO).filter((t) => isUnlocked(t)).length, Object.keys(THEME_INFO).length]],
+    ['s3', '📅', 50, () => [wallet.streak, 3]],
+    ['s7', '🗓️', 150, () => [wallet.streak, 7]],
+  ].map(([id, icon, reward, prog]) => ({ id, icon, reward, prog }));
+
+  function saveStats() {
+    store.set('stats', stats);
+  }
+
+  // Yeni tamamlananları açar, ödülü verir, bildirimi sıraya koyar
+  function checkAchievements() {
+    if (isShowcase) return;
+    let gained = 0;
+    for (const a of ACH) {
+      if (achDone[a.id]) continue;
+      const [cur, goal] = a.prog();
+      if (cur < goal) continue;
+      achDone[a.id] = today();
+      gained += a.reward;
+      achQueue.push(a);
+    }
+    if (!gained) return;
+    store.set('ach', achDone);
+    addCoins(gained);
+    renderAchBtn();
+    flushAchPops();
+  }
+
+  // Oyun akarken bildirim rakip kalenin önünü kapatmasın: ilk duraklamada (gol, geri sayım,
+  // maç sonu, menü) gösterilir. Her karede çağrılır.
+  function flushAchPops() {
+    if (achQueue.length && !achShowing && game.state !== 'play') nextAchPop();
+  }
+
+  const achQueue = [];
+  let achShowing = false;
+  function nextAchPop() {
+    const a = achQueue.shift();
+    const el = $('achPop');
+    if (!a) {
+      achShowing = false;
+      return;
+    }
+    achShowing = true;
+    $('achPopIcon').textContent = a.icon;
+    $('achPopName').textContent = tl('a.' + a.id);
+    $('achPopReward').textContent = '+' + fmt(a.reward);
+    el.classList.remove('show');
+    void el.offsetWidth;
+    el.classList.add('show');
+    Sound.ready();
+    setTimeout(() => {
+      el.classList.remove('show');
+      setTimeout(nextAchPop, 350);
+    }, 2600);
+  }
+
+  function renderAchBtn() {
+    const n = ACH.filter((a) => achDone[a.id]).length;
+    $('achCount').textContent = `${n}/${ACH.length}`;
+  }
+
+  function renderAchList() {
+    const n = ACH.filter((a) => achDone[a.id]).length;
+    $('achSub').textContent = tl('a.count', { n, t: ACH.length });
+    const list = $('achList');
+    list.textContent = '';
+    // Tamamlanmamışlar (en yakın olan önce), sonra tamamlananlar
+    const items = ACH.map((a) => {
+      const [cur, goal] = a.prog();
+      return { a, cur: Math.min(cur, goal), goal, done: !!achDone[a.id] };
+    }).sort((x, y) => (x.done - y.done) || (y.cur / y.goal - x.cur / x.goal));
+    for (const it of items) {
+      const row = document.createElement('div');
+      row.className = 'ach' + (it.done ? ' done' : '');
+      const ico = document.createElement('span');
+      ico.className = 'ach-ico';
+      ico.textContent = it.a.icon;
+      const txt = document.createElement('span');
+      txt.className = 'ach-text';
+      const b = document.createElement('b');
+      b.textContent = tl('a.' + it.a.id);
+      const sm = document.createElement('small');
+      sm.textContent = tl('a.' + it.a.id + '.d');
+      txt.append(b, sm);
+      if (!it.done && it.goal > 1) {
+        const bar = document.createElement('i');
+        bar.className = 'ach-bar';
+        const fill = document.createElement('i');
+        fill.style.width = Math.round((it.cur / it.goal) * 100) + '%';
+        bar.append(fill);
+        const cnt = document.createElement('em');
+        cnt.textContent = `${fmt(it.cur)} / ${fmt(it.goal)}`;
+        txt.append(bar, cnt);
+      }
+      const rw = document.createElement('span');
+      rw.className = 'ach-reward';
+      if (it.done) rw.textContent = '✓';
+      else {
+        const c = document.createElement('i');
+        c.className = 'coin';
+        rw.append(c, document.createTextNode(' ' + fmt(it.a.reward)));
+      }
+      row.append(ico, txt, rw);
+      list.append(row);
+    }
+  }
+
+  function openAchievements() {
+    renderAchList();
+    achBack = [menuEl, overEl, pauseEl].find((o) => o.classList.contains('show')) || menuEl;
+    showOverlay(achEl);
+  }
+  let achBack = null;
+
+  // Maç içi takip (yalnızca yapay zekâya karşı; iki oyunculuda yalnızca maç sayılır)
+  function achMatchStart() {
+    game.m = { g: 0, c: 0, def: 0, fg: 0 };
+  }
+
+  function achGoal(scorer) {
+    const m = game.m;
+    if (!m || settings.mode === 'pvp') return;
+    if (scorer === 0) {
+      m.g++;
+      stats.goals++;
+      if (game.frenzy) m.fg++;
+      if (game.clock <= 3) stats.buzzer = 1;
+      if (m.fg >= 2) stats.frenzy = 1;
+    } else {
+      m.c++;
+      m.def = Math.max(m.def, m.c - m.g);
+    }
+    saveStats();
+    checkAchievements();
+  }
+
+  function achMatchEnd(win) {
+    const m = game.m || { g: 0, c: 0, def: 0 };
+    stats.matches++;
+    if (settings.mode === 'pvp') stats.pvp++;
+    else {
+      if (win) stats.wins++;
+      if (win && m.c === 0) stats.clean = 1;
+      if (m.g >= 5) stats.five = 1;
+      if (win && m.def >= 2) stats.comeback = 1;
+    }
+    if (!stats.themes.includes(settings.theme)) stats.themes.push(settings.theme);
+    saveStats();
+    checkAchievements();
+  }
+
+  function achSkill() {
+    stats.skills++;
+    saveStats();
+    checkAchievements();
+  }
+
+  // Oyuncunun vuruşundan sonra pak neredeyse en yüksek hızdaysa
+  function achShot(m) {
+    if (stats.rocket || m.ai || game.state !== 'play') return;
+    for (const p of pucks) {
+      if (p.active && Math.hypot(p.x - m.x, p.y - m.y) < MIN_D + 8 && Math.hypot(p.vx, p.vy) > MAX_PUCK * 0.85) {
+        stats.rocket = 1;
+        saveStats();
+        checkAchievements();
+        return;
+      }
+    }
   }
 
   function renderTomorrow() {
@@ -8542,6 +8789,8 @@
     goalSprites[0] = goalSprites[1] = null;
     syncMenu();
     syncIntro();
+    renderAchBtn();
+    if (achEl.classList.contains('show')) renderAchList();
     syncVolumeUI();
     renderInventory();
     renderStoreMsg();
@@ -8988,6 +9237,7 @@
     if (game.state !== 'demo') updateSkillUI();
     syncGameplay();
     Music.update();
+    flushAchPops();
     requestAnimationFrame(frame);
   }
 

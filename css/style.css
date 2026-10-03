@@ -2747,3 +2747,196 @@ body.pvp .hs small {
     font-size: 19px;
   }
 }
+
+/* ---------- Başarımlar ---------- */
+.menu-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.menu-pair .btn {
+  margin-top: 10px;
+  padding: 11px 6px;
+  font-size: 15px;
+}
+
+.ach-panel {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 90px);
+}
+
+.ach-panel .title {
+  margin-bottom: 4px;
+}
+
+.ach-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 4px -4px 4px;
+  padding: 2px 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+.ach {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  text-align: left;
+}
+
+.ach.done {
+  background: linear-gradient(135deg, rgba(255, 200, 60, 0.14), rgba(25, 200, 255, 0.08));
+  box-shadow: inset 0 0 0 1px rgba(255, 205, 70, 0.4);
+}
+
+.ach-ico {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  font-size: 21px;
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.ach.done .ach-ico {
+  filter: none;
+  opacity: 1;
+  box-shadow: 0 0 14px rgba(255, 200, 60, 0.35);
+}
+
+.ach-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ach-text b {
+  font-size: 14.5px;
+  font-style: italic;
+  font-weight: 900;
+}
+
+.ach-text small {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.ach-text em {
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ach-bar {
+  display: block;
+  height: 4px;
+  margin-top: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.ach-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--cyan), var(--deep));
+}
+
+.ach-reward {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffe7a3;
+}
+
+.ach.done .ach-reward {
+  font-size: 18px;
+  color: #ffd54a;
+}
+
+/* Açıldı bildirimi: üstten kayarak gelir, oyunu engellemez */
+.ach-pop {
+  position: fixed;
+  z-index: 31;
+  left: 50%;
+  top: calc(var(--safe-t) + 62px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100% - 24px);
+  padding: 8px 14px 8px 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(40, 32, 8, 0.95), rgba(13, 22, 44, 0.95));
+  box-shadow: inset 0 0 0 1.5px rgba(255, 205, 70, 0.75), 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 24px rgba(255, 190, 40, 0.3);
+  opacity: 0;
+  transform: translate(-50%, -16px);
+  transition: opacity 0.3s, transform 0.35s cubic-bezier(0.2, 1.3, 0.4, 1);
+  pointer-events: none;
+}
+
+.ach-pop.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.ach-pop-ico {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255, 200, 60, 0.18);
+  font-size: 21px;
+}
+
+.ach-pop-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  min-width: 0;
+}
+
+.ach-pop-text small {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #ffd67a;
+}
+
+.ach-pop-text b {
+  font-size: 15px;
+  font-style: italic;
+  font-weight: 900;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ach-pop-reward {
+  display: flex;
+  align-items: center;
+  font-size: 15px;
+  color: #ffe08a;
+}
