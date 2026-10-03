@@ -93,7 +93,12 @@
     'diffl.easy': ['kolay', 'easy'], 'diffl.medium': ['orta', 'medium'], 'diffl.hard': ['zor', 'hard'],
     'm.play': ['OYNA', 'PLAY'], 'm.store': ['Mağaza', 'Store'],
     'm.level': ['Rakip', 'Opponent'],
-    's.mallets': ['Raketler', 'Mallets'], 's.skinD': ['Raketinin görünümü', 'Your mallet look'],
+    's.mallets': ['Görünümler', 'Looks'], 's.skinD': ['Raketinin görünümü', 'Your mallet look'],
+    's.secMallet': ['RAKET', 'MALLET'], 's.secPuck': ['PAK', 'PUCK'], 's.puckD': ['Pakın görünümü', 'Puck look'],
+    's.puckThemeD': ['Her stadyumun kendi pakı', "Each stadium's own puck"],
+    'pk.theme': ['Tema Pakı', 'Stadium Puck'], 'pk.ember': ['Kor', 'Ember'], 'pk.mint': ['Nane', 'Mint'],
+    'pk.carbon': ['Karbon', 'Carbon'], 'pk.soccer': ['Futbol', 'Football'], 'pk.melon': ['Karpuz', 'Watermelon'],
+    'pk.plasma': ['Plazma', 'Plasma'], 'pk.diamond': ['Elmas', 'Diamond'],
     'skin.classic': ['Klasik', 'Classic'], 'skin.frost': ['Kırağı', 'Frost'], 'skin.lime': ['Zehir Yeşili', 'Toxic Lime'],
     'skin.violet': ['Ametist', 'Amethyst'], 'skin.fire': ['Alev', 'Blaze'], 'skin.gold': ['Altın', 'Gold'],
     'skin.galaxy': ['Galaksi', 'Galaxy'], 'skin.rainbow': ['Gökkuşağı', 'Rainbow'],
@@ -105,7 +110,7 @@
     'mi.matches': ['{n} maç oyna', 'Play {n} matches'], 'mi.skills': ['{n} kez yetenek kullan', 'Use skills {n} times'],
     'mi.themeWin': ['{t}: bir maç kazan', 'Win a match in {t}'], 'mi.clean': ['Gol yemeden bir maç kazan', 'Win without conceding'],
     'mi.late': ['Son 15 saniyede gol at', 'Score in the last 15 seconds'],
-    'a.style': ['Tarz Sahibi', 'Stylish'], 'a.style.d': ['Yeni bir raket görünümü al', 'Get a new mallet look'],
+    'a.style': ['Tarz Sahibi', 'Stylish'], 'a.style.d': ['Yeni bir raket ya da pak görünümü al', 'Get a new mallet or puck look'],
     'a.title': ['BAŞARIMLAR', 'ACHIEVEMENTS'], 'a.btn': ['Başarımlar', 'Achievements'], 'a.close': ['Kapat', 'Close'],
     'a.unlocked': ['BAŞARIM AÇILDI', 'ACHIEVEMENT UNLOCKED'], 'a.done': ['Tamamlandı', 'Completed'],
     'a.count': ['{n}/{t} tamamlandı', '{n}/{t} completed'],
@@ -350,6 +355,19 @@
     rainbow: { price: 500, main: '#ff6ad5', light: '#ffffff', dark: '#3a1060', rgb: '255,255,255', deco: 'rainbow' },
   };
 
+  // Pak görünümleri: 'theme' her stadyumun kendi pakıdır; diğerleri onun yerine geçer. `rgb`
+  // kıvılcım ve iz rengi, `spin` desenli pakların hızına göre dönmesi.
+  const PUCKS = {
+    theme: { price: 0 },
+    ember: { price: 150, rgb: '255,150,60', glow: true },
+    mint: { price: 150, rgb: '150,255,215' },
+    carbon: { price: 200, rgb: '255,214,60' },
+    soccer: { price: 250, rgb: '255,255,255', spin: true },
+    melon: { price: 250, rgb: '255,90,110', spin: true },
+    plasma: { price: 350, rgb: '190,120,255', glow: true, spin: true },
+    diamond: { price: 400, rgb: '170,230,255', glow: true },
+  };
+
   const THEME_INFO = {
     water: { price: 0, get name() { return tl('th.water'); }, get desc() { return tl('th.water.d'); } },
     neon: { price: 150, get name() { return tl('th.neon'); }, get desc() { return tl('th.neon.d'); } },
@@ -372,6 +390,7 @@
       adCount: n(v.adCount),
       welcomed: !!v.welcomed,      // hoş geldin hediyesi verildi mi
       skins: Array.isArray(v.skins) ? v.skins.filter((k) => SKINS[k]) : [], // alınan raket görünümleri
+      pucks: Array.isArray(v.pucks) ? v.pucks.filter((k) => PUCKS[k]) : [], // alınan pak görünümleri
       dailyDay: String(v.dailyDay || ''), // son günlük ödülün günü
       streak: n(v.streak),         // art arda gelinen gün sayısı
     };
@@ -380,8 +399,12 @@
   function saveWallet() {
     store.set('wallet', {
       coins: wallet.coins, unlocked: wallet.unlocked, adDay: wallet.adDay, adCount: wallet.adCount,
-      welcomed: wallet.welcomed, dailyDay: wallet.dailyDay, streak: wallet.streak, skins: wallet.skins,
+      welcomed: wallet.welcomed, dailyDay: wallet.dailyDay, streak: wallet.streak, skins: wallet.skins, pucks: wallet.pucks,
     });
+  }
+
+  function hasPuck(k) {
+    return !!PUCKS[k] && (isShowcase || PUCKS[k].price === 0 || wallet.pucks.includes(k));
   }
 
   function hasSkin(k) {
@@ -418,6 +441,7 @@
     volume: clamp(Number(store.get('volume', 1)) || 0, 0, 1),
     music: store.get('music', true),
     skin: hasSkin(store.get('skin', 'classic')) ? store.get('skin', 'classic') : 'classic',
+    puck: hasPuck(store.get('puck', 'theme')) ? store.get('puck', 'theme') : 'theme',
     maxLevel: maxLevel0,
     level: clamp(Math.floor(Number(store.get('level', maxLevel0))) || maxLevel0, 1, maxLevel0),
     musicVol: clamp(Number(store.get('musicVol', 0.6)), 0, 1) || 0,
@@ -2930,7 +2954,7 @@
       g.fillRect(0, 0, MS, MS);
       return c;
     });
-    puckSprite = buildPuck(settings.theme);
+    puckSprite = settings.puck !== 'theme' ? buildSkinPuck(settings.puck, settings.theme) : buildPuck(settings.theme);
   }
 
   // Raketin renk seti: alttaki oyuncu seçtiği görünümle, üstteki hep pembe
@@ -3105,6 +3129,169 @@
     g.beginPath();
     g.arc(0, 0, R + 1.5, 0, TAU);
     g.stroke();
+  }
+
+  // Kıvılcım ve iz rengi: seçili pak görünümünün rengi ya da varsayılan sarı
+  const puckRgb = () => (PUCKS[settings.puck] && PUCKS[settings.puck].rgb) || PUCK_RGB;
+
+  // Satın alınan pak görünümü (temanın pakı yerine). Su ve çamurda suya oturma halkası korunur.
+  function buildSkinPuck(id, style = 'neon') {
+    const [c, g] = makeLayer(PS, PS);
+    const r = PUCK_R, sk = PUCKS[id];
+    g.translate(PS / 2, PS / 2);
+    if (style === 'water' || style === 'mud') meniscus(g, r);
+    else {
+      g.save();
+      g.shadowColor = 'rgba(0,0,0,0.7)';
+      g.shadowBlur = 10 * S;
+      g.shadowOffsetX = 3 * S;
+      g.shadowOffsetY = 6 * S;
+      g.fillStyle = '#000';
+      g.beginPath();
+      g.arc(0, 0, r - 1, 0, TAU);
+      g.fill();
+      g.restore();
+    }
+    if (sk.glow) {
+      const halo = g.createRadialGradient(0, 0, r * 0.8, 0, 0, r + PS_PAD);
+      halo.addColorStop(0, `rgba(${sk.rgb},0.6)`);
+      halo.addColorStop(1, `rgba(${sk.rgb},0)`);
+      g.fillStyle = halo;
+      g.beginPath();
+      g.arc(0, 0, r + PS_PAD, 0, TAU);
+      g.fill();
+    }
+    const disc = (stops) => {
+      const gr = g.createRadialGradient(-r * 0.3, -r * 0.35, 1, 0, 0, r);
+      stops.forEach(([o, col]) => gr.addColorStop(o, col));
+      g.fillStyle = gr;
+      g.beginPath();
+      g.arc(0, 0, r, 0, TAU);
+      g.fill();
+    };
+    const ring = (rr, w, col) => {
+      g.lineWidth = w;
+      g.strokeStyle = col;
+      g.beginPath();
+      g.arc(0, 0, rr, 0, TAU);
+      g.stroke();
+    };
+    g.save();
+    if (id === 'ember') {
+      disc([[0, '#fff1a8'], [0.35, '#ffb02e'], [0.75, '#ff4a12'], [1, '#7a1204']]);
+      g.strokeStyle = 'rgba(90,10,0,0.55)'; // közün çatlakları
+      g.lineWidth = 1.4;
+      for (let k = 0; k < 5; k++) {
+        const a = k * 1.3 + 0.4;
+        g.beginPath();
+        g.moveTo(Math.cos(a) * r * 0.25, Math.sin(a) * r * 0.25);
+        g.lineTo(Math.cos(a + 0.3) * r * 0.6, Math.sin(a + 0.3) * r * 0.6);
+        g.lineTo(Math.cos(a + 0.1) * r * 0.92, Math.sin(a + 0.1) * r * 0.92);
+        g.stroke();
+      }
+      ring(r - 1.5, 2.5, 'rgba(255,230,150,0.8)');
+    } else if (id === 'mint') {
+      disc([[0, '#ffffff'], [0.5, '#9dffd9'], [1, '#1f8a66']]);
+      ring(r - 2, 3, 'rgba(255,255,255,0.85)');
+      ring(r * 0.5, 2, 'rgba(20,110,80,0.55)');
+    } else if (id === 'carbon') {
+      disc([[0, '#4a4d55'], [1, '#0d0e12']]);
+      g.setLineDash([5, 4]); // sarı-siyah uyarı şeridi
+      ring(r - 3.5, 5, '#ffd63c');
+      g.setLineDash([]);
+      ring(r * 0.42, 2, 'rgba(255,214,60,0.7)');
+    } else if (id === 'soccer') {
+      disc([[0, '#ffffff'], [0.7, '#e9edf2'], [1, '#9aa3ae']]);
+      g.beginPath();
+      g.arc(0, 0, r - 0.5, 0, TAU);
+      g.clip();
+      const pent = (cx, cy, s, rot) => {
+        g.beginPath();
+        for (let k = 0; k < 5; k++) {
+          const a = rot + (k / 5) * TAU;
+          g[k ? 'lineTo' : 'moveTo'](cx + Math.cos(a) * s, cy + Math.sin(a) * s);
+        }
+        g.closePath();
+        g.fill();
+      };
+      g.fillStyle = '#1b1d22';
+      pent(0, 0, r * 0.32, -Math.PI / 2);
+      for (let k = 0; k < 5; k++) {
+        const a = -Math.PI / 2 + (k / 5) * TAU + Math.PI / 5;
+        pent(Math.cos(a) * r * 0.95, Math.sin(a) * r * 0.95, r * 0.3, a);
+      }
+      g.strokeStyle = 'rgba(40,44,52,0.6)';
+      g.lineWidth = 1.2;
+      for (let k = 0; k < 5; k++) {
+        const a = -Math.PI / 2 + (k / 5) * TAU;
+        g.beginPath();
+        g.moveTo(Math.cos(a) * r * 0.32, Math.sin(a) * r * 0.32);
+        g.lineTo(Math.cos(a) * r * 0.7, Math.sin(a) * r * 0.7);
+        g.stroke();
+      }
+    } else if (id === 'melon') {
+      disc([[0, '#4fd36a'], [1, '#1d6b2c']]); // kabuk
+      ring(r * 0.86, 2, 'rgba(210,255,190,0.9)');
+      const fl = g.createRadialGradient(-r * 0.2, -r * 0.25, 1, 0, 0, r * 0.8);
+      fl.addColorStop(0, '#ff8a96');
+      fl.addColorStop(1, '#e8243e');
+      g.fillStyle = fl;
+      g.beginPath();
+      g.arc(0, 0, r * 0.78, 0, TAU);
+      g.fill();
+      g.fillStyle = '#1a0d0d';
+      for (let k = 0; k < 7; k++) {
+        const a = (k / 7) * TAU + 0.3, d = r * (k % 2 ? 0.48 : 0.3);
+        g.beginPath();
+        g.ellipse(Math.cos(a) * d, Math.sin(a) * d, 1.6, 2.8, a, 0, TAU);
+        g.fill();
+      }
+    } else if (id === 'plasma') {
+      disc([[0, '#d6b8ff'], [0.4, '#6b2cd9'], [1, '#14062e']]);
+      g.lineCap = 'round';
+      for (let k = 0; k < 3; k++) { // enerji sarmalı
+        const a0 = (k / 3) * TAU;
+        g.strokeStyle = k % 2 ? 'rgba(80,240,255,0.9)' : 'rgba(255,120,240,0.9)';
+        g.lineWidth = 2.2;
+        g.beginPath();
+        for (let t = 0; t <= 1.001; t += 0.1) {
+          const a = a0 + t * 2.6, rr = r * (0.15 + 0.75 * t);
+          g[t ? 'lineTo' : 'moveTo'](Math.cos(a) * rr, Math.sin(a) * rr);
+        }
+        g.stroke();
+      }
+      ring(r - 1.5, 2.5, 'rgba(200,170,255,0.85)');
+    } else if (id === 'diamond') {
+      disc([[0, '#ffffff'], [0.5, '#9fdcff'], [1, '#2a6fa8']]);
+      // Yontulmuş yüzeyler: merkezde sekizgen, çevresinde açık-koyu üçgenler
+      const N = 8, ri = r * 0.45, ro = r * 0.97;
+      for (let k = 0; k < N; k++) {
+        const a0 = (k / N) * TAU, a1 = ((k + 1) / N) * TAU, am = (a0 + a1) / 2;
+        g.fillStyle = k % 2 ? 'rgba(255,255,255,0.32)' : 'rgba(20,70,120,0.28)';
+        g.beginPath();
+        g.moveTo(Math.cos(a0) * ri, Math.sin(a0) * ri);
+        g.lineTo(Math.cos(am) * ro, Math.sin(am) * ro);
+        g.lineTo(Math.cos(a1) * ri, Math.sin(a1) * ri);
+        g.closePath();
+        g.fill();
+      }
+      g.fillStyle = 'rgba(230,248,255,0.7)';
+      g.beginPath();
+      for (let k = 0; k < N; k++) {
+        const a = (k / N) * TAU;
+        g[k ? 'lineTo' : 'moveTo'](Math.cos(a) * ri, Math.sin(a) * ri);
+      }
+      g.closePath();
+      g.fill();
+      ring(r - 1, 1.5, 'rgba(255,255,255,0.9)');
+    }
+    g.restore();
+    // Parlama
+    g.fillStyle = 'rgba(255,255,255,0.3)';
+    g.beginPath();
+    g.ellipse(-r * 0.35, -r * 0.45, r * 0.32, r * 0.12, -0.6, 0, TAU);
+    g.fill();
+    return c;
   }
 
   function buildPuck(style = 'neon') {
@@ -6043,9 +6230,11 @@
       if (p.active) {
         p.trail.push(p.x, p.y);
         if (p.trail.length > 36) p.trail.splice(0, 2);
+        // Desenli pak görünümleri hızla ve yatay hareketin yönüne göre döner
+        p.spin = ((p.spin || 0) + (p.vx * 0.6 + Math.abs(p.vy) * 0.25 * Math.sign(p.vx || 1)) * dt / PUCK_R) % TAU;
         const sp = Math.hypot(p.vx, p.vy);
         if (sp > 1300 && !quality.lite && Math.random() < 0.7) {
-          spawn(p.x, p.y, sp > 1800 ? '255,140,70' : PUCK_RGB, 1, 120, 0.35, 2.6);
+          spawn(p.x, p.y, sp > 1800 ? '255,140,70' : puckRgb(), 1, 120, 0.35, 2.6);
         }
       } else if (p.trail.length) {
         p.trail.splice(0, 2);
@@ -6313,8 +6502,8 @@
 
   function onWallHit(x, y, imp) {
     const k = clamp(imp / 1800, 0, 1);
-    ripple(x, y, PUCK_RGB, 6, 30 + k * 40, 0.4, 2.5);
-    if (k > 0.2) spawn(x, y, PUCK_RGB, Math.round(3 + k * 8), 150 + k * 350, 0.35, 2.4, { spark: true });
+    ripple(x, y, puckRgb(), 6, 30 + k * 40, 0.4, 2.5);
+    if (k > 0.2) spawn(x, y, puckRgb(), Math.round(3 + k * 8), 150 + k * 350, 0.35, 2.4, { spark: true });
     Sound.wall(k, x);
     if (isWater()) {
       Water.splash(x, y, k * 0.7);
@@ -6376,7 +6565,7 @@
     const k = clamp(imp / 1800, 0, 1);
     ripple(x, y, '255,255,255', 8, 40 + k * 40, 0.35, 3);
     spawn(x, y, '255,255,255', Math.round(4 + k * 10), 200 + k * 400, 0.35, 2.4, { spark: true });
-    spawn(x, y, PUCK_RGB, Math.round(3 + k * 8), 150 + k * 300, 0.4, 2.4, { spark: true });
+    spawn(x, y, puckRgb(), Math.round(3 + k * 8), 150 + k * 300, 0.4, 2.4, { spark: true });
     Sound.clack(k, x);
     if (isWater()) Water.splash(x, y, k * 0.6);
     else if (isMud()) {
@@ -6461,7 +6650,7 @@
       });
       Sound.chime(Crystal.noteAt(gx, cy), gx);
     }
-    spawn(gx, gy, PUCK_RGB, 30, 700, 0.9, 3.5, { dir, spread: 1.4 });
+    spawn(gx, gy, puckRgb(), 30, 700, 0.9, 3.5, { dir, spread: 1.4 });
     spawn(gx, gy, '255,255,255', 20, 500, 0.6, 2.5, { dir, spread: 1.5, spark: true });
     ripple(gx, gy, col.rgb, 20, 300, 0.8, 8);
     ripple(gx, gy, '255,255,255', 10, 180, 0.5, 3);
@@ -8106,6 +8295,55 @@
     }
   }
 
+  const puckPreview = {};
+  function renderPucks() {
+    const list = $('puckList');
+    list.textContent = '';
+    for (const k of Object.keys(PUCKS)) {
+      const pk = PUCKS[k], own = hasPuck(k), sel = settings.puck === k;
+      let right;
+      if (!own) right = priceChip(pk.price);
+      else {
+        right = document.createElement('span');
+        right.className = 'product-price state' + (sel ? ' selected' : '');
+        right.textContent = sel ? tl('s.selected') : tl('s.select');
+      }
+      const name = tl('pk.' + k);
+      const b = productButton('skin', name, k === 'theme' ? tl('s.puckThemeD') : tl('s.puckD'), '', right);
+      // Tema pakının önizlemesi seçili stadyuma göre değişir; diğerleri bir kez çizilir
+      const key = k === 'theme' ? 'theme:' + settings.theme : k;
+      if (!puckPreview[key]) {
+        const c = document.createElement('canvas');
+        c.width = c.height = 96;
+        // Pak hale payıyla birlikte çizilir; önizlemede yalnızca pakın kendisi (biraz payla) gösterilir
+        const src = k === 'theme' ? buildPuck(settings.theme) : buildSkinPuck(k, 'ice');
+        const f = (PUCK_R + 5) / PS, sw = src.width * f * 2, sx = src.width / 2 - sw / 2;
+        c.getContext('2d').drawImage(src, sx, sx, sw, sw, 0, 0, 96, 96);
+        puckPreview[key] = c.toDataURL();
+      }
+      const img = document.createElement('img');
+      img.className = 'skin-prev';
+      img.alt = '';
+      img.src = puckPreview[key];
+      b.querySelector('.product-ico').appendChild(img);
+      if (!own) b.classList.add('locked');
+      b.setAttribute('aria-label', tl(own ? (sel ? 's.ariaSel' : 's.ariaOwn') : 's.ariaPrice', { name, p: pk.price }));
+      b.addEventListener('click', () => {
+        if (!own) askPurchase({ kind: 'puck', puck: k, name, price: pk.price });
+        else if (!sel) selectPuck(k);
+      });
+      list.appendChild(b);
+    }
+  }
+
+  function selectPuck(k) {
+    settings.puck = k;
+    store.set('puck', k);
+    buildSprites();
+    renderPucks();
+    toast(tl('s.chosen', { name: tl('pk.' + k) }));
+  }
+
   function selectSkin(k) {
     settings.skin = k;
     store.set('skin', k);
@@ -8153,6 +8391,7 @@
     renderProducts();
     renderThemes();
     renderSkins();
+    renderPucks();
     renderInventory();
     showStoreBody(false);
     showOverlay(storeEl);
@@ -8220,6 +8459,12 @@
       skillUI.dirty = true;
       const got = Object.keys(it.pr.give).map((k) => `${SKILLS[k].label} +${it.pr.give[k]}`).join(', ');
       toast(tl('s.bought', { x: got }));
+    } else if (it.kind === 'puck') {
+      if (!wallet.pucks.includes(it.puck)) wallet.pucks.push(it.puck);
+      settings.puck = it.puck; // yeni görünüm hemen takılır
+      store.set('puck', it.puck);
+      buildSprites();
+      toast(tl('s.unlockedSel', { name: it.name }));
     } else if (it.kind === 'skin') {
       if (!wallet.skins.includes(it.skin)) wallet.skins.push(it.skin);
       settings.skin = it.skin; // yeni görünüm hemen takılır
@@ -8251,6 +8496,7 @@
     renderProducts();
     renderThemes();
     renderSkins();
+    renderPucks();
     showStoreBody(false);
   }
 
@@ -8447,7 +8693,7 @@
     ['frenzy', '🎱', 50, () => [stats.frenzy, 1]],
     ['rocket', '🚀', 40, () => [stats.rocket, 1]],
     ['skills', '✨', 30, () => [stats.skills, 10]],
-    ['style', '🖌️', 30, () => [wallet.skins.length, 1]],
+    ['style', '🖌️', 30, () => [wallet.skins.length + wallet.pucks.length, 1]],
     ['pvp', '🤝', 30, () => [stats.pvp, 1]],
     ['tour', '🏟️', 50, () => [stats.themes.length, 3]],
     ['all', '🎨', 250, () => [Object.keys(THEME_INFO).filter((t) => isUnlocked(t)).length, Object.keys(THEME_INFO).length]],
@@ -8807,6 +9053,7 @@
       renderProducts();
       renderThemes();
       renderSkins();
+      renderPucks();
     }
   }
 
@@ -9424,14 +9671,22 @@
       ctx.globalCompositeOperation = 'source-over';
     }
     if (!p.visible) return;
+    const spin = PUCKS[settings.puck] && PUCKS[settings.puck].spin && p.spin;
+    if (spin) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.spin);
+    }
+    const x = spin ? 0 : p.x, y = spin ? 0 : p.y;
     if (!p.active && game.state !== 'over') {
       // Oyuna girmeyi bekleyen pak yanıp söner
       ctx.globalAlpha = 0.5 + 0.5 * Math.sin(game.time * 14);
-      ctx.drawImage(puckSprite, p.x - PS / 2, p.y - PS / 2, PS, PS);
+      ctx.drawImage(puckSprite, x - PS / 2, y - PS / 2, PS, PS);
       ctx.globalAlpha = 1;
     } else {
-      ctx.drawImage(puckSprite, p.x - PS / 2, p.y - PS / 2, PS, PS);
+      ctx.drawImage(puckSprite, x - PS / 2, y - PS / 2, PS, PS);
     }
+    if (spin) ctx.restore();
   }
 
   function drawMallets() {
