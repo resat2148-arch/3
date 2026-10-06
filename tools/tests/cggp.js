@@ -1,0 +1,25 @@
+const { chromium } = require('playwright');
+(async () => {
+  const browser = await chromium.launch(); const errs = [];
+  const page = await (await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'tr-TR' })).newPage();
+  page.on('pageerror', e => errs.push(e.message));
+  await page.goto('http://127.0.0.1:8771/'); await page.evaluate(() => { localStorage.clear(); localStorage.setItem('neonah_skillsSeen', 'true'); });
+  await page.reload(); await page.waitForTimeout(1200);
+  const log = async (label) => console.log(label.padEnd(26), JSON.stringify(await page.evaluate(() => [__airHockey.game.state, (window.__gp || []).join(',')])));
+  await log('menu');
+  await page.click((await page.$('#introMenu.show')) ? '#introMenu' : '#startBtn'); await page.waitForTimeout(600); await log('match start (countdown)');
+  await page.waitForTimeout(3000); await log('playing');
+  await page.keyboard.press('KeyP'); await page.waitForTimeout(300); await log('paused');
+  await page.click('#resumeBtn'); await page.waitForTimeout(300); await log('resumed');
+  await page.evaluate(() => { __airHockey.inventory.grow = 0; __airHockey.skills[0].grow = 0; __airHockey.goals[1].grow = 0; __airHockey.useSkill(0, 'grow'); }); await page.waitForTimeout(400); await log('in-game store');
+  await page.click('#storeClose'); await page.waitForTimeout(300); await log('store closed');
+  await page.evaluate(() => { __airHockey.game.clock = 0.05; }); await page.waitForTimeout(2500); await log('match over');
+  await page.click('#againBtn'); await page.waitForTimeout(500); await log('play again');
+  await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new Event('visibilitychange')); });
+  await page.waitForTimeout(200); await log('tab hidden');
+  await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => false }); document.dispatchEvent(new Event('visibilitychange')); });
+  await page.waitForTimeout(300); await log('tab visible (paused)');
+  await page.click('#quitBtn'); await page.waitForTimeout(400); await log('back to menu');
+  console.log('errors', errs);
+  await browser.close();
+})();
