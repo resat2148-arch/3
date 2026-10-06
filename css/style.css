@@ -2486,6 +2486,45 @@ body.skills .toast {
   background: linear-gradient(90deg, #0fb8e6, #27c98a);
 }
 
+/* Yükseltmeler: seviye çubuğu (5 parça) */
+.product[data-kind="upg"] {
+  --sc: 90, 240, 160;
+}
+
+.product.maxed {
+  cursor: default;
+}
+
+.upg-pips {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.upg-pips i {
+  flex: none;
+  width: 14px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.upg-pips i.on {
+  background: rgb(var(--sc));
+  box-shadow: 0 0 6px rgba(var(--sc), 0.6);
+}
+
+.upg-pips em {
+  margin-left: 4px;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 .need {
   color: #ff9db8;
   font-weight: 700;
@@ -2947,7 +2986,7 @@ body.pvp .hs small {
 }
 
 .store-tabs {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr); /* 4 sekme: 2 × 2 */
 }
 
 /* ---------- Günlük görevler (menü) ---------- */

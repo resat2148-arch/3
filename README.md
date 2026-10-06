@@ -24,9 +24,13 @@ Her maçta her skillden **1 ücretsiz** hakkın vardır; bekleme süresi yoktur 
 
 ## Altın (oyun parası) ve Mağaza
 
-Oyunda gerçek parayla satış yoktur. Altınla alınabilen her şey **Mağaza**'da, iki sekmede toplanır:
+Oyunda gerçek parayla satış yoktur. Altınla alınabilen her şey **Mağaza**'da, dört sekmede toplanır (Temalar, Görünümler, Yükseltmeler, Yetenekler; görünümler aşağıda, altın kazanma yollarının arasında anlatılıyor):
 
 - **Temalar**: yalnızca **Su Stadyumu** ücretsizdir; diğer temalar altınla açılır. Açılan bir tema kalıcıdır ve mağazadan ya da menüden seçilebilir. Menüde kilitli bir temaya dokunmak mağazayı o temanın satın alma adımında açar. Menüden açılan mağazada "Önizle" ile tema, arkadaki tanıtım maçında denenebilir.
+- **Yükseltmeler**: kalıcı geliştirmeler, her biri 5 seviye. Yalnızca tek oyunculu (kariyer) maçlarda oyuncunun raketine işler; iki oyunculu mod eşit kalır. Alınan seviye maç içinde alınsa da hemen işler. Ayarlar `UPGRADES` içinde.
+  - **Raket Hızı**: seviye başına en yüksek vuruş hızı +%5 (pakın hız sınırı, raketin en yüksek hızı ve klavyeyle hareket hızı; son seviyede +%25).
+  - **Şut Gücü**: seviye başına şutlar +%6 daha hızlı (raketin pak yönündeki hızından paka geçen itiş artar; son seviyede +%30).
+  - **Yetenek Süresi**: seviye başına Dev Kale ve Kale Kilidi +0,6 sn (5 sn → son seviyede 8 sn).
 - **Yetenekler**: Dev Kale ve Kale Kilidi ek hakları. Satın alınan haklar cihazda saklanır ve sonraki maçlarda da kullanılır; iki oyunculu modda iki oyuncu da aynı envanterden kullanır. Maç içinde ücretsiz hak bitince skill düğmesi mağazayı bu sekmede açar (maç duraklar, satın alınca kaldığı yerden devam eder).
 
 | Tema | Fiyat |
@@ -46,24 +50,31 @@ Oyunda gerçek parayla satış yoktur. Altınla alınabilen her şey **Mağaza**
 | Kale Kilidi | 3 kullanım | 60 |
 | Skill Paketi | 5 Dev Kale + 5 Kale Kilidi | 170 |
 
+| Yükseltme | 1. seviye | 2. | 3. | 4. | 5. | Toplam |
+|---|---|---|---|---|---|---|
+| Raket Hızı | 120 | 240 | 400 | 600 | 850 | 2.210 |
+| Şut Gücü | 120 | 240 | 400 | 600 | 850 | 2.210 |
+| Yetenek Süresi | 90 | 180 | 300 | 450 | 650 | 1.670 |
+
 Altın kazanma yolları:
 
 - **Her maçtan sonra** (maç süre bitene kadar oynanmalı; yarıda bırakılan maç ödül vermez):
   - Tek oyuncu: sonuç (galibiyet 35, beraberlik 20, yenilgi 10) × rakibin zorluk çarpanı (Su Ligi'nde ×1–1,23, son liglerde en çok ×2,65) + attığın her gol için 2 (en fazla 10 gol). Lig şampiyonluğunda bir kez 80 + 30 × lig sırası altın.
   - İki oyuncu: 15 + atılan her gol için 1 (en fazla 10).
   - Maç sonunda reklam izleyerek o maçın ödülü **2 katına** çıkarılabilir.
-- **Hoş geldin hediyesi**: ilk maçın sonunda bir kez +100 altın. İlk galibiyetten sonra Neon'a çok az kalır; maç sonu ekranı en ucuz kilitli temaya ne kadar altın kaldığını gösterir, yetiyorsa mağazaya kısayol olur.
+- **Hoş geldin hediyesi**: ilk maçın sonunda bir kez +100 altın. İlk galibiyetten sonra Neon'a çok az kalır; maç sonu ekranı sıradaki hedefe (en ucuz kilitli tema ya da daha ucuzsa sıradaki yükseltme seviyesi) ne kadar altın kaldığını gösterir, yetiyorsa mağazaya kısayol olur.
 - **Günlük ödül**: her gün ilk açılışta kendiliğinden verilir ve art arda gelinen günlerde artar: 30, 40, 50, 60, 80, 100, 150 altın (7. günden sonra 150). Bir gün atlanırsa seri baştan başlar. Maç sonu ekranı yarınki ödülü hatırlatır. İlk gün hoş geldin hediyesi verildiği için günlük ödül ertesi gün başlar.
-- **Günlük görevler**: menüde her gün yenilenen 3 görev (herkeste aynı; tarihten türetilir). Türler: N gol at, N maç kazan, N maç oyna, N kez yetenek kullan, belirli bir stadyumda kazan (açık stadyumlardan), gol yemeden kazan, son 15 saniyede gol at. Her görev 25–70 altın, üçü bitince +50 bonus. Tamamlanan görev başarım gibi bildirimle duyurulur; maç sonu ekranı kaç görevin bittiğini gösterir. Ayarlar `MISSION_TYPES` ve `MISSION_BONUS` içinde.
+- **Günlük görevler**: menüde her gün yenilenen 3 görev (herkeste aynı; tarihten türetilir). Türler: N gol at, N maç kazan, N maç oyna, N kez yetenek kullan, belirli bir stadyumda kazan (açık stadyumlardan), gol yemeden kazan, son 15 saniyede gol at, bir yükseltme al (hepsi son seviyedeyse çıkmaz), N sert şut at (vuruştan sonra pak 1.500 birim/sn'yi geçerse; yalnızca tek oyunculu). Her görev 25–70 altın, üçü bitince +50 bonus. Tamamlanan görev başarım gibi bildirimle duyurulur; maç sonu ekranı kaç görevin bittiğini gösterir. Ayarlar `MISSION_TYPES` ve `MISSION_BONUS` içinde.
 - **Raket görünümleri**: mağazanın **Görünümler** sekmesinde (Raket bölümü) oyuncunun raketi için 7 görünüm: Kırağı ve Zehir Yeşili (150), Ametist (200), Alev (300, alev dilleri), Altın (350, ışınsal yivler), Galaksi (400, yıldızlar), Gökkuşağı (500, renk çemberi). Alınan görünüm hemen takılır, sonra istenen seçilir. Rakibin raketi hep pembe kalır; vuruş kıvılcımları raketin rengini alır. Görünümler `SKINS` içinde.
 - **Pak görünümleri**: aynı sekmenin Pak bölümünde. Varsayılan **Tema Pakı** her stadyumun kendi pakıdır (suda turuncu kauçuk, buzda siyah pak…); satın alınan görünüm onun yerine her stadyumda kullanılır (suda ve çamurda suya oturma halkasıyla): Kor ve Nane (150), Karbon (200), Futbol ve Karpuz (250), Plazma (350), Elmas (400). Desenli paklar (Futbol, Karpuz, Plazma) hızlarına göre döner; duvar ve gol kıvılcımları pakın rengini alır. Görünümler `PUCKS` içinde.
-- **Başarımlar**: 22 başarım, her biri bir kez altın verir (20–250). Menüdeki **Başarımlar** düğmesi listeyi ilerleme çubuklarıyla açar (tamamlanmamışlar, bitmeye en yakın olan önce). Açılan başarım ekranın üstünde kısa bir bildirimle duyurulur; oyun akarken açılanlar rakip kalenin önünü kapatmasın diye ilk duraklamada (gol, geri sayım, maç sonu) gösterilir. Başarımlar ve istatistikler (`stats`, `ach`) ilerlemeyle birlikte kaydedilir (CrazyGames'te bulutta). Liste `js/game.js` içindeki `ACH` dizisinde:
+- **Başarımlar**: 26 başarım, her biri bir kez altın verir (20–400). Menüdeki **Başarımlar** düğmesi listeyi ilerleme çubuklarıyla açar (tamamlanmamışlar, bitmeye en yakın olan önce). Açılan başarım ekranın üstünde kısa bir bildirimle duyurulur; oyun akarken açılanlar rakip kalenin önünü kapatmasın diye ilk duraklamada (gol, geri sayım, maç sonu) gösterilir. Başarımlar ve istatistikler (`stats`, `ach`) ilerlemeyle birlikte kaydedilir (CrazyGames'te bulutta). Liste `js/game.js` içindeki `ACH` dizisinde:
   - İlk Gol, İlk Zafer; ilk ligini / 4 ligi / tüm ligleri kazan; toplam 25 / 100 gol; 10 / 50 maç
   - Maç içi: gol yemeden kazan, bir maçta 5 gol, 2 gol gerideyken kazan, son 3 saniyede gol, iki pak varken 2 gol, en yüksek hıza yakın şut
   - Yetenekleri 10 kez kullan, yeni bir raket ya da pak görünümü al, iki kişilik maç oyna, 3 farklı stadyumda oyna, tüm stadyumları aç, 3 / 7 gün üst üste gel
+  - Toplam 100 sert şut; ilk yükseltmeyi al, bir yükseltmeyi son seviyeye çıkar, tüm yükseltmeleri son seviyeye çıkar
 - **Reklam izleyerek**: menüde ve mağazada "Reklam izle" ile her reklam için +50 altın (altın yetmediğinde satın alma adımında da çıkar). Günde en fazla 10 ödüllü reklam izlenebilir; reklam sonuna kadar izlenmezse ödül verilmez. Reklam oynarken oyun sesi kısılır.
 
-Fiyatlar ve ödüller `js/game.js` içindeki `THEME_INFO`, `PRODUCTS`, `COIN`, `WELCOME_GIFT`, `DAILY`, `levelMult()` ve `matchReward()` ile ayarlanır.
+Fiyatlar ve ödüller `js/game.js` içindeki `THEME_INFO`, `PRODUCTS`, `UPGRADES`, `COIN`, `WELCOME_GIFT`, `DAILY`, `levelMult()` ve `matchReward()` ile ayarlanır.
 
 > **Kendi sitendeki sürümde reklamlar şu an TEST MODUNDA** (CrazyGames sürümü gerçek CrazyGames reklamlarını kullanır): gerçek reklam yerine 5 saniyelik örnek bir gösterim oynatılır. Gerçek reklam için `Ads.showRewarded()` bir reklam altyapısına bağlanmalıdır — web için Google H5 Games Ads (Ad Placement API, ödüllü reklam), mobil uygulama için AdMob ödüllü reklam gibi. Gerçek sistemde ödül, reklam sağlayıcısının sunucu tarafı doğrulamasından (SSV) sonra bir sunucuda eklenmelidir; tarayıcıda (localStorage) tutulan bakiye, envanter ve açılan temalar kullanıcı tarafından değiştirilebilir.
 
@@ -77,7 +88,7 @@ Tek oyunculu modda stadyum kariyerdeki ligden gelir; iki oyunculu modda menüdek
   - **Etkileşim**: raketler ve paklar suyu hacimleriyle iter; önlerinde kabarma, arkalarında V biçimli iz ve dalga halkaları oluşur. Hızlı hareket köpük bırakır; çarpışmalar ve goller sıçrama ve halka dalgaları üretir.
   - **Görüntü (WebGL)**: tabana boyanmış saha çizgileri ve mozaik fayanslar dalgaların altında kırılarak görünür; yüzey eğriliğinden kostik ışık desenleri, Fresnel yansıması, projektör pırıltıları, nesnelerin tabana düşen gölgeleri ve köpük.
   - **Ses**: çarpışmalarda su sıçraması ve kabarcık sesleri, arka planda hafif havuz ambiyansı.
-  - WebGL olmayan cihazlarda havuz (ve bataklık) durağan gösterilir. Zayıf cihazlarda su, uyarlanabilir kaliteyle daha düşük çözünürlükte çizilir.
+  - WebGL katmanı (havuz ve bataklık) ilk dokunuşta ya da tuşa basınca kurulur; o zamana kadar ve WebGL olmayan cihazlarda havuz durağan bir görselle gösterilir. Zayıf cihazlarda su, uyarlanabilir kaliteyle daha düşük çözünürlükte çizilir.
 - **Buz Stadyumu**: çatlayan, sürekli değişen buz tabakası.
   - **Görüntü**: derin, yarı saydam turkuaz bir buzul gölü; buzun içinde farklı derinliklerde donmuş kabarcık kümeleri ve eski silik çatlaklar, buzun altında süzülen ışık ve yükselen kabarcıklar, bantların dibinde kar, buz altına boyanmış saha çizgileri. Disk klasik siyah kauçuk hokey diskidir.
   - **Etkileşim**: kayan disk buzda ince paralel çizikler, raketler hafif sürtme izi bırakır. Sert şut, duvara şiddetli çarpma, gol ya da skill kullanımı çarpma noktasından dallanarak yayılan çatlaklar oluşturur (güçlü darbede örümcek ağı gibi halka çatlaklar) ve etrafa buz kristalleri sıçrar. İzler zamanla yavaşça "yeniden donar"; her maç temiz buzla başlar.
@@ -124,6 +135,7 @@ Tek oyunculu modda stadyum kariyerdeki ligden gelir; iki oyunculu modda menüdek
 - **Skor paylaşımı**: maç sonunda sonuç X, WhatsApp, Telegram ve Facebook'ta paylaşılabilir ya da metin olarak kopyalanabilir. Oyun ayrıca 1080×1350 boyutunda neon bir skor kartı görseli üretir. Telefonda "Paylaş" düğmesi bu görseli sistemin paylaşım menüsüyle (Instagram, WhatsApp vb.) gönderir, bilgisayarda görsel indirilebilir.
 - **Ses**: tüm efektler Web Audio ile anlık üretilir, ses dosyası yoktur. Sağ üstteki hoparlör düğmesi ses seviyesi panelini açar (kaydırıcı + sessize alma); ayar tarayıcıda saklanır. Dokunmatik cihazlarda titreşim geri bildirimi verir.
 - **Müzik**: her temanın kendi arka plan parçası vardır ve o da Web Audio ile anlık üretilir: su için sakin bir chill parçası, neonda synthwave, buzda kristal çanlar, lavda ağır karanlık bir ritim, kumda hicaz makamında ud ve darbuka, uzayda geniş rüya tınıları, kristalde vuruşların çaldığı pentatonik notalara uyan yumuşak bir zemin, bataklıkta aksak bir blues. Maç sürerken davul ve arpej katmanları açılır; menüde, maç sonunda ve duraklatmada yalnızca yumuşak katmanlar çalar, ikinci pak girince ritim sıklaşır. Tema değişince parça yumuşak bir geçişle değişir. Ses panelinde müziğin ayrı bir açma/kapama düğmesi ve seviye kaydırıcısı vardır (`N` kısayolu); ana ses seviyesi ve sessiz modu müziği de kapsar. Sekme arka plana geçince müzik susar.
+- **Performans**: açılışta WebGL kurulmaz (su ve çamur ilk dokunuşta başlar), böylece ilk kare hızlanır. Kareler yetişmezse çözünürlük kademeli düşer, en sonda **sade mod** açılır (daha az parçacık ve efekt, suyun çözünürlüğü düşük). Düşük donanımlı cihazlar (≤ 2 GB bellek ya da dokunmatik ekranlı ≤ 2 çekirdek) ve önceki bir maçta sade moda geçmiş cihazlar oyuna baştan sade modda ve en çok 1,25 piksel yoğunluğuyla başlar (karar yalnızca o cihazda saklanır); açılıştaki tanıtım maçı 25 kare/sn'nin altında kalırsa o oturum sade moda geçer. İlk kare süresi konsola yazılır (`__airHockey.perf`).
 - **Dil**: Türkçe ve İngilizce (English). Menüdeki **Dil · Language** seçiminden değiştirilir ve cihazda saklanır; ilk açılışta tarayıcının diline göre seçilir (Türkçe tarayıcıda Türkçe, diğerlerinde İngilizce). Menüler, oyun içi yazılar, mağaza, paylaşım metinleri ve skor kartı görseli seçili dilde gösterilir. Metinler `js/game.js` içindeki `STR` sözlüğünde, HTML'deki sabit metinler `data-i18n` öznitelikleriyle tanımlıdır.
 - **Yatay ekran**: pencere ya da ekran yataysa (bilgisayar, yatay tutulan telefon ya da tablet) masa yan döner: oyuncu solda, rakip sağda, masa 16:9 pencereyi doldurur. Yetenek düğmeleri masanın yanlarında (Mavi solda, Pembe sağda), skor ve süre üstte durur. Fizik ve yapay zekâ aynıdır; yalnızca görüntü ve girdi döner, yazılar ve raket/pak parlamaları dik kalır. Ekran dikse masa da diktir.
 - **Mobil uyumlu**: her ekrana ölçeklenir, Retina ekranlarda net görünür, çentikli ekranlara uyum sağlar, ana ekrana eklenebilir (PWA) ve çevrimdışı çalışır.
@@ -185,7 +197,7 @@ Tanıtım videosu çekmek için:
 # çıktı: dist/aqua-hockey-showcase.zip
 ```
 
-Bu sürümde tüm temalar açıktır, oyun 9.999 altın ve 99'ar Dev Kale / Kale Kilidi hakkıyla başlar (her açılışta yenilenir), reklam düğmeleri gizlidir ve görüntü kalitesi performansa göre otomatik düşürülmez. Kayıtları gerçek oyundan ayrı tutulur (`aquash_` önekiyle), yani aynı tarayıcıdaki gerçek ilerlemeye dokunmaz. Yayına ya da CrazyGames'e yüklenmek için değildir.
+Bu sürümde tüm temalar açıktır, tüm yükseltmeler son seviyededir, oyun 9.999 altın ve 99'ar Dev Kale / Kale Kilidi hakkıyla başlar (her açılışta yenilenir), reklam düğmeleri gizlidir ve görüntü kalitesi performansa göre otomatik düşürülmez. Kayıtları gerçek oyundan ayrı tutulur (`aquash_` önekiyle), yani aynı tarayıcıdaki gerçek ilerlemeye dokunmaz. Yayına ya da CrazyGames'e yüklenmek için değildir.
 
 ### Önizleme videoları
 

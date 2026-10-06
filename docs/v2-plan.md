@@ -47,17 +47,34 @@ Not: Günlük görevler, başarımlar ve görünümler değerlendirme döneminin
 - Ölçüm (`tools/tests/land.js`, masanın ekranda kapladığı alan): 960×540 %68, 1280×720 %73, 1920×1080 %79, 844×390 %57 (dikeyde %49 olurdu), 1024×768 %55; arayüzle çakışma yok. Diğer tüm testler değişmeden geçiyor.
 - Bilinen: tuvalin gölgesi masa ile birlikte döndüğü için yatayda sola düşer (temaların `box-shadow` değerleri).
 
-### Aşama 3: Yükseltmeler ve mobil performans
-- Altınla alınan kalıcı yükseltmeler (her biri 4–5 seviye):
-  - Raket hızı (en yüksek vuruş hızı).
-  - Şut gücü.
-  - Yetenek süresi.
-  - Mağazada yeni bir "Yükseltmeler" bölümü olacak. Fiyatlar artan sırada; kariyer zorluğuyla dengelenmeli (rakip zorluğu gerekirse hafifçe artırılsın).
+### Aşama 3: Yükseltmeler ve mobil performans (bitti)
+- Yükseltmeler (`UPGRADES`, mağazanın yeni **Yükseltmeler** sekmesi; 4 sekme 2 × 2 düzende). Her biri 5 seviye, kalıcı, kayıtta `wallet.upg`. Yalnızca tek oyunculu maçta oyuncunun raketine işler (`mallets[0].up`); iki oyunculu mod eşit kalır.
+  - Raket Hızı: seviye başına +%5 en yüksek vuruş hızı. Son vuran raketin pak hız sınırı (`p.capK`), raketin en yüksek hızı ve klavye hızı artar. Fiyatlar 120, 240, 400, 600, 850.
+  - Şut Gücü: seviye başına şutlar +%6. Raketin pak yönündeki hızından gelen itiş artar; duran pakı durdurmak ya da karşılamak değişmez. Fiyatlar 120, 240, 400, 600, 850.
+  - Yetenek Süresi: seviye başına +0,6 sn (5 → 8 sn). Fiyatlar 90, 180, 300, 450, 650.
+  - Tümü 6.090 altın: uzun vadeli hedef. Maç sonu ekranındaki hedef, kilitli temadan ucuzsa sıradaki yükseltmeyi gösterir.
+  - Ölçüm (`tools/tests/upg.js`): duran paka 480 birim/sn'lik vuruş 874 → 1.137 birim/sn (+%30); en yüksek pak hızı 2.300 → 2.875.
+- Denge (`tools/tests/balance.js`: oyuncunun raketini rakiple aynı seviyedeki yapay zekâ sürer, ayar başına 60 maç; sonuçlarda ± 6 puan gürültü var):
+  - Tüm yükseltmeler son seviyedeyken, eşit seviyedeki rakibe karşı kazanma: Lig 1'de %47 → %53, Lig 5'te %43 → %47, Lig 8 patronunda %32 → %47. Maç başına yaklaşık +0,5 gol.
+  - Bu yüzden rakip zorluğu hafifçe artırıldı: lig başına 1,4 yerine 1,5 seviye (`rivalDiff`; Lig 1 aynı, Lig 5'te +0,4, Lig 8'de +0,7). Seviye eğrisine 14. seviye çapası eklendi; Kristal patronu 12,3 yerine 13. Ödül çarpanı (`levelMult`, en çok ×2,65) aynı.
+  - Eski eğrideki oyuncu yeni rakiplere karşı: yükseltmesiz Lig 5'te %30, Lig 8'de %35; tüm yükseltmelerle %38 ve %43. Yani yükseltmeler artışı kabaca karşılıyor.
 - Mobil performans:
-  - WebGL su/çamur ilk dokunuştan sonra başlasın (açılışta 2B görüntüyle).
-  - Düşük donanımda (yavaş kare ya da az bellek) sade mod: daha az parçacık, düşük çözünürlüklü katmanlar.
-  - Yükleme ve ilk kare süresi ölçülsün.
-- Yeni başarımlar ve görevler: "bir yükseltmeyi son seviyeye çıkar" gibi.
+  - Su/çamur WebGL'i ilk dokunuşta (`pointerdown`, `touchstart`, `keydown`) kurulur. O zamana kadar masa suyun 2B taban görseliyle çizilir (WebGL olmayan cihazlardaki yol); simülasyon da çalışmaz. Tanıtım sürümünde baştan açık.
+  - Sade mod (`quality.lite`: daha az parçacık ve efekt, su ¾ çözünürlükte) ve en çok 1,25 piksel yoğunluğu şu durumlarda baştan açılır:
+    - düşük donanım (`navigator.deviceMemory` ≤ 2 ya da dokunmatik ekranda ≤ 2 çekirdek);
+    - açılıştaki tanıtım maçının ilk 120 karesinin ortalaması 40 ms'yi geçerse (yalnızca o oturum; açılışta başka şeyler de yükleniyor olabilir);
+    - maçta kareler yetişmezse (eskisi gibi); bu karar cihazda saklanır ve sonraki açılışlar baştan sade modda başlar (`neonah_perf`, buluta gitmez).
+  - Ölçüm: `__airHockey.perf` (betik başlangıcı, ilk kare, su kurulumu) ve konsolda ilk kare satırı. `tools/tests/perf.js`: telefon görünümü, işlemci 4 kat yavaş, 5 açılışın ortancası, Google Fonts istekleri kesik.
+
+    | | Aşama 2 | Aşama 3 |
+    |---|---|---|
+    | İlk kare | 844 ms | 625 ms |
+    | DOMContentLoaded / load | 1.708 ms | 754 ms |
+    | Düşük bellekli cihazda ilk kare | 792 ms (tam kalite) | 569 ms (sade mod, 1,25 yoğunluk) |
+    | Su kurulumu (ilk dokunuşta) | açılışta | 161–174 ms |
+- Yeni başarımlar (26): Top Güllesi (toplam 100 sert şut), Antrenman (ilk yükseltme), Son Seviye (bir yükseltmeyi son seviyeye çıkar), Tam Donanım (hepsi son seviye).
+- Yeni günlük görevler: "Bir yükseltme satın al" (hepsi son seviyedeyse çıkmaz) ve "N sert şut at" (5/10/15). Sert şut: oyuncunun vuruşundan sonra pak 1.500 birim/sn'yi geçerse; yalnızca tek oyunculu modda sayılır.
+- Ayrıca düzeltildi: mağazadaki satın alma onayı açıkken Görünümler sekmesinin listesi gizlenmiyordu.
 
 ### Aşama 4: Yeni ad ve kimlik
 - Ad önerileri: Elemental Puck Arena, Splash Puck, Tidal Air Hockey (karar kullanıcıda).
@@ -88,6 +105,9 @@ Betikler `tools/tests/` altında (Playwright; `NODE_PATH=$(npm root -g) node too
 | `stress.js` | Çökme avı: aşırı boyutlar, düşük kalite, tüm temalar |
 | `corner.js` | Yapay zekânın köşedeki pakı çıkarması |
 | `land.js` | Yatay masa: kaplanan alan, arayüz çakışması, işaretçi ve ok tuşu dönüşümü (960×540, 1280×720, 1920×1080, 844×390, 390×844, 1024×768) |
+| `upg.js` | Yükseltmeler: satın alma, kayıt, yetenek süresi, şut hızı, iki oyunculuda etkisizlik, tanıtım sürümü |
+| `balance.js` | Yükseltme dengesi: yükseltmesiz / son seviye kazanma oranı (yavaş; `node tools/tests/balance.js 60 4.2,7.4`) |
+| `perf.js` | Açılış: ilk kare, DOMContentLoaded, su kurulumu; düşük bellekte sade mod (birden çok adres karşılaştırılabilir) |
 | `cg*.js` | CrazyGames: bildirimler, bulut kaydı, ses kapatma, reklam |
 
 - `cg*.js` betikleri `mock-sdk.js` ile 127.0.0.1:8771'den sunulan CrazyGames derlemesini kullanır.

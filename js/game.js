@@ -122,6 +122,7 @@
     'mi.matches': ['{n} maç oyna', 'Play {n} matches'], 'mi.skills': ['{n} kez yetenek kullan', 'Use skills {n} times'],
     'mi.themeWin': ['{t}: bir maç kazan', 'Win a match in {t}'], 'mi.clean': ['Gol yemeden bir maç kazan', 'Win without conceding'],
     'mi.late': ['Son 15 saniyede gol at', 'Score in the last 15 seconds'],
+    'mi.upgrade': ['Bir yükseltme satın al', 'Buy an upgrade'], 'mi.shots': ['{n} sert şut at', 'Hit {n} hard shots'],
     'a.style': ['Tarz Sahibi', 'Stylish'], 'a.style.d': ['Yeni bir raket ya da pak görünümü al', 'Get a new mallet or puck look'],
     'ph.neon': ['Neon: klasik hava yastığı.', 'Neon: classic air cushion.'],
     'ph.water': ['Su Stadyumu: su pakı hafifçe yavaşlatır.', 'Water Stadium: the water gently slows the puck.'],
@@ -167,6 +168,10 @@
     'a.all': ['Koleksiyoncu', 'Collector'], 'a.all.d': ['Tüm stadyumları aç', 'Unlock every stadium'],
     'a.s3': ['Sadık Oyuncu', 'Regular'], 'a.s3.d': ['3 gün üst üste gel', 'Play 3 days in a row'],
     'a.s7': ['Vazgeçilmez', 'Unstoppable'], 'a.s7.d': ['7 gün üst üste gel', 'Play 7 days in a row'],
+    'a.upg1': ['Antrenman', 'Training'], 'a.upg1.d': ['İlk yükseltmeni satın al', 'Buy your first upgrade'],
+    'a.upgMax': ['Son Seviye', 'Maxed Out'], 'a.upgMax.d': ['Bir yükseltmeyi son seviyeye çıkar', 'Max out an upgrade'],
+    'a.upgAll': ['Tam Donanım', 'Fully Loaded'], 'a.upgAll.d': ['Tüm yükseltmeleri son seviyeye çıkar', 'Max out every upgrade'],
+    'a.shots': ['Top Güllesi', 'Cannonball'], 'a.shots.d': ['Toplam 100 sert şut at', 'Hit 100 hard shots in total'],
     'ob.or': ['veya', 'or'], 'ob.drag': ['Sürükle', 'Drag'], 'ob.move': ['Fareyle yönet', 'Move with the mouse'], 'lv.prev': ['Önceki seviye', 'Previous level'], 'lv.next': ['Sonraki seviye', 'Next level'],
     'lvl.name': ['Seviye {n}', 'Level {n}'], 'lvl.of': ['{n}.', 'level {n}'],
     'lvl.locked': ['Kazanınca açılır', 'Win to unlock'],
@@ -244,6 +249,16 @@
     's.title': ['MAĞAZA', 'STORE'],
     's.note': ['Altın her maçtan sonra ve reklam izleyerek kazanılır.', 'Earn gold after every match and by watching ads.'],
     's.themes': ['Temalar', 'Themes'], 's.skills': ['Yetenekler', 'Skills'], 's.inv': ['Envanterin', 'Your inventory'],
+    's.upgrades': ['Yükseltmeler', 'Upgrades'],
+    's.upgMsg': ['Kalıcı geliştirmeler. Kariyer maçlarında raketine işler (iki oyunculu modda işlemez).', 'Permanent boosts for your mallet in career matches (not in two-player mode).'],
+    'up.speed': ['Raket Hızı', 'Mallet Speed'], 'up.speed.d': ['En yüksek vuruş hızı +%{n}', 'Top hit speed +{n}%'],
+    'up.power': ['Şut Gücü', 'Shot Power'], 'up.power.d': ['Şutların +%{n} daha hızlı', 'Shots {n}% faster'],
+    'up.skill': ['Yetenek Süresi', 'Skill Duration'], 'up.skill.d': ['Dev Kale ve Kale Kilidi +{n} sn', 'Big Goal and Goal Lock +{n} s'],
+    'up.lvl': ['Seviye {n}/{m}', 'Level {n}/{m}'], 'up.max': ['MAKS', 'MAX'], 'up.next': ['Sonraki: {x}', 'Next: {x}'],
+    'up.name': ['{name} · Seviye {n}', '{name} · Level {n}'],
+    'up.bought': ['{name} seviye {n} oldu!', '{name} is now level {n}!'],
+    'r.toUpg': ['{t} seviye {l}: {n} altın kaldı', '{t} level {l}: {n} gold to go'],
+    'r.canUpg': ['⬆️ {t} seviye {l} alınabilir!', '⬆️ You can buy {t} level {l}!'],
     's.confirm': ['Satın almayı onayla', 'Confirm purchase'],
     's.buy': ['SATIN AL', 'BUY'], 's.short': ['YETERSİZ ALTIN', 'NOT ENOUGH GOLD'], 's.need': ['· {n} eksik', '· {n} short'],
     's.preview': ['Önizle', 'Preview'], 's.cancel': ['Vazgeç', 'Cancel'], 's.close': ['Kapat', 'Close'], 's.bal': ['Bakiyen', 'Balance'],
@@ -324,9 +339,10 @@
     [4, AI_LEVELS.medium],
     [8, AI_LEVELS.hard],
     [12, { speed: 1600, accel: 13000, think: 0.028, predict: 0.42, aimErr: 0.12, noise: 3, strike: 1.36, bank: 0.35, skillSmart: 1, skillRandom: 0 }],
+    [14, { speed: 1720, accel: 14000, think: 0.024, predict: 0.46, aimErr: 0.1, noise: 2, strike: 1.4, bank: 0.38, skillSmart: 1, skillRandom: 0 }],
   ];
   function aiForLevel(n) {
-    n = Math.max(1, Math.min(12, n));
+    n = Math.max(1, Math.min(14, n));
     let i = 0;
     while (i < AI_ANCHORS.length - 2 && n > AI_ANCHORS[i + 1][0]) i++;
     const [l0, a] = AI_ANCHORS[i], [l1, b] = AI_ANCHORS[i + 1];
@@ -355,8 +371,9 @@
     space: [['👽', 'Zorp', 'trickster'], ['🛸', 'Saucer', 'speedy'], ['☄️', 'Comet', 'aggressive'], ['🚀', 'Rocket', 'balanced'], ['🌑', 'Eclipse', 'boss']],
     crystal: [['💎', 'Gem', 'balanced'], ['🔮', 'Oracle', 'trickster'], ['🦄', 'Unicorn', 'speedy'], ['✨', 'Prism', 'aggressive'], ['👑', 'Crystal Queen', 'boss']],
   };
-  // Zorluk: lig başına ~1,4, maç başına 0,3 seviye; patron biraz daha zor (1 → ~12)
-  const rivalDiff = (li, mi) => 1 + li * 1.4 + mi * 0.3 + (mi === 4 ? 0.3 : 0);
+  // Zorluk: lig başına 1,5, maç başına 0,3 seviye; patron biraz daha zor (1 → 13). v2'de yükseltmeler
+  // geldiği için lig başına artış 1,4'ten 1,5'e çıktı (son ligde +0,7 seviye; tools/tests/balance.js).
+  const rivalDiff = (li, mi) => 1 + li * 1.5 + mi * 0.3 + (mi === 4 ? 0.3 : 0);
   function rivalAI(li, mi) {
     const o = aiForLevel(rivalDiff(li, mi));
     switch (RIVALS[LEAGUES[li]][mi][2]) {
@@ -453,6 +470,18 @@
   };
   const COIN = { adReward: 50, adDaily: 10 };
 
+  // Yükseltmeler: altınla alınan kalıcı geliştirmeler (5 seviye). Yalnızca tek oyunculu maçlarda
+  // oyuncunun raketine işler; iki oyunculu mod eşit kalır. step: seviye başına etki.
+  //   speed: pakın en yüksek hızı (MAX_PUCK) ile raketin en yüksek hızı ve klavye hızı +%5
+  //   power: raketin hareketinden paka geçen itiş +%6 (şutlar daha hızlı)
+  //   skill: Dev Kale ve Kale Kilidi süresi +0,6 sn
+  const UPGRADES = {
+    speed: { step: 0.05, prices: [120, 240, 400, 600, 850] },
+    power: { step: 0.06, prices: [120, 240, 400, 600, 850] },
+    skill: { step: 0.6, prices: [90, 180, 300, 450, 650] },
+  };
+  const UPG_MAX = 5;
+
   const wallet = (() => {
     const v = store.get('wallet', null) || {};
     const n = (x) => Math.max(0, Math.floor(Number(x) || 0));
@@ -466,6 +495,7 @@
       pucks: Array.isArray(v.pucks) ? v.pucks.filter((k) => PUCKS[k]) : [], // alınan pak görünümleri
       dailyDay: String(v.dailyDay || ''), // son günlük ödülün günü
       streak: n(v.streak),         // art arda gelinen gün sayısı
+      upg: Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, Math.min(UPG_MAX, n(v.upg && v.upg[k]))])), // yükseltme seviyeleri
     };
   })();
 
@@ -473,8 +503,12 @@
     store.set('wallet', {
       coins: wallet.coins, unlocked: wallet.unlocked, adDay: wallet.adDay, adCount: wallet.adCount,
       welcomed: wallet.welcomed, dailyDay: wallet.dailyDay, streak: wallet.streak, skins: wallet.skins, pucks: wallet.pucks,
+      upg: wallet.upg,
     });
   }
+
+  // Yükseltme seviyesi (tanıtım sürümünde hepsi son seviyede)
+  const upgLevel = (k) => (isShowcase ? UPG_MAX : wallet.upg[k]);
 
   function hasPuck(k) {
     return !!PUCKS[k] && (isShowcase || PUCKS[k].price === 0 || wallet.pucks.includes(k));
@@ -1715,14 +1749,62 @@
   const quality = {
     levels: [Math.min(deviceDpr, 2), 1.5, 1.25, 1].filter((v, i, a) => i === 0 || (v < a[0] && v < a[i - 1])),
     level: 0,
-    lite: false,          // en düşük çözünürlükte de yetişmiyorsa efektleri azalt
+    lite: false,          // sade mod: daha az parçacık ve efekt, suyun çözünürlüğü düşük
     acc: 0,
     n: 0,
     cooldown: 0,
   };
 
+  // Sade mod cihazda hatırlanır (bulut kaydına değil: başka cihazı etkilemesin). Düşük donanım
+  // (≤ 2 GB bellek ya da dokunmatik ekranlı ≤ 2 çekirdek) ya da önceki bir maçta kareler
+  // yetişmediyse oyun baştan sade modda ve düşük çözünürlükte açılır.
+  const perfMem = {
+    get() {
+      try { return JSON.parse(localStorage.getItem('neonah_perf')) || {}; } catch (e) { return {}; }
+    },
+    set(v) {
+      try { localStorage.setItem('neonah_perf', JSON.stringify(v)); } catch (e) { /* yok say */ }
+    },
+  };
+  const lowEnd = !isShowcase && ((navigator.deviceMemory > 0 && navigator.deviceMemory <= 2)
+    || (window.matchMedia && matchMedia('(pointer: coarse)').matches && navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 2));
+  // Ölçüm (ms, sayfanın açılışından): betik başlangıcı, ilk kare, su/çamur WebGL'inin kurulumu
+  const perfInfo = { script: Math.round(performance.now()), firstFrame: 0, liquidInit: null, lowEnd, lite: false };
+
+  // Sade moda geç: çözünürlük en az 1,25'e iner. Maçta süren yavaşlık cihazda saklanır; açılıştaki
+  // yavaşlık (o an yüklenen başka şeyler olabilir) yalnızca bu oturum için geçerlidir.
+  function goLite(why, remember) {
+    if (quality.lite) return;
+    quality.lite = true;
+    perfInfo.lite = why;
+    const i = quality.levels.findIndex((v) => v <= 1.25);
+    if (i > quality.level) quality.level = i;
+    if (remember) perfMem.set({ lite: true, level: quality.level });
+    resize();
+  }
+
+  {
+    const saved = isShowcase ? {} : perfMem.get();
+    if (saved.lite || lowEnd) {
+      quality.lite = true;
+      perfInfo.lite = saved.lite ? 'saved' : 'device';
+      const i = quality.levels.findIndex((v) => v <= 1.25);
+      quality.level = Math.max(i < 0 ? 0 : i, Math.min(Number(saved.level) || 0, quality.levels.length - 1));
+    }
+  }
+
+  // Açılışta (tanıtım maçı) ilk 120 karenin ortalaması 40 ms'yi (25 kare/sn) geçiyorsa sade moda geç
+  const boot = { n: 0, acc: 0, done: isShowcase };
+
   function trackFrame(ms) {
     if (isShowcase) return; // tanıtım kaydında görüntü kalitesi düşürülmez
+    if (!boot.done && game.state === 'demo' && ms < 250) {
+      boot.acc += ms;
+      if (++boot.n >= 120) {
+        boot.done = true;
+        if (boot.acc / boot.n > 40) goLite('boot', false);
+      }
+    }
     if (!(game.state === 'play' || game.state === 'countdown' || game.state === 'goal')) {
       quality.acc = quality.n = 0;
       return;
@@ -1740,7 +1822,7 @@
       quality.cooldown = 60;
       resize();
     } else if (!quality.lite) {
-      quality.lite = true;
+      goLite('frames', true);
     }
   }
   let tableLayer = null, puckSprite = null;
@@ -6232,8 +6314,13 @@
       aiTx: W / 2, aiTy: homeY(i), avx: 0, avy: 0,
       aiTimer: 0, aiMode: '', aimX: W / 2, charge: false, tap: false, digSide: 1, clearUntil: 0,
       glow: 0, hitCool: 0,
+      up: null, // yükseltme seviyeleri { speed, power, skill } (yalnızca tek oyunculu maçta oyuncunun raketi)
     };
   }
+
+  // Raketin yükseltmeden gelen etkisi (step × seviye; yükseltmesi yoksa 0)
+  const upK = (m, k) => (m.up ? m.up[k] * UPGRADES[k].step : 0);
+  const upgLevels = () => Object.fromEntries(Object.keys(UPGRADES).map((k) => [k, upgLevel(k)]));
 
   function homeY(i) {
     return i === 0 ? H - 110 : 110;
@@ -6268,6 +6355,7 @@
       }
     }
     p.vx = p.vy = 0;
+    p.capK = 1;
     p.trail.length = 0;
     p.stuck = 0;
     p.blink = 0;
@@ -6377,6 +6465,13 @@
     if (vn < 0) {
       p.vx -= (1 + MALLET_E) * vn * nx;
       p.vy -= (1 + MALLET_E) * vn * ny;
+      // Şut Gücü: raketin pak yönündeki hızından gelen itiş artar; Raket Hızı: bu vuruşun hız sınırı
+      const pw = upK(m, 'power'), mv = m.vx * nx + m.vy * ny;
+      if (pw && mv > 0) {
+        p.vx += (1 + MALLET_E) * mv * pw * nx;
+        p.vy += (1 + MALLET_E) * mv * pw * ny;
+      }
+      p.capK = 1 + upK(m, 'speed');
       m.hx = m.x + nx * MALLET_R;
       m.hy = m.y + ny * MALLET_R;
       return -vn;
@@ -6665,7 +6760,7 @@
       }
       [ex, ey] = clampPos(m, ex, ey);
       let vx = (ex - m.x) / dt, vy = (ey - m.y) / dt;
-      const v = Math.hypot(vx, vy), vmax = phys().mallet || MAX_MALLET_V; // çamurda raketler ağır
+      const v = Math.hypot(vx, vy), vmax = (phys().mallet || MAX_MALLET_V) * (1 + upK(m, 'speed')); // çamurda raketler ağır
       if (v > vmax) { vx *= vmax / v; vy *= vmax / v; }
       m.vx = vx;
       m.vy = vy;
@@ -6717,8 +6812,8 @@
         resolvePin(p, mallets[0]);
         resolvePin(p, mallets[1]);
 
-        const sp = Math.hypot(p.vx, p.vy);
-        if (sp > MAX_PUCK) { p.vx *= MAX_PUCK / sp; p.vy *= MAX_PUCK / sp; }
+        const sp = Math.hypot(p.vx, p.vy), cap = MAX_PUCK * (p.capK || 1); // son vuran raketin sınırı
+        if (sp > cap) { p.vx *= cap / sp; p.vy *= cap / sp; }
 
         if (p.y < 0 || p.y > H) {
           p.active = false;
@@ -7069,7 +7164,7 @@
       return false;
     }
     const sk = SKILLS[key];
-    goals[gi][key] = sk.dur;
+    goals[gi][key] = sk.dur + upK(mallets[p], 'skill');
     const gy = gi === 1 ? 0 : H;
     ripple(W / 2, gy, sk.rgb, 20, 240, 0.7, 6);
     spawn(W / 2, gy, sk.rgb, 34, 650, 0.8, 3, { dir: gi === 1 ? Math.PI / 2 : -Math.PI / 2, spread: 1.3, spark: true });
@@ -7527,7 +7622,7 @@
     }
     if (!dx && !dy) return;
     if (landscape) [dx, dy] = [dy, -dx]; // tuşlar ekrandaki yöne göre: → rakibe doğru
-    const l = Math.hypot(dx, dy), sp = 1050;
+    const l = Math.hypot(dx, dy), sp = 1050 * (1 + upK(m, 'speed'));
     [m.tx, m.ty] = clampPos(m, m.tx + (dx / l) * sp * dt, m.ty + (dy / l) * sp * dt);
   }
 
@@ -7562,6 +7657,7 @@
     mallets.forEach((m) => {
       m.ai = true;
       m.level = AI_LEVELS.medium;
+      m.up = null;
       resetMallet(m);
     });
     pucks.length = 1;
@@ -7640,6 +7736,8 @@
     mallets.forEach(resetMallet);
     mallets[0].ai = false;
     mallets[1].ai = settings.mode === 'ai';
+    mallets[0].up = settings.mode === 'ai' ? upgLevels() : null; // iki oyunculu maç eşit kalır
+    mallets[1].up = null;
     // Tek oyunculu: kariyerdeki seçili rakip, ligin stadyumunda
     game.rival = null;
     if (settings.mode === 'ai') {
@@ -8527,7 +8625,7 @@
         if (left > 0) {
           state = 'active';
           sub = tl('sk.active', { n: Math.ceil(left) });
-          fill = left / sk.dur;
+          fill = left / (sk.dur + upK(mallets[p], 'skill'));
         } else if (free > 0 || owned > 0) {
           state = playing ? 'ready' : 'wait';
           sub = free > 0 ? tl(key === 'grow' ? 'sk.growSub' : 'sk.shrinkSub') : tl('sk.owned', { n: owned });
@@ -8758,26 +8856,89 @@
     toast(tl('s.chosen', { name: tl('skin.' + k) }));
   }
 
+  // Mağaza sekmeleri: sekme adı → panel
+  const STORE_TABS = { themes: 'tabThemes', mallets: 'tabMallets', upgrades: 'tabUpgrades', skills: 'tabSkills' };
+
   function setTab(tab) {
     storeState.tab = tab;
-    $('tabThemes').classList.toggle('hidden', tab !== 'themes');
-    $('tabMallets').classList.toggle('hidden', tab !== 'mallets');
-    $('tabSkills').classList.toggle('hidden', tab !== 'skills');
-    for (const id of ['tabBtnThemes', 'tabBtnMallets', 'tabBtnSkills']) {
-      const b = $(id), on = b.dataset.tab === tab;
+    for (const t of Object.keys(STORE_TABS)) $(STORE_TABS[t]).classList.toggle('hidden', tab !== t);
+    document.querySelectorAll('.store-tabs button').forEach((b) => {
+      const on = b.dataset.tab === tab;
       b.classList.toggle('active', on);
       b.setAttribute('aria-selected', on ? 'true' : 'false');
-    }
+    });
   }
 
   function showStoreBody(confirm) {
     storeConfirm.classList.toggle('hidden', !confirm);
     document.querySelector('.store-tabs').classList.toggle('hidden', confirm);
-    $('tabThemes').classList.toggle('hidden', confirm || storeState.tab !== 'themes');
-    $('tabSkills').classList.toggle('hidden', confirm || storeState.tab !== 'skills');
+    for (const t of Object.keys(STORE_TABS)) $(STORE_TABS[t]).classList.toggle('hidden', confirm || storeState.tab !== t);
   }
 
-  // tab: 'themes' | 'skills'; theme: doğrudan satın alma adımı açılacak tema
+  // Yükseltmeler sekmesi: her satırda sıradaki seviyenin etkisi, seviye çubuğu ve fiyatı
+  const UPG_ICONS = {
+    speed: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>',
+    power: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="15" r="5"/><path d="M13 11l7-7M15 4h5v5"/></svg>',
+    skill: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>',
+  };
+
+  // Seviyenin toplam etkisi metin olarak: speed/power yüzde, skill saniye
+  function upgEffect(k, lv) {
+    const v = UPGRADES[k].step * lv;
+    return k === 'skill' ? v.toLocaleString(LOCALE(), { maximumFractionDigits: 1 }) : String(Math.round(v * 100));
+  }
+
+  function renderUpgrades() {
+    const list = $('upgList');
+    list.textContent = '';
+    for (const k of Object.keys(UPGRADES)) {
+      const lv = upgLevel(k), max = lv >= UPG_MAX, name = tl('up.' + k);
+      const price = max ? 0 : UPGRADES[k].prices[lv];
+      let right;
+      if (max) {
+        right = document.createElement('span');
+        right.className = 'product-price state selected';
+        right.textContent = tl('up.max');
+      } else {
+        right = priceChip(price);
+      }
+      // Açıklama: alınacak seviyedeki toplam etki (son seviyedeyse şimdiki)
+      const desc = tl('up.' + k + '.d', { n: upgEffect(k, max ? lv : lv + 1) });
+      const b = productButton('upg', name, max ? desc : tl('up.next', { x: desc }), UPG_ICONS[k], right);
+      const pips = document.createElement('span');
+      pips.className = 'upg-pips';
+      for (let i = 0; i < UPG_MAX; i++) {
+        const d = document.createElement('i');
+        if (i < lv) d.className = 'on';
+        pips.append(d);
+      }
+      const lbl = document.createElement('em');
+      lbl.textContent = tl('up.lvl', { n: lv, m: UPG_MAX });
+      pips.append(lbl);
+      b.querySelector('.product-text').append(pips);
+      if (max) b.classList.add('maxed');
+      b.setAttribute('aria-label', `${name}, ${tl('up.lvl', { n: lv, m: UPG_MAX })}, ${max ? tl('up.max') : tl('s.ariaPrice', { name: desc, p: price })}`);
+      b.addEventListener('click', () => {
+        if (!max) askPurchase({ kind: 'upg', upg: k, name: tl('up.name', { name, n: lv + 1 }), price });
+      });
+      list.appendChild(b);
+    }
+  }
+
+  // Sıradaki en ucuz yükseltme (hepsi son seviyedeyse null)
+  function cheapestUpgrade() {
+    let best = null, bp = Infinity;
+    for (const k of Object.keys(UPGRADES)) {
+      const lv = upgLevel(k);
+      if (lv < UPG_MAX && UPGRADES[k].prices[lv] < bp) {
+        best = k;
+        bp = UPGRADES[k].prices[lv];
+      }
+    }
+    return best;
+  }
+
+  // tab: 'themes' | 'mallets' | 'upgrades' | 'skills'; theme: doğrudan satın alma adımı açılacak tema
   function openStore({ focus = null, fromGame = false, tab = null, theme = null } = {}) {
     storeState.focus = focus;
     storeState.fromGame = fromGame;
@@ -8798,6 +8959,7 @@
     renderThemes();
     renderSkins();
     renderPucks();
+    renderUpgrades();
     renderInventory();
     showStoreBody(false);
     showOverlay(storeEl);
@@ -8865,6 +9027,11 @@
       skillUI.dirty = true;
       const got = Object.keys(it.pr.give).map((k) => `${SKILLS[k].label} +${it.pr.give[k]}`).join(', ');
       toast(tl('s.bought', { x: got }));
+    } else if (it.kind === 'upg') {
+      wallet.upg[it.upg] = Math.min(UPG_MAX, wallet.upg[it.upg] + 1);
+      if (mallets[0].up) mallets[0].up = upgLevels(); // maç içinde alındıysa hemen işler
+      toast(tl('up.bought', { name: tl('up.' + it.upg), n: wallet.upg[it.upg] }));
+      missionAdd('upgrade');
     } else if (it.kind === 'puck') {
       if (!wallet.pucks.includes(it.puck)) wallet.pucks.push(it.puck);
       settings.puck = it.puck; // yeni görünüm hemen takılır
@@ -8909,6 +9076,7 @@
     renderThemes();
     renderSkins();
     renderPucks();
+    renderUpgrades();
     showStoreBody(false);
   }
 
@@ -8961,6 +9129,7 @@
   $('tabBtnThemes').addEventListener('click', () => setTab('themes'));
   $('tabBtnSkills').addEventListener('click', () => setTab('skills'));
   $('tabBtnMallets').addEventListener('click', () => setTab('mallets'));
+  $('tabBtnUpgrades').addEventListener('click', () => setTab('upgrades'));
   $('storeClose').addEventListener('click', closeStore);
   $('menuStoreBtn').addEventListener('click', () => openStore());
   $('menuAchBtn').addEventListener('click', openAchievements);
@@ -9037,15 +9206,19 @@
     return best;
   }
 
+  // Hedef: en ucuz kilitli tema ile sıradaki en ucuz yükseltmeden ucuz olanı (eşitse tema)
   function renderNextUnlock() {
-    const el = $('nextUnlock'), t = cheapestLocked();
-    el.classList.toggle('hidden', !t);
-    if (!t) return;
-    const info = THEME_INFO[t], left = info.price - wallet.coins;
-    el.dataset.theme = t;
+    const el = $('nextUnlock'), t = cheapestLocked(), u = cheapestUpgrade();
+    const up = u && (!t || UPGRADES[u].prices[upgLevel(u)] < THEME_INFO[t].price);
+    el.classList.toggle('hidden', !t && !u);
+    if (!t && !u) return;
+    const price = up ? UPGRADES[u].prices[upgLevel(u)] : THEME_INFO[t].price, left = price - wallet.coins;
+    el.dataset.theme = up ? '' : t;
+    el.dataset.upg = up ? u : '';
     el.classList.toggle('ready', left <= 0);
-    $('nextUnlockText').textContent = left <= 0 ? tl('r.canUnlock', { t: info.name }) : tl('r.toUnlock', { t: info.name, n: fmt(left) });
-    $('nextUnlockBar').style.width = Math.round(clamp(wallet.coins / info.price, 0, 1) * 100) + '%';
+    const vars = up ? { t: tl('up.' + u), l: upgLevel(u) + 1, n: fmt(left) } : { t: THEME_INFO[t].name, n: fmt(left) };
+    $('nextUnlockText').textContent = tl(up ? (left <= 0 ? 'r.canUpg' : 'r.toUpg') : (left <= 0 ? 'r.canUnlock' : 'r.toUnlock'), vars);
+    $('nextUnlockBar').style.width = Math.round(clamp(wallet.coins / price, 0, 1) * 100) + '%';
   }
 
   // Günlük ödül: her gün ilk açılışta kendiliğinden verilir; art arda gelinen günlerde artar.
@@ -9083,7 +9256,7 @@
     const n = (x) => Math.max(0, Math.floor(Number(x) || 0));
     return {
       matches: n(v.matches), wins: n(v.wins), goals: n(v.goals), skills: n(v.skills), pvp: n(v.pvp),
-      clean: n(v.clean), five: n(v.five), comeback: n(v.comeback), buzzer: n(v.buzzer), frenzy: n(v.frenzy), rocket: n(v.rocket),
+      clean: n(v.clean), five: n(v.five), comeback: n(v.comeback), buzzer: n(v.buzzer), frenzy: n(v.frenzy), rocket: n(v.rocket), shots: n(v.shots),
       themes: Array.isArray(v.themes) ? v.themes.filter((t) => THEME_INFO[t]) : [],
     };
   })();
@@ -9116,11 +9289,18 @@
     ['all', '🎨', 250, () => [Object.keys(THEME_INFO).filter((t) => isUnlocked(t)).length, Object.keys(THEME_INFO).length]],
     ['s3', '📅', 50, () => [wallet.streak, 3]],
     ['s7', '🗓️', 150, () => [wallet.streak, 7]],
+    ['shots', '💥', 80, () => [stats.shots, 100]],
+    ['upg1', '🔧', 30, () => [upgTotal(), 1]],
+    ['upgMax', '⬆️', 120, () => [Math.max(...Object.values(wallet.upg)), UPG_MAX]],
+    ['upgAll', '🏅', 400, () => [upgTotal(), UPG_MAX * Object.keys(UPGRADES).length]],
   ].map(([id, icon, reward, prog]) => ({ id, icon, reward, prog }));
 
   function saveStats() {
     store.set('stats', stats);
   }
+
+  // Alınan toplam yükseltme seviyesi
+  const upgTotal = () => Object.values(wallet.upg).reduce((a, b) => a + b, 0);
 
   // Yeni tamamlananları açar, ödülü verir, bildirimi sıraya koyar
   function checkAchievements() {
@@ -9283,15 +9463,30 @@
   }
 
   // Oyuncunun vuruşundan sonra pak neredeyse en yüksek hızdaysa
+  // Sert şut: oyuncunun vuruşundan sonra pak bu hızı geçerse (görev ve başarım için sayılır)
+  const HARD_SHOT = 1500;
   function achShot(m) {
-    if (stats.rocket || m.ai || game.state !== 'play') return;
+    if (m.ai || game.state !== 'play') return;
     for (const p of pucks) {
-      if (p.active && Math.hypot(p.x - m.x, p.y - m.y) < MIN_D + 8 && Math.hypot(p.vx, p.vy) > MAX_PUCK * 0.85) {
+      if (!p.active || Math.hypot(p.x - m.x, p.y - m.y) >= MIN_D + 8) continue;
+      const sp = Math.hypot(p.vx, p.vy);
+      let changed = false;
+      // Aynı vuruşun ardışık karelerdeki teması bir kez sayılır
+      if (sp > HARD_SHOT && settings.mode === 'ai' && game.time - (m.shotT || -9) > 0.3) {
+        m.shotT = game.time;
+        stats.shots++;
+        missionAdd('shots');
+        changed = true;
+      }
+      if (!stats.rocket && sp > MAX_PUCK * 0.85) {
         stats.rocket = 1;
+        changed = true;
+      }
+      if (changed) {
         saveStats();
         checkAchievements();
-        return;
       }
+      return;
     }
   }
 
@@ -9308,6 +9503,8 @@
     themeWin: [[1], [50]],
     clean: [[1], [60]],
     late: [[1], [40]],
+    upgrade: [[1], [40]],
+    shots: [[5, 10, 15], [30, 45, 60]],
   };
   const MISSION_BONUS = 50;
   let missions = null;
@@ -9316,7 +9513,8 @@
     let h = 2166136261;
     for (const ch of day) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
     const rnd = () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909), (h >>> 0) / 4294967296));
-    const types = Object.keys(MISSION_TYPES);
+    // Tüm yükseltmeler bitmişse "yükseltme al" görevi çıkmaz
+    const types = Object.keys(MISSION_TYPES).filter((t) => t !== 'upgrade' || upgTotal() < UPG_MAX * Object.keys(UPGRADES).length);
     for (let i = types.length - 1; i > 0; i--) { // karıştır
       const j = Math.floor(rnd() * (i + 1));
       [types[i], types[j]] = [types[j], types[i]];
@@ -9471,6 +9669,7 @@
       renderThemes();
       renderSkins();
       renderPucks();
+      renderUpgrades();
     }
   }
 
@@ -9673,11 +9872,31 @@
 
 
   // Tema: Neon ya da Su Stadyumu
-  function applyTheme() {
-    const t = settings.theme, th = t;
-    if ((t === 'water' || t === 'mud') && !Water.init(waterCanvas)) {
-      toast(tl('webgl', { x: tl(th === 'mud' ? 'webgl.mud' : 'webgl.water') }));
+  // Su ve çamurun WebGL katmanı ilk dokunuşta (ya da tuşa basınca) kurulur: açılış ve ilk kare
+  // hızlanır. O zamana kadar masa, suyun 2B taban görseliyle çizilir (WebGL olmayan cihazlardaki gibi).
+  let liquidReady = isShowcase; // tanıtım kaydında baştan açık
+  function initLiquid() {
+    const t0 = performance.now();
+    const ok = Water.init(waterCanvas);
+    if (perfInfo.liquidInit === null) perfInfo.liquidInit = Math.round(performance.now() - t0);
+    if (!ok) toast(tl('webgl', { x: tl(settings.theme === 'mud' ? 'webgl.mud' : 'webgl.water') }));
+    return ok;
+  }
+  const LIQUID_EVENTS = ['pointerdown', 'keydown', 'touchstart'];
+  function onFirstInput() {
+    for (const e of LIQUID_EVENTS) window.removeEventListener(e, onFirstInput, true);
+    if (liquidReady) return;
+    liquidReady = true;
+    if (isLiquid() && initLiquid()) {
+      Water.setMode(settings.theme);
+      resize(); // masa katmanı suyun görüneceği alanı açar
     }
+  }
+  for (const e of LIQUID_EVENTS) window.addEventListener(e, onFirstInput, { capture: true, passive: true });
+
+  function applyTheme() {
+    const t = settings.theme;
+    if ((t === 'water' || t === 'mud') && liquidReady) initLiquid();
     document.body.classList.toggle('theme-water', t === 'water');
     document.body.classList.toggle('theme-ice', t === 'ice');
     document.body.classList.toggle('theme-lava', t === 'lava');
@@ -9806,7 +10025,11 @@
   }
   $('lgPrev').addEventListener('click', () => selectLeague(career.li - 1));
   $('lgNext').addEventListener('click', () => selectLeague(career.li + 1));
-  $('nextUnlock').addEventListener('click', (e) => openStore({ tab: 'themes', theme: e.currentTarget.dataset.theme }));
+  $('nextUnlock').addEventListener('click', (e) => {
+    const d = e.currentTarget.dataset;
+    if (d.upg) openStore({ tab: 'upgrades' });
+    else openStore({ tab: 'themes', theme: d.theme });
+  });
 
   updateCoins(false);
   $('startBtn').addEventListener('click', startMatch);
@@ -10223,6 +10446,10 @@
       const dt = Math.min(Math.max(raw / 1000, 0), 0.1);
       last = now;
       trackFrame(raw);
+      if (!perfInfo.firstFrame) {
+        perfInfo.firstFrame = Math.round(performance.now());
+        console.info(`Aqua Hockey: ilk kare ${perfInfo.firstFrame} ms (betik ${perfInfo.script} ms)${quality.lite ? ', sade mod: ' + perfInfo.lite : ''}`);
+      }
       if (dt > 0 && !Ads.playing) update(dt); // reklam oynarken oyun (tanıtım maçı dahil) donar
       // Duraklatılmışken ekranda değişen bir şey yok: çizme (pil ve ısınma için)
       if (game.state !== 'paused') {
@@ -10317,5 +10544,5 @@
   }
 
   // Test ve hata ayıklama için
-  window.__airHockey = { saveTarget: cloudData ? 'crazygames' : 'local', wallet, Ads, THEME_INFO, matchReward, adsLeft, Water, Ice, Lava, Sand, Space, Crystal, Swamp, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update, Music };
+  window.__airHockey = { saveTarget: cloudData ? 'crazygames' : 'local', wallet, Ads, THEME_INFO, matchReward, adsLeft, aiForLevel, rivalAI, rivalDiff, upgLevels, perf: perfInfo, Water, Ice, Lava, Sand, Space, Crystal, Swamp, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update, Music };
 });

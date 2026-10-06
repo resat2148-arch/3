@@ -13,7 +13,7 @@ const SECS = +(process.argv[2] || 120);
     await page.evaluate((th) => { document.querySelector(`[data-group="theme"] [data-value="${th}"]`).click(); for (let i = 0; i < 5; i++) __vt.advance(16); document.getElementById('startBtn').click(); }, th);
     const r = await page.evaluate(([SECS]) => {
       const A = __airHockey; let seed = 5; Math.random = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-      A.mallets[0].ai = true;
+      A.mallets[0].ai = true; A.mallets[0].up = null; // tanıtım sürümünde yükseltmeler son seviyede: ölçümde eşit raketler
       const lv = { ...A.AI_LEVELS.medium, skillSmart: 0, skillRandom: 0 };
       A.mallets.forEach((m) => { m.level = lv; });
       let goals = 0, t = 0, spSum = 0, n = 0, slow = 0, longSlow = 0, cur = 0;

@@ -1,3 +1,6 @@
 dist/
 tools/preview-video/font/
 tools/preview-video/*.tgz
+
+# Test betiklerinin depo köküne yazdığı ekran görüntüleri
+/*.png
