@@ -201,14 +201,18 @@ Bu sürümde tüm temalar açıktır, tüm yükseltmeler son seviyededir, oyun 9
 
 ### Önizleme videoları
 
-CrazyGames için iki sessiz önizleme videosu (yatay 1920×1080, dikey 1080×1620, ~16 sn) tanıtım sürümünden kare kare, sanal zamanla çekilir; çekim yavaş olsa da video akıcıdır. Etkileyici anlar (sert şut, duvar çarpması, 2. top, süpernova golü) betikte tetiklenir.
+CrazyGames için iki sessiz önizleme videosu (yatay 1920×1080, dikey 1080×1620, ~17 sn) tanıtım sürümünden kare kare, sanal zamanla çekilir; çekim yavaş olsa da video akıcıdır. Yatay video doğrudan yatay masayla çekilir. Sıra: logo ekranı → Su'da sert şut → Lav halkasının fırlattığı gol → Kristal sütundan sekip gol → Uzay'da çekim kuyusunda kıvrılan gol → Kum'da ikinci pak → Buz → menüdeki kariyer kartında ligler arasında geçiş. Anlar betikte tetiklenir (`tools/preview-video/record.js`, `CLIPS`).
 
 ```bash
 ./tools/build-showcase.sh && (cd dist/showcase && python3 -m http.server 8772 &)
 cd tools/preview-video && npm pack @fontsource/exo-2 && mkdir -p font && tar xzf fontsource-exo-2-*.tgz -C font
-node record.js portrait            # Playwright gerekir; kareler dist/preview-video/portrait altına
-python3 compose.py ../../dist/preview-video/portrait ffmpeg   # H.264 destekli ffmpeg gerekir
+node record.js portrait && node record.js landscape   # Playwright gerekir; kareler dist/preview-video/<yön> altına
+python3 compose.py ../../dist/preview-video ffmpeg     # H.264 destekli ffmpeg gerekir
 ```
+
+### Kapak görselleri
+
+`node tools/cover/cover.js` (tanıtım sürümü 8772'de sunulurken, yazı tipi yukarıdaki gibi açılmışken) dört stadyumdan (Su, Lav, Kristal, Uzay) oyun anı çeker, çapraz dilimler hâlinde dizer ve ortaya logoyu koyar: `dist/cover/elemental-puck-arena-cover-1920x1080.png`, `-800x1200.png`, `-800x800.png`. Boyutları yüklemeden önce CrazyGames portalındaki güncel isteklerle karşılaştırın.
 
 ## Dosya yapısı
 
@@ -218,6 +222,6 @@ css/style.css         Arayüz, menüler ve arka plan
 js/game.js            Fizik, yapay zekâ, çizim, ses ve kontroller
 manifest.webmanifest  PWA tanımı
 sw.js                 Çevrimdışı önbellek
-tools/                CrazyGames, tanıtım ve deneme sayfası sürümlerini üreten betikler, testler
+tools/                Sürümleri üreten betikler (CrazyGames, tanıtım, deneme sayfası), tanıtım videosu ve kapak araçları, testler
 icons/                Uygulama ikonları
 ```

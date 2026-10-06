@@ -10541,5 +10541,5 @@
   }
 
   // Test ve hata ayıklama için
-  window.__airHockey = { saveTarget: cloudData ? 'crazygames' : 'local', wallet, Ads, THEME_INFO, matchReward, adsLeft, aiForLevel, rivalAI, rivalDiff, upgLevels, perf: perfInfo, Water, Ice, Lava, Sand, Space, Crystal, Swamp, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update, Music };
+  window.__airHockey = { saveTarget: cloudData ? 'crazygames' : 'local', wallet, Ads, THEME_INFO, matchReward, adsLeft, aiForLevel, rivalAI, rivalDiff, upgLevels, perf: perfInfo, Arena, Water, Ice, Lava, Sand, Space, Crystal, Swamp, game, pucks, mallets, settings, AI_LEVELS, quality, Sound, goals, skills, inventory, useSkill, openStore, step: update, Music };
 });

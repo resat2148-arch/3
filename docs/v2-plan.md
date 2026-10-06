@@ -88,10 +88,14 @@ Not: Günlük görevler, başarımlar ve görünümler değerlendirme döneminin
 - Değişmeyenler: kayıt öneki `neonah_` (tanıtım sürümünde `aquash_`), cihazdaki sade mod kaydı `neonah_perf`, "Su Stadyumu" ve diğer stadyum adları, menünün su altı arka planı (ilk lig Su).
 - Kapak görselleri ve yeni tanıtım videoları Aşama 5'te.
 
-### Aşama 5: Yayın
-- Yeni tanıtım videoları (yeni kimlik, kariyer ve stadyum mekanikleri).
-- Kapak görseli: tıklama oranı %1,6; çekici bir kapak gösterimden oyuna geçişi artırır.
-- CrazyGames'e v2 olarak gönderim. Yeniden gönderim kuralları CrazyGames dokümantasyonunda kontrol edilmeli.
+### Aşama 5: Yayın (hazır; gönderim kullanıcıda)
+- Tanıtım videoları (`tools/preview-video`): yeni sıra kimlik → stadyum mekanikleri → kariyer. Klipler: logo ekranı, Su'da sert şut, Lav halkasının fırlattığı gol, Kristal sütundan sekip gol, Uzay'da çekim kuyusu golü, Kum'da ikinci pak, Buz, kariyer kartında ligler arası geçiş.
+  - Yatay video artık doğrudan yatay masayla çekiliyor (eskiden dikey videonun iki yanı bulanık dolguydu).
+  - Çıktılar: 1920×1080 ve 1080×1620, 16,7 sn, H.264, sessiz, ~19–21 MB.
+  - Düzeltilen hata: kariyer (Aşama 1) geldiğinden beri tek oyunculu maçın stadyumu ligden geldiği için eski betik her klibi Su Stadyumu'nda çekiyordu. Artık her klibin ligi seçiliyor.
+  - Kariyer rakiplerinin kendi yapay zekâ ayarı olduğundan, yetenek istenmeyen kliplerde rakibin yetenekleri de kapatılıyor.
+- Kapak görselleri (`tools/cover/cover.js`): dört stadyumdan (Su, Lav, Kristal, Uzay) oyun anı, çapraz dilimler, ortada logo. Boyutlar 1920×1080, 800×1200, 800×800.
+- CrazyGames gönderimi: adımlar ve kontrol listesi `docs/crazygames-v2.md` içinde. CrazyGames dokümantasyonu bu ortamdan açılamadı (ağ engeli). Arama sonuçlarına göre Basic Launch'ı geçemeyen oyun anlamlı iyileştirmelerden sonra yeniden gönderilebiliyor. Kesin kurallar portalda doğrulanmalı.
 
 ## Test
 
