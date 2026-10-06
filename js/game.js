@@ -1706,7 +1706,7 @@
   // Yatay ekranda (masaüstü penceresi, yatay telefon) masa 90° saat yönünde döner: oyuncu solda,
   // rakip sağda. Fizik ve yapay zekâ aynı (dikey) mantıksal alanda çalışır; yalnızca masayı taşıyan
   // kutu döndürülür, girdi ters dönüştürülür, metinler ve raket/pak parlamaları dik tutulur.
-  let landscape = false;
+  let landscape = stage.clientWidth > stage.clientHeight;
   let cssScale = 1, boardShaken = false;
   const textCache = new Map();
 
@@ -10251,7 +10251,7 @@
     resizeRaf = requestAnimationFrame(() => {
       const was = landscape;
       resize();
-      if (was !== landscape) renderInventory(); // "alttaki / soldaki düğmeler" ipuçları
+      if (was !== landscape) syncMenu(); // "alttaki / soldaki düğmeler" ipuçları
     });
   };
   window.addEventListener('resize', onResize);
