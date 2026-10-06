@@ -70,7 +70,6 @@
     // Genel
     'meta.desc': ['Aqua Hockey — tarayıcıda ve telefonda oynanabilen, su stadyumunda geçen bir air hockey oyunu.', 'Aqua Hockey — an air hockey game set in a water stadium, playable in the browser and on your phone.'],
     'board.aria': ['Air hockey masası', 'Air hockey table'],
-    'rotate': ['Daha iyi deneyim için telefonunu dik tut', 'Hold your phone upright for the best experience'],
     'pct': ['%{n}', '{n}%'],
     'coin': ['altın', 'gold'],
     // Oyuncular ve skiller
@@ -90,6 +89,7 @@
     'sk.buy': ['Satın al', 'Buy'],
     'sk.free': ['ÜCRETSİZ', 'FREE'],
     'sk.introTouch': ['Her yetenekten 1 ücretsiz hakkın var! Alttaki düğmelerle kullan.', 'You get 1 free use of each skill! Use them with the buttons below.'],
+    'sk.introTouchL': ['Her yetenekten 1 ücretsiz hakkın var! Soldaki düğmelerle kullan.', 'You get 1 free use of each skill! Use them with the buttons on the left.'],
     'sk.introKeys': ['Her yetenekten 1 ücretsiz hakkın var! 1 ve 2 tuşlarıyla ya da düğmelerle kullan.', 'You get 1 free use of each skill! Use them with keys 1 and 2 or the buttons.'],
     // HUD
     'hud.pause': ['Duraklat', 'Pause'], 'hud.pauseT': ['Duraklat (P)', 'Pause (P)'],
@@ -186,8 +186,10 @@
     'm.inv': ['Envanter: {g} Dev Kale · {s} Kale Kilidi', 'Owned: {g} Big Goal · {s} Goal Lock'],
     'm.wallet': ['Altın bakiyen', 'Your gold'],
     'hint.pvpTouch': ['Telefonu masaya koyun: <b class="c">alt yarı</b> ve <b class="p">üst yarı</b> kendi raketini parmağıyla sürükler, yetenekler kendi tarafındaki düğmelerde.', 'Put the phone on the table: the <b class="c">bottom half</b> and the <b class="p">top half</b> each drag their own mallet, with skill buttons on each side.'],
+    'hint.pvpTouchL': ['Telefonu masaya koyun: <b class="c">sol yarı</b> ve <b class="p">sağ yarı</b> kendi raketini parmağıyla sürükler, yetenekler kendi tarafındaki düğmelerde.', 'Put the phone on the table: the <b class="c">left half</b> and the <b class="p">right half</b> each drag their own mallet, with skill buttons on each side.'],
     'hint.pvpKeys': ['<b class="c">Mavi</b>: fare veya ok tuşları, yetenekler <b>1</b>/<b>2</b> · <b class="p">Pembe</b>: {w} {a} {s} {d}, yetenekler <b>{q}</b>/<b>{e}</b><br>Dokunmatik ekranda iki parmakla da oynanır.', '<b class="c">Blue</b>: mouse or arrow keys, skills <b>1</b>/<b>2</b> · <b class="p">Pink</b>: {w} {a} {s} {d}, skills <b>{q}</b>/<b>{e}</b><br>On a touch screen, play with two fingers.'],
     'hint.aiTouch': ['Raketi parmağınla sürükle, yetenekleri alttaki düğmelerle kullan!', 'Drag your mallet with your finger and use skills with the buttons below!'],
+    'hint.aiTouchL': ['Raketi parmağınla sürükle, yetenekleri soldaki düğmelerle kullan!', 'Drag your mallet with your finger and use skills with the buttons on the left!'],
     'hint.aiKeys': ['Raketi <b>fare</b> (veya ok tuşları) ile yönet, yetenekler <b>1</b>/<b>2</b>. <b>P</b> duraklatır, <b>M</b> sesi, <b>N</b> müziği kapatır, <b>−</b>/<b>+</b> ses seviyesini değiştirir.', 'Control your mallet with the <b>mouse</b> (or arrow keys), skills <b>1</b>/<b>2</b>. <b>P</b> pauses, <b>M</b> mutes, <b>N</b> toggles music, <b>−</b>/<b>+</b> change the volume.'],
     // Duraklatma
     'p.title': ['DURAKLATILDI', 'PAUSED'], 'p.resume': ['DEVAM', 'RESUME'], 'p.restart': ['Yeniden Başla', 'Restart'], 'p.menu': ['Ana Menü', 'Main Menu'],
@@ -1699,7 +1701,12 @@
   const isSpace = () => settings.theme === 'space';
   const isCrystal = () => settings.theme === 'crystal';
   const stage = document.getElementById('stage');
+  const tableEl = canvas.parentElement, boardEl = tableEl.parentElement;
   let S = 1; // mantıksal birim başına cihaz pikseli
+  // Yatay ekranda (masaüstü penceresi, yatay telefon) masa 90° saat yönünde döner: oyuncu solda,
+  // rakip sağda. Fizik ve yapay zekâ aynı (dikey) mantıksal alanda çalışır; yalnızca masayı taşıyan
+  // kutu döndürülür, girdi ters dönüştürülür, metinler ve raket/pak parlamaları dik tutulur.
+  let landscape = false;
   let cssScale = 1, boardShaken = false;
   const textCache = new Map();
 
@@ -1769,10 +1776,13 @@
   }
 
   function resize() {
+    landscape = stage.clientWidth > stage.clientHeight;
+    document.body.classList.toggle('landscape', landscape);
     const cs = getComputedStyle(stage);
     const aw = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     const ah = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-    const scale = Math.max(0.1, Math.min(aw / LW, ah / LH));
+    const [fw, fh] = landscape ? [LH, LW] : [LW, LH]; // masanın ekrandaki genişliği / yüksekliği
+    const scale = Math.max(0.1, Math.min(aw / fw, ah / fh));
     const cssW = Math.floor(LW * scale), cssH = Math.floor(LH * scale);
     const dpr = quality.levels[quality.level];
     canvas.style.width = cssW + 'px';
@@ -1783,9 +1793,10 @@
     S = canvas.width / LW;
     cssScale = scale;
     clearTextCache();
-    const board = canvas.parentElement;
-    board.style.width = cssW + 'px';
-    board.style.height = cssH + 'px';
+    tableEl.style.width = cssW + 'px';
+    tableEl.style.height = cssH + 'px';
+    boardEl.style.width = (landscape ? cssH : cssW) + 'px';
+    boardEl.style.height = (landscape ? cssW : cssH) + 'px';
     if (isLiquid()) {
       // Su yumuşak bir yüzey: daha düşük çözünürlükte çizmek görüntüyü bozmaz, çok hızlandırır
       const wd = Math.min(dpr, 1.5) * (quality.lite ? 0.75 : 1);
@@ -3031,9 +3042,25 @@
   const MS_PAD = 30, MS = (MALLET_R + MS_PAD) * 2;
   const PS_PAD = 28, PS = (PUCK_R + PS_PAD) * 2;
 
+  // Yatay masada raket ve pak görselleri -90° döndürülür: masa kutusu 90° döndüğünde parlamaları
+  // ekranda yine sol üstten ışık alır.
+  function upright(c) {
+    if (!landscape || !c || !c.width) return c;
+    const o = document.createElement('canvas');
+    o.width = c.width;
+    o.height = c.height;
+    const g = o.getContext('2d');
+    if (!g) return c;
+    g.translate(o.width / 2, o.height / 2);
+    g.rotate(-Math.PI / 2);
+    g.drawImage(c, -c.width / 2, -c.height / 2);
+    freeCanvas(c);
+    return o;
+  }
+
   function buildSprites() {
     if (malletSprites) [...malletSprites, ...glowSprites, puckSprite].forEach(freeCanvas);
-    malletSprites = COLORS.map((col, i) => buildMallet(malletCol(i), settings.theme));
+    malletSprites = COLORS.map((col, i) => upright(buildMallet(malletCol(i), settings.theme)));
     glowSprites = COLORS.map((c0, i) => {
       const col = malletCol(i);
       const [c, g] = makeLayer(MS, MS);
@@ -3046,7 +3073,7 @@
       g.fillRect(0, 0, MS, MS);
       return c;
     });
-    puckSprite = settings.puck !== 'theme' ? buildSkinPuck(settings.puck, settings.theme) : buildPuck(settings.theme);
+    puckSprite = upright(settings.puck !== 'theme' ? buildSkinPuck(settings.puck, settings.theme) : buildPuck(settings.theme));
   }
 
   // Raketin renk seti: alttaki oyuncu seçtiği görünümle, üstteki hep pembe
@@ -7321,7 +7348,14 @@
   let lastInputTouch = false;
 
   function toField(e) {
-    const r = canvas.getBoundingClientRect();
+    const r = canvas.getBoundingClientRect(); // döndürülmüş tuvalin ekrandaki kutusu
+    if (landscape) {
+      // Saat yönünde 90°: ekranın solu masanın altı (y = H), üstü masanın solu (x = 0)
+      return {
+        x: ((e.clientY - r.top) / r.height) * LW - B,
+        y: (1 - (e.clientX - r.left) / r.width) * LH - B,
+      };
+    }
     return {
       x: ((e.clientX - r.left) / r.width) * LW - B,
       y: ((e.clientY - r.top) / r.height) * LH - B,
@@ -7492,6 +7526,7 @@
       if (keys.has('KeyS')) dy++;
     }
     if (!dx && !dy) return;
+    if (landscape) [dx, dy] = [dy, -dx]; // tuşlar ekrandaki yöne göre: → rakibe doğru
     const l = Math.hypot(dx, dy), sp = 1050;
     [m.tx, m.ty] = clampPos(m, m.tx + (dx / l) * sp * dt, m.ty + (dy / l) * sp * dt);
   }
@@ -7644,7 +7679,7 @@
     if (!store.get('skillsSeen', false) && !coach.on[0] && !tipShown) {
       store.set('skillsSeen', true);
       const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
-      setTimeout(() => toast(touch ? tl('sk.introTouch') : tl('sk.introKeys')), 1800);
+      setTimeout(() => toast(touch ? tl(landscape ? 'sk.introTouchL' : 'sk.introTouch') : tl('sk.introKeys')), 1800);
     }
     serve(Math.random() < 0.5 ? 0 : 1);
   }
@@ -9682,8 +9717,8 @@
     $('playSub').textContent = pvp ? tl('m.pvp') : tl('c.play', { l: tl('lg.' + LEAGUES[career.li]), n: rn, i: career.mi + 1 });
     const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
     $('hint').innerHTML = settings.mode === 'pvp'
-      ? tl(touch ? 'hint.pvpTouch' : 'hint.pvpKeys', KEYCAP)
-      : tl(touch ? 'hint.aiTouch' : 'hint.aiKeys');
+      ? tl(touch ? (landscape ? 'hint.pvpTouchL' : 'hint.pvpTouch') : 'hint.pvpKeys', KEYCAP)
+      : tl(touch ? (landscape ? 'hint.aiTouchL' : 'hint.aiTouch') : 'hint.aiKeys');
   }
 
   // Dil: sabit metinleri (data-i18n*) ve o an görünen dinamik arayüzü yeniden yazar
@@ -9954,10 +9989,15 @@
         if (g[key] <= 0) continue;
         const sk = SKILLS[key];
         const label = textSprite(`${sk.name}  ${Math.ceil(g[key])}`, `800 15px ${FONT}`, 15, sk.rgb, false);
-        const y = top ? 36 + row * 20 : H - 36 - row * 20;
         ctx.save();
-        ctx.translate(W / 2, y);
-        if (top && pvp) ctx.rotate(Math.PI);
+        if (landscape) {
+          // Yatay masada yazı dik durur ve ekranda kale direğinin altında, satır satır dizilir
+          ctx.translate(W / 2 + half + 28 + row * 20, top ? 64 : H - 64);
+          ctx.rotate(-Math.PI / 2);
+        } else {
+          ctx.translate(W / 2, top ? 36 + row * 20 : H - 36 - row * 20);
+          if (top && pvp) ctx.rotate(Math.PI);
+        }
         ctx.globalAlpha = 0.9;
         drawSprite(label, 0, 0);
         ctx.restore();
@@ -9972,11 +10012,11 @@
     for (const f of floaters) {
       const t = f.t / f.dur;
       const top = f.gi === 1;
-      const rise = 40 * t;
-      const y = top ? 120 + rise : H - 120 - rise;
+      const rise = 40 * t, y0 = landscape ? 250 : 120; // yatayda yazı masanın uzun ekseninde uzanır
+      const y = top ? y0 + rise : H - y0 - rise;
       const pop = t < 0.15 ? 1.5 - (t / 0.15) * 0.5 : 1;
       const alpha = t > 0.65 ? (1 - t) / 0.35 : 1;
-      textGlow(f.text, W / 2, y, 46, f.rgb, alpha, pop, top && pvp);
+      textGlow(f.text, W / 2, y, 46, f.rgb, alpha, pop, top && pvp && !landscape);
     }
   }
 
@@ -9988,7 +10028,7 @@
     let ox = 0, oy = 0;
     if (isLiquid()) {
       // Su ve kenar birlikte sarsılsın: iki tuvali taşıyan kutuyu kaydır
-      const board = canvas.parentElement;
+      const board = boardEl;
       if (game.shake > 0.3 && !reduceMotion) {
         const k = cssScale;
         board.style.transform = `translate(${(rand(-1, 1) * game.shake * k).toFixed(1)}px, ${(rand(-1, 1) * game.shake * k).toFixed(1)}px)`;
@@ -10149,7 +10189,7 @@
     const t = b.t / b.dur;
     const pop = t < 0.18 ? 1.7 - (t / 0.18) * 0.7 : 1;
     const alpha = t > 0.7 ? (1 - t) / 0.3 : Math.min(1, t / 0.08);
-    if (settings.mode === 'pvp' && game.state !== 'demo') {
+    if (settings.mode === 'pvp' && game.state !== 'demo' && !landscape) {
       textGlow(b.text, W / 2, H / 2 + 150, b.size * 0.8, b.rgb, alpha, pop, false);
       textGlow(b.text, W / 2, H / 2 - 150, b.size * 0.8, b.rgb, alpha, pop, true);
     } else {
@@ -10161,7 +10201,8 @@
     const sp = textSprite(text, `italic 900 ${size}px ${FONT}`, size, rgb, true);
     ctx.save();
     ctx.translate(x, y);
-    if (flip) ctx.rotate(Math.PI);
+    if (landscape) ctx.rotate(-Math.PI / 2);
+    else if (flip) ctx.rotate(Math.PI);
     ctx.scale(scale, scale);
     ctx.globalAlpha = clamp(alpha, 0, 1);
     drawSprite(sp, 0, 0);
@@ -10207,7 +10248,11 @@
   let resizeRaf = 0;
   const onResize = () => {
     cancelAnimationFrame(resizeRaf);
-    resizeRaf = requestAnimationFrame(resize);
+    resizeRaf = requestAnimationFrame(() => {
+      const was = landscape;
+      resize();
+      if (was !== landscape) renderInventory(); // "alttaki / soldaki düğmeler" ipuçları
+    });
   };
   window.addEventListener('resize', onResize);
   window.addEventListener('orientationchange', onResize);

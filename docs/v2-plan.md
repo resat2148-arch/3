@@ -37,16 +37,15 @@ Not: Günlük görevler, başarımlar ve görünümler değerlendirme döneminin
   - Kare döngüsü bir hatada durmuyor.
   - Nedeni doğrulanamadı; Safari'de test edilemedi.
 
-### Aşama 2: Yatay masa (masaüstü + yatay telefon)
-- Ekran yataysa masa yan dönsün: oyuncu solda, rakip sağda; 16:9 pencere dolsun.
-- Önerilen yol: mantıksal fizik ve yapay zekâ aynı kalsın. Yalnızca çizim ve girdi dönüşümü 90° döndürülsün (tuvalde `rotate`, işaretçi koordinatında ters dönüşüm).
-- Etkilenen yerler:
-  - Masa çizimleri: 8 tema, `buildTable` ve temaların kendi katmanları.
-  - WebGL su/çamur.
-  - Arayüz: skor göstergesi, yetenek düğmeleri, ilk maç rehberi, iki oyunculu düzen.
-  - Pak ve raket parlamaları, metin sprite'ları (döndürülmemeli, okunur kalmalı).
-- Telefon yatay tutulduğunda "telefonunu dik tut" uyarısı kaldırılsın.
-- Ölçüt: 960×540, 1280×720, 1920×1080 ve 844×390'da masa ekranın çoğunu kaplamalı; tüm testler geçmeli.
+### Aşama 2: Yatay masa (bitti)
+- Ekran (pencere) yataysa masa saat yönünde 90° döner: oyuncu solda, rakip sağda; 16:9 pencereyi doldurur. Dikey ekranda her şey eskisi gibi.
+- Yol: mantıksal fizik ve yapay zekâ aynı kaldı. İki tuvali (2B + WebGL su/çamur) taşıyan `.table` kutusu CSS ile döner (`body.landscape`); böylece 8 temanın katmanları, `buildTable` ve WebGL hiç değişmedi.
+  - Girdi: `toField` işaretçiyi ters dönüştürür; ok tuşları ve W A S D ekrandaki yöne göre (`applyKeyboard`).
+  - Dik kalanlar: raket ve pak görselleri bir kez -90° döndürülür (`upright`, parlamalar sol üstte kalır); tuvaldeki yazılar (gol/geri sayım, yetenek etiketleri ve yükselen yazılar) -90° çizilir. İki oyunculu yatay masada yazılar ters çevrilmez.
+  - Arayüz: skor göstergesi üstte (solda Sen, sağda rakip); yetenek düğmeleri masanın yanlarında dikey (Mavi solda, Pembe sağda); ilk maç rehberi raketlerin yanında; alçak ekranlarda (≤500 px) üst boşluk daraltıldı. "Soldaki düğmeler" / "sol yarı, sağ yarı" ipuçları eklendi.
+  - "Telefonunu dik tut" uyarısı kaldırıldı.
+- Ölçüm (`tools/tests/land.js`, masanın ekranda kapladığı alan): 960×540 %68, 1280×720 %73, 1920×1080 %79, 844×390 %57 (dikeyde %49 olurdu), 1024×768 %55; arayüzle çakışma yok. Diğer tüm testler değişmeden geçiyor.
+- Bilinen: tuvalin gölgesi masa ile birlikte döndüğü için yatayda sola düşer (temaların `box-shadow` değerleri).
 
 ### Aşama 3: Yükseltmeler ve mobil performans
 - Altınla alınan kalıcı yükseltmeler (her biri 4–5 seviye):
@@ -88,14 +87,16 @@ Betikler `tools/tests/` altında (Playwright; `NODE_PATH=$(npm root -g) node too
 | `arena.js` | Stadyum fizikleri (yapay zekâya karşı yapay zekâ ölçümü; `dist/showcase` gerekir) |
 | `stress.js` | Çökme avı: aşırı boyutlar, düşük kalite, tüm temalar |
 | `corner.js` | Yapay zekânın köşedeki pakı çıkarması |
+| `land.js` | Yatay masa: kaplanan alan, arayüz çakışması, işaretçi ve ok tuşu dönüşümü (960×540, 1280×720, 1920×1080, 844×390, 390×844, 1024×768) |
 | `cg*.js` | CrazyGames: bildirimler, bulut kaydı, ses kapatma, reklam |
 
 - `cg*.js` betikleri `mock-sdk.js` ile 127.0.0.1:8771'den sunulan CrazyGames derlemesini kullanır.
 - O derleme şöyle hazırlanır: `dist/crazygames` kopyalanır ve SDK betiği `mock-sdk.js` ile değiştirilir.
 - Bazı betiklerde geçici klasör yolları var; gerekirse düzeltilmeli.
+- `arena.js` eşit seviyedeki iki yapay zekâyla her stadyumda dakikada 0 gol ölçüyor (birbirlerini kilitliyorlar; Aşama 2'den önce de böyleydi). Sürtünme/hız karşılaştırması için kullanılabilir, gol sayısı için değil.
 
 ## Deneme sayfaları
 
-Güncellerken aynı adresler kullanılmalı:
+Sayfalar `tools/build-artifact.sh` ile üretilir (`dist/artifact/`: CSS ve JS gömülü tek HTML). Güncellerken aynı adresler kullanılmalı:
 - Oyun: https://claude.ai/artifact/2bCRQbBUxU5qDV6EycYogz
 - Tanıtım (her şey açık): https://claude.ai/artifact/CmFzzh2BXabyGc5CMDh8Ug

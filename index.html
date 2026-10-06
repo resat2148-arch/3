@@ -27,8 +27,11 @@
 
   <main id="stage">
     <div class="board">
-      <canvas id="water" aria-hidden="true"></canvas>
-      <canvas id="game" aria-label="Air hockey masası" data-i18n-aria="board.aria"></canvas>
+      <!-- Masa: yatay ekranda bu kutu 90° döner (oyuncu solda, rakip sağda) -->
+      <div class="table">
+        <canvas id="water" aria-hidden="true"></canvas>
+        <canvas id="game" aria-label="Air hockey masası" data-i18n-aria="board.aria"></canvas>
+      </div>
       <!-- İlk maç: kontrolleri gösteren görsel rehber (raket hareket edince kaybolur) -->
       <div id="coach0" class="coach hidden" aria-hidden="true">
         <div class="coach-arrows"><i>‹</i><span class="coach-drag"><svg class="coach-hand" viewBox="0 0 48 56" aria-hidden="true"><path d="M17 30V9.5a3.5 3.5 0 0 1 7 0V26l.4-2.6a3.4 3.4 0 0 1 6.7.4l-.1 3.4.5-1.8a3.3 3.3 0 0 1 6.4 1.4l-.3 2.6.5-1a3 3 0 0 1 5.6 2c-.6 6-2 11.6-4.6 15.4A12 12 0 0 1 29 52h-4.6a11 11 0 0 1-8.8-4.4l-7.3-9.8a3.5 3.5 0 0 1 5.3-4.6z" fill="#fff" stroke="#0a2a4a" stroke-width="2.4" stroke-linejoin="round"/></svg><svg class="coach-mouse" viewBox="0 0 32 48" aria-hidden="true"><rect x="3" y="3" width="26" height="42" rx="13" fill="#fff" stroke="#0a2a4a" stroke-width="2.4"/><path d="M16 3v14M3 17h26" stroke="#0a2a4a" stroke-width="2"/><rect x="14" y="8" width="4" height="7" rx="2" fill="#19c8ff"/></svg></span><i>›</i></div>
@@ -396,8 +399,6 @@
     </div>
     <div class="vol-hint" data-i18n-html="v.hint">Klavye: <b>−</b> / <b>+</b> seviye, <b>M</b> sessiz</div>
   </div>
-
-  <div id="rotateHint" data-i18n="rotate">Daha iyi deneyim için telefonunu dik tut</div>
 
   <script src="js/game.js"></script>
 </body>

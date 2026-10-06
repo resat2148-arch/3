@@ -9,7 +9,7 @@ const URL = process.argv[2] || 'http://127.0.0.1:8765/';
   const page = await ctx.newPage();
   page.on('pageerror', e => errs.push(e.message));
   await page.goto(URL); if (process.env.BOT) await page.addInitScript('window.__BOT = 1'); if (process.env.LV) await page.addInitScript(`window.__LV = ${JSON.stringify(process.env.LV.split(','))}`);
-  await page.evaluate(() => { localStorage.clear(); localStorage.setItem('neonah_skillsSeen', 'true'); });
+  await page.evaluate(() => { localStorage.clear(); localStorage.setItem('neonah_played', 'true'); localStorage.setItem('neonah_skillsSeen', 'true'); });
   await page.reload();
   await page.evaluate(() => { for (let i = 0; i < 40; i++) __vt.advance(16); });
   await page.click('#startBtn');

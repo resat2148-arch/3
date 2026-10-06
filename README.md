@@ -125,26 +125,28 @@ Tek oyunculu modda stadyum kariyerdeki ligden gelir; iki oyunculu modda menüdek
 - **Ses**: tüm efektler Web Audio ile anlık üretilir, ses dosyası yoktur. Sağ üstteki hoparlör düğmesi ses seviyesi panelini açar (kaydırıcı + sessize alma); ayar tarayıcıda saklanır. Dokunmatik cihazlarda titreşim geri bildirimi verir.
 - **Müzik**: her temanın kendi arka plan parçası vardır ve o da Web Audio ile anlık üretilir: su için sakin bir chill parçası, neonda synthwave, buzda kristal çanlar, lavda ağır karanlık bir ritim, kumda hicaz makamında ud ve darbuka, uzayda geniş rüya tınıları, kristalde vuruşların çaldığı pentatonik notalara uyan yumuşak bir zemin, bataklıkta aksak bir blues. Maç sürerken davul ve arpej katmanları açılır; menüde, maç sonunda ve duraklatmada yalnızca yumuşak katmanlar çalar, ikinci pak girince ritim sıklaşır. Tema değişince parça yumuşak bir geçişle değişir. Ses panelinde müziğin ayrı bir açma/kapama düğmesi ve seviye kaydırıcısı vardır (`N` kısayolu); ana ses seviyesi ve sessiz modu müziği de kapsar. Sekme arka plana geçince müzik susar.
 - **Dil**: Türkçe ve İngilizce (English). Menüdeki **Dil · Language** seçiminden değiştirilir ve cihazda saklanır; ilk açılışta tarayıcının diline göre seçilir (Türkçe tarayıcıda Türkçe, diğerlerinde İngilizce). Menüler, oyun içi yazılar, mağaza, paylaşım metinleri ve skor kartı görseli seçili dilde gösterilir. Metinler `js/game.js` içindeki `STR` sözlüğünde, HTML'deki sabit metinler `data-i18n` öznitelikleriyle tanımlıdır.
+- **Yatay ekran**: pencere ya da ekran yataysa (bilgisayar, yatay tutulan telefon ya da tablet) masa yan döner: oyuncu solda, rakip sağda, masa 16:9 pencereyi doldurur. Yetenek düğmeleri masanın yanlarında (Mavi solda, Pembe sağda), skor ve süre üstte durur. Fizik ve yapay zekâ aynıdır; yalnızca görüntü ve girdi döner, yazılar ve raket/pak parlamaları dik kalır. Ekran dikse masa da diktir.
 - **Mobil uyumlu**: her ekrana ölçeklenir, Retina ekranlarda net görünür, çentikli ekranlara uyum sağlar, ana ekrana eklenebilir (PWA) ve çevrimdışı çalışır.
 
 ## Kontroller
 
 | | Bilgisayar | Telefon / Tablet |
 |---|---|---|
-| Mavi (alt) | Fare veya ok tuşları | Alt yarıda parmakla sürükle |
-| Pembe (üst, 2 oyunculu) | W A S D | Üst yarıda parmakla sürükle |
+| Mavi (alt; yatayda sol) | Fare veya ok tuşları | Kendi yarında (alt / sol) parmakla sürükle |
+| Pembe (üst; yatayda sağ, 2 oyunculu) | W A S D | Kendi yarında (üst / sağ) parmakla sürükle |
 | Duraklat | `P` (pencere odağı kaçınca kendiliğinden) | ⏸ düğmesi |
 | Ses aç/kapa | `M` | 🔊 düğmesi → sessiz |
 | Müzik aç/kapa | `N` | 🔊 düğmesi → müzik |
 | Ses seviyesi | `−` / `+` veya 🔊 düğmesi | 🔊 düğmesi → kaydırıcı |
-| Yetenekler (Mavi) | `1` Dev Kale, `2` Kale Kilidi (veya düğmeler) | Alttaki düğmeler |
+| Yetenekler (Mavi) | `1` Dev Kale, `2` Kale Kilidi (veya düğmeler) | Alttaki (yatayda soldaki) düğmeler |
 | Mağaza | Menüde veya maç sonunda "Mağaza" | Aynı |
-| Yetenekler (Pembe, 2 oyunculu) | `Q` Dev Kale, `E` Kale Kilidi | Üstteki düğmeler |
+| Yetenekler (Pembe, 2 oyunculu) | `Q` Dev Kale, `E` Kale Kilidi | Üstteki (yatayda sağdaki) düğmeler |
 
 - **Escape** duraklatmaya bağlı değildir (tarayıcıda tam ekrandan çıkarır); yalnızca açık paneli (ses, mağaza, önizleme) kapatır.
 - **Klavye düzeni**: hareket ve yetenek tuşları fiziksel konumla okunur; AZERTY klavyede W A S D yerine aynı yerdeki Z Q S D tuşları çalışır ve menüdeki ipucu ile ilk maç rehberi tuşları oyuncunun klavyesindeki adlarıyla gösterir (tarayıcı izin veriyorsa). `P`, `M`, `N` kısayolları ise üzerinde o harf yazan tuşla çalışır.
 - **İlk maç rehberi**: her modda ilk maçta oyuncunun raketinin yanında kontroller görsel olarak gösterilir (dokunmatikte sürükleyen el, bilgisayarda fare + ok tuşları; iki oyunculuda Pembe için W A S D). Raket hareket edince ya da 8 saniye sonra kaybolur, oyunu engellemez. Yetenek ipucu ikinci maçta bir kez çıkar.
-- İki oyunculu modda üstteki düğmeler ve rehber yalnızca dokunmatik cihazlarda (karşılıklı oturulduğu için) ters çevrilir; bilgisayarda iki oyuncu aynı klavyenin başında olduğundan düz durur.
+- Ok tuşları ve W A S D ekrandaki yöne göre çalışır: yatay masada → (ya da D) rakibe doğru götürür.
+- İki oyunculu modda üstteki düğmeler ve rehber yalnızca dikey masada ve dokunmatik cihazlarda (karşılıklı oturulduğu için) ters çevrilir; bilgisayarda iki oyuncu aynı klavyenin başında olduğundan, yatay masada da yan yana bakıldığından düz durur.
 
 ## Çalıştırma
 
@@ -204,6 +206,6 @@ css/style.css         Arayüz, menüler ve arka plan
 js/game.js            Fizik, yapay zekâ, çizim, ses ve kontroller
 manifest.webmanifest  PWA tanımı
 sw.js                 Çevrimdışı önbellek
-tools/                CrazyGames ve tanıtım sürümlerini üreten betikler
+tools/                CrazyGames, tanıtım ve deneme sayfası sürümlerini üreten betikler, testler
 icons/                Uygulama ikonları
 ```

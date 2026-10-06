@@ -139,7 +139,20 @@ body.playing .bg-grid::before {
 
 .board {
   position: relative;
+  flex: none;
   line-height: 0;
+}
+
+/* Masa (iki tuval) kutunun ortasında; yatay ekranda saat yönünde 90° döner: oyuncu solda, rakip sağda */
+.table {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+body.landscape .table {
+  transform: translate(-50%, -50%) rotate(90deg);
 }
 
 /* Su teması: WebGL su katmanı oyun tuvalinin altında */
@@ -2052,30 +2065,6 @@ body.skills .toast {
   transform: translate(-50%, 0);
 }
 
-/* Yatay telefon uyarısı */
-#rotateHint {
-  display: none;
-  position: fixed;
-  z-index: 20;
-  left: 50%;
-  bottom: calc(var(--safe-b) + 10px);
-  transform: translateX(-50%);
-  padding: 8px 16px;
-  border-radius: 999px;
-  background: rgba(16, 20, 46, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  font-size: 13px;
-  color: var(--muted);
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
-  #rotateHint {
-    display: block;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .blob,
   .bg-grid::before,
@@ -3177,4 +3166,112 @@ html[data-build="showcase"] #miOver {
 
 .career-field {
   margin: 14px 0 0;
+}
+
+/* ---------- Yatay masa (masaüstü penceresi, yatay telefon) ---------- */
+/* Yetenek düğmeleri masanın yanlarında dikey durur: Mavi solda, Pembe sağda */
+body.landscape.skills #stage,
+body.landscape.skills.pvp #stage {
+  padding-top: calc(var(--safe-t) + 64px);
+  padding-bottom: calc(var(--safe-b) + 10px);
+  padding-left: calc(var(--safe-l) + 96px);
+  padding-right: calc(var(--safe-r) + 96px);
+}
+
+body.landscape .skillbar,
+body.landscape .skillbar.top {
+  top: 50%;
+  bottom: auto;
+  left: calc(var(--safe-l) + 10px);
+  right: auto;
+  flex-direction: column;
+  gap: 14px;
+  transform: translateY(-50%);
+}
+
+body.landscape .skillbar.top {
+  left: auto;
+  right: calc(var(--safe-r) + 10px);
+}
+
+body.landscape .skill-btn {
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 78px;
+  height: 80px;
+  padding: 8px 4px 6px;
+  text-align: center;
+}
+
+body.landscape .skill-text {
+  align-items: center;
+  max-width: 100%;
+}
+
+body.landscape .skill-text b {
+  font-size: 11px;
+}
+
+body.landscape .skill-text small {
+  display: none;
+}
+
+body.landscape .skill-count {
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+body.landscape .skill-btn kbd {
+  top: auto;
+  bottom: -6px;
+  right: -6px;
+}
+
+/* İlk maç rehberi: oyuncunun raketinin yanında (solda), Pembe için sağda; karşılıklı çevrilmez */
+body.landscape .coach {
+  left: 27%;
+  top: 50%;
+  flex-direction: column;
+  gap: 10px;
+}
+
+body.landscape .coach.top {
+  left: 73%;
+}
+
+body.landscape .coach.top.touch {
+  transform: translate(-50%, -50%);
+}
+
+/* Yatay telefon gibi alçak ekranlarda üstteki göstergeler sıkışık: masaya yer kalsın */
+@media (max-height: 500px) {
+  body.landscape .hud {
+    top: calc(var(--safe-t) + 4px);
+  }
+
+  body.landscape #stage,
+  body.landscape.skills #stage,
+  body.landscape.skills.pvp #stage {
+    padding-top: calc(var(--safe-t) + 46px);
+    padding-bottom: calc(var(--safe-b) + 4px);
+  }
+
+  body.landscape .clock {
+    padding: 1px 12px 2px;
+  }
+
+  body.landscape .clock-time,
+  body.landscape .hs b {
+    font-size: 20px;
+  }
+
+  body.landscape .hs small {
+    display: none;
+  }
+
+  body.landscape .skill-btn {
+    height: 68px;
+  }
 }
