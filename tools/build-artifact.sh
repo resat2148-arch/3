@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Deneme sayfaları (claude.ai artifact): CSS ve JS'nin içine gömüldüğü tek HTML dosyası. PWA dosyaları
 # (manifest, sw.js, simgeler) yoktur. İki çıktı:
-#   dist/artifact/aqua-hockey.html           oyun
-#   dist/artifact/aqua-hockey-showcase.html  tanıtım sürümü (data-build="showcase": her şey açık)
+#   dist/artifact/elemental-puck-arena.html           oyun
+#   dist/artifact/elemental-puck-arena-showcase.html  tanıtım sürümü (data-build="showcase": her şey açık)
 # Adresler docs/v2-plan.md içinde ("Deneme sayfaları"); güncellerken aynı adresler kullanılmalı.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -35,7 +35,7 @@ def page(showcase):
              f'<link href="{fonts}" rel="stylesheet">']
     return '\n'.join(head) + '\n<style>\n' + css + '\n:root { color-scheme: dark; }\n</style>\n' + body + '  <script>\n' + js + '</script>\n'
 
-for name, sc in (('aqua-hockey.html', False), ('aqua-hockey-showcase.html', True)):
+for name, sc in (('elemental-puck-arena.html', False), ('elemental-puck-arena-showcase.html', True)):
     open(f'{out}/{name}', 'w', encoding='utf-8').write(page(sc))
 EOF
-echo "Hazır: $out/aqua-hockey.html, $out/aqua-hockey-showcase.html"
+echo "Hazır: $out/elemental-puck-arena.html, $out/elemental-puck-arena-showcase.html"

@@ -20,8 +20,8 @@ for i in range(1, len(clips)):
     parts.append(f'[{prev}][v{i}]xfade=transition=fade:duration={T}:offset={off:.3f}[x{i}]')
     prev = f'x{i}'
 common = ['-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-pix_fmt', 'yuv420p', '-r', '30', '-movflags', '+faststart', '-an']
-portrait = os.path.join(out_dir, 'aqua-hockey-preview-1080x1620.mp4')
-landscape = os.path.join(out_dir, 'aqua-hockey-preview-1920x1080.mp4')
+portrait = os.path.join(out_dir, 'elemental-puck-arena-preview-1080x1620.mp4')
+landscape = os.path.join(out_dir, 'elemental-puck-arena-preview-1920x1080.mp4')
 subprocess.run([F, '-y', *inputs, '-filter_complex', ';'.join(parts), '-map', f'[{prev}]', *common, portrait], check=True)
 blur = ('[0:v]split[a][b];[a]scale=1920:-2,crop=1920:1080,boxblur=28:3,eq=brightness=-0.10:saturation=1.1[bg];'
         '[b]scale=-2:1080[fg];[bg][fg]overlay=(W-w)/2:0,format=yuv420p')

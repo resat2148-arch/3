@@ -1,4 +1,4 @@
-# Aqua Hockey v2 planı
+# Elemental Puck Arena v2 planı (eski adı Aqua Hockey)
 
 Dal: `claude/air-hockey-game-648a7g`. Oyunun özellikleri README'de; bu belge v2'nin neden ve nasıl yapıldığını anlatır.
 
@@ -76,13 +76,17 @@ Not: Günlük görevler, başarımlar ve görünümler değerlendirme döneminin
 - Yeni günlük görevler: "Bir yükseltme satın al" (hepsi son seviyedeyse çıkmaz) ve "N sert şut at" (5/10/15). Sert şut: oyuncunun vuruşundan sonra pak 1.500 birim/sn'yi geçerse; yalnızca tek oyunculu modda sayılır.
 - Ayrıca düzeltildi: mağazadaki satın alma onayı açıkken Görünümler sekmesinin listesi gizlenmiyordu.
 
-### Aşama 4: Yeni ad ve kimlik
-- Ad önerileri: Elemental Puck Arena, Splash Puck, Tidal Air Hockey (karar kullanıcıda).
-- Değişecek yerler:
-  - `index.html` başlığı, logo (CSS), simgeler (`icons/`).
-  - `manifest.webmanifest`, paylaşım metinleri ve skor kartı (`drawCard`).
-  - CrazyGames kapak görselleri ve tanıtım videoları (`tools/preview-video`).
-- Kayıt anahtarı öneki (`neonah_`) değişmemeli; oyuncuların kaydı kaybolur.
+### Aşama 4: Yeni ad ve kimlik (bitti)
+- Ad: **Elemental Puck Arena** (kullanıcının seçimi). Adaylar web'de arandı: bu adla bir oyun çıkmadı; yakın olanlar itch.io'da "Element Air Hockey" prototipi ve GitHub'da "Puck Arena". Kısa ad (ana ekran simgesi): **Puck Arena**.
+- Değişenler:
+  - `index.html`: başlık, açıklama, `apple-mobile-web-app-title`, menü ve ilk açılış logosu (ELEMENTAL / PUCK ARENA).
+  - Logo (CSS): stadyumların renkleriyle yatay geçiş (su mavisi, buz, kum sarısı, lav turuncusu, kristal pembe-moru); parlama animasyonu `logo-shine` aynı.
+  - Simgeler: `icons/icon.svg` aynı renk geçişinde saha, mavi raket, koyu pak; PNG'ler (192, 512) SVG'den Chromium ile üretildi.
+  - `manifest.webmanifest`, service worker önbellek adı (`elemental-puck-arena-v33`).
+  - Paylaşım metinleri (`sh.*`, `#ElementalPuckArena`), paylaşım başlığı ve kart dosya adı, skor kartı logosu (`drawCard`), `meta.desc`, konsol iletileri.
+  - Derleme çıktıları: `dist/elemental-puck-arena-crazygames.zip`, `-showcase.zip`, `dist/artifact/elemental-puck-arena*.html`, tanıtım videosu dosya adları (`tools/preview-video/compose.py`).
+- Değişmeyenler: kayıt öneki `neonah_` (tanıtım sürümünde `aquash_`), cihazdaki sade mod kaydı `neonah_perf`, "Su Stadyumu" ve diğer stadyum adları, menünün su altı arka planı (ilk lig Su).
+- Kapak görselleri ve yeni tanıtım videoları Aşama 5'te.
 
 ### Aşama 5: Yayın
 - Yeni tanıtım videoları (yeni kimlik, kariyer ve stadyum mekanikleri).

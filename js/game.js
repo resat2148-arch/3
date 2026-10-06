@@ -1,4 +1,4 @@
-/* Aqua Hockey — bağımlılıksız, tek dosyalık oyun motoru. */
+/* Elemental Puck Arena — bağımlılıksız, tek dosyalık oyun motoru. */
 
 // Açılış. Sayfada CrazyGames SDK'sı varsa (CrazyGames sürümü) önce SDK başlatılır ve ilerleme
 // SDK'nın veri modülüne kaydedilir: CrazyGames'in iframe'inde localStorage'a güvenilemez, veri
@@ -68,7 +68,7 @@
   // ---------------------------------------------------------------------------
   const STR = {
     // Genel
-    'meta.desc': ['Aqua Hockey — tarayıcıda ve telefonda oynanabilen, su stadyumunda geçen bir air hockey oyunu.', 'Aqua Hockey — an air hockey game set in a water stadium, playable in the browser and on your phone.'],
+    'meta.desc': ['Elemental Puck Arena — tarayıcıda ve telefonda oynanan air hockey: su, neon, buz, kum, lav, bataklık, uzay ve kristal stadyumlarında, her biri kendi fiziğiyle.', 'Elemental Puck Arena — air hockey in your browser and on your phone: water, neon, ice, sand, lava, swamp, space and crystal stadiums, each with its own physics.'],
     'board.aria': ['Air hockey masası', 'Air hockey table'],
     'pct': ['%{n}', '{n}%'],
     'coin': ['altın', 'gold'],
@@ -218,11 +218,11 @@
     'sh.hintSave': ['Görseli kaydedip istediğin yerde paylaşabilirsin.', 'Save the image and share it anywhere you like.'],
     'sh.hintHold': ['Kaydetmek için görsele basılı tut veya sağ tıkla.', 'Press and hold (or right-click) the image to save it.'],
     'sh.shareImg': ['GÖRSELİ PAYLAŞ', 'SHARE IMAGE'], 'sh.saveImg': ['Görseli kaydet', 'Save image'], 'sh.back': ['Geri', 'Back'],
-    'sh.pvpDraw': ["Aqua Hockey'de {s} berabere kaldık!", 'We drew {s} in Aqua Hockey!'],
-    'sh.pvpWin': ["Aqua Hockey'de {w}, {l} rakibini {hi}-{lo} yendi!", '{w} beat {l} {hi}-{lo} in Aqua Hockey!'],
-    'sh.aiDraw': ["Aqua Hockey'de {d} ile {s} berabere kaldım!", 'I drew {s} against {d} in Aqua Hockey!'],
-    'sh.aiWin': ["Aqua Hockey'de rakibim {d} karşısında {s} kazandım! 🏆", 'I beat {d} {s} in Aqua Hockey! 🏆'],
-    'sh.aiLose': ["Aqua Hockey'de rakibim {d} karşısında {s} kaybettim, rövanş lazım!", 'I lost {s} to {d} in Aqua Hockey. I need a rematch!'],
+    'sh.pvpDraw': ["Elemental Puck Arena'da {s} berabere kaldık!", 'We drew {s} in Elemental Puck Arena!'],
+    'sh.pvpWin': ["Elemental Puck Arena'da {w}, {l} rakibini {hi}-{lo} yendi!", '{w} beat {l} {hi}-{lo} in Elemental Puck Arena!'],
+    'sh.aiDraw': ["Elemental Puck Arena'da {d} ile {s} berabere kaldım!", 'I drew {s} against {d} in Elemental Puck Arena!'],
+    'sh.aiWin': ["Elemental Puck Arena'da rakibim {d} karşısında {s} kazandım! 🏆", 'I beat {d} {s} in Elemental Puck Arena! 🏆'],
+    'sh.aiLose': ["Elemental Puck Arena'da rakibim {d} karşısında {s} kaybettim, rövanş lazım!", 'I lost {s} to {d} in Elemental Puck Arena. I need a rematch!'],
     'sh.tail': ['Sen de dene!', 'Give it a try!'],
     'sh.copied': ['Paylaşım metni panoya kopyalandı.', 'Share text copied to the clipboard.'],
     'sh.menuFail': ['Paylaşım menüsü açılamadı; metin panoya kopyalandı.', "Couldn't open the share menu; the text was copied to the clipboard."],
@@ -8133,7 +8133,7 @@
       const d = r.rname || 'CPU';
       line = r.draw ? tl('sh.aiDraw', { d, s }) : r.win ? tl('sh.aiWin', { d, s }) : tl('sh.aiLose', { d, s });
     }
-    return `🏒 ${line} ${tl('sh.tail')} #AquaHockey`;
+    return `🏒 ${line} ${tl('sh.tail')} #ElementalPuckArena`;
   }
 
   function fullText() {
@@ -8183,7 +8183,7 @@
   }
 
   function cardFile() {
-    return new File([share.blob || new Blob()], 'aqua-hockey-skor.jpg', { type: 'image/jpeg' });
+    return new File([share.blob || new Blob()], 'elemental-puck-arena-skor.jpg', { type: 'image/jpeg' });
   }
 
   function toast(msg, ms = 2600) {
@@ -8215,7 +8215,7 @@
   }
 
   function nativeShare(withImage) {
-    const data = { title: 'Aqua Hockey', text: shareText() };
+    const data = { title: 'Elemental Puck Arena', text: shareText() };
     if (share.url) data.url = share.url;
     if (withImage && share.blob) {
       const file = cardFile();
@@ -8239,7 +8239,7 @@
   function saveCard() {
     if (!share.blob) return;
     if (downloadsApi) {
-      downloadsApi.save({ filename: 'aqua-hockey-skor.jpg', data: share.blob })
+      downloadsApi.save({ filename: 'elemental-puck-arena-skor.jpg', data: share.blob })
         .then(() => toast(tl('sh.saved')))
         .catch((e) => {
           const code = e && e.code;
@@ -8251,7 +8251,7 @@
     }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(share.blob);
-    a.download = 'aqua-hockey-skor.jpg';
+    a.download = 'elemental-puck-arena-skor.jpg';
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -8346,24 +8346,21 @@
     g.textAlign = 'center';
     g.textBaseline = 'middle';
 
-    // Logo: AQUA (su renginde) + HOCKEY
+    // Logo: ELEMENTAL (stadyumların renkleri) + PUCK ARENA
     spacing('0px');
-    g.font = `italic 900 150px ${FONT}`;
-    const lg = g.createLinearGradient(0, 95, 0, 235);
-    lg.addColorStop(0, '#effdff');
-    lg.addColorStop(0.4, '#7fe9ff');
-    lg.addColorStop(0.7, '#19b8ff');
-    lg.addColorStop(1, '#0a5fd6');
-    g.shadowColor = 'rgba(40,190,255,0.85)';
+    g.font = `italic 900 128px ${FONT}`;
+    const lg = g.createLinearGradient(CW / 2 - 400, 0, CW / 2 + 400, 0);
+    [[0, '#3fd2ff'], [0.2, '#9ff0ff'], [0.42, '#ffd25a'], [0.6, '#ff6a1e'], [0.76, '#ff4f8b'], [1, '#a66bff']].forEach(([k, c]) => lg.addColorStop(k, c));
+    g.shadowColor = 'rgba(140,150,255,0.8)';
     g.shadowBlur = 34;
     g.fillStyle = lg;
-    g.fillText('AQUA', CW / 2, 168);
-    spacing('24px');
+    g.fillText('ELEMENTAL', CW / 2, 168);
+    spacing('20px');
     g.font = `italic 900 44px ${FONT}`;
-    g.shadowColor = 'rgba(80,210,255,0.9)';
+    g.shadowColor = 'rgba(150,170,255,0.9)';
     g.shadowBlur = 22;
-    g.fillStyle = '#d9f8ff';
-    g.fillText('HOCKEY', CW / 2 + 12, 272);
+    g.fillStyle = '#eef3ff';
+    g.fillText('PUCK ARENA', CW / 2 + 10, 272);
     spacing('0px');
 
     // Sonuç başlığı
@@ -10448,7 +10445,7 @@
       trackFrame(raw);
       if (!perfInfo.firstFrame) {
         perfInfo.firstFrame = Math.round(performance.now());
-        console.info(`Aqua Hockey: ilk kare ${perfInfo.firstFrame} ms (betik ${perfInfo.script} ms)${quality.lite ? ', sade mod: ' + perfInfo.lite : ''}`);
+        console.info(`Elemental Puck Arena: ilk kare ${perfInfo.firstFrame} ms (betik ${perfInfo.script} ms)${quality.lite ? ', sade mod: ' + perfInfo.lite : ''}`);
       }
       if (dt > 0 && !Ads.playing) update(dt); // reklam oynarken oyun (tanıtım maçı dahil) donar
       // Duraklatılmışken ekranda değişen bir şey yok: çizme (pil ve ısınma için)
@@ -10464,7 +10461,7 @@
       const key = String(err && err.message);
       if (!frameErrors.has(key)) {
         frameErrors.add(key);
-        console.warn('Aqua Hockey frame error:', err);
+        console.warn('Elemental Puck Arena frame error:', err);
       }
       ctx.setTransform(1, 0, 0, 1, 0, 0); // yarım kalan çizim durumunu sıfırla
       ctx.globalAlpha = 1;

@@ -1,4 +1,4 @@
-// Aqua Hockey tanıtım videosu: sanal zamanla kare kare çekim.
+// Elemental Puck Arena tanıtım videosu: sanal zamanla kare kare çekim.
 // Kullanım: node record.js <landscape|portrait> <çıktı klasörü> [yalnızca klip adı]
 const { chromium } = require('playwright');
 const fs = require('fs');

@@ -1309,7 +1309,7 @@ body.skills.pvp #stage {
   width: min(360px, 100%);
 }
 
-/* Logo: AQUA (su renginde, üzerinden ışık geçer) + HOCKEY */
+/* Logo: ELEMENTAL (stadyumların renkleri: su, buz, kum, lav, kristal; üzerinden ışık geçer) + PUCK ARENA */
 .logo {
   margin-bottom: 24px;
   font-style: italic;
@@ -1319,31 +1319,32 @@ body.skills.pvp #stage {
 
 .logo .l1 {
   display: block;
-  font-size: clamp(54px, 16vw, 72px);
-  letter-spacing: 0.04em;
+  font-size: clamp(40px, 11.5vw, 58px);
+  letter-spacing: 0.03em;
   background:
     linear-gradient(110deg, transparent 38%, rgba(255, 255, 255, 0.75) 50%, transparent 62%),
-    linear-gradient(180deg, #effdff 0%, #7fe9ff 38%, #19b8ff 66%, #0a5fd6 100%);
-  background-size: 260% 100%, 100% 100%;
-  background-position: 150% 0, 0 0;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 45%),
+    linear-gradient(95deg, #3fd2ff 0%, #9ff0ff 20%, #ffd25a 42%, #ff6a1e 60%, #ff4f8b 76%, #a66bff 100%);
+  background-size: 260% 100%, 100% 100%, 100% 100%;
+  background-position: 150% 0, 0 0, 0 0;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 0 16px rgba(40, 190, 255, 0.55));
-  animation: aqua-shine 5s ease-in-out infinite;
+  filter: drop-shadow(0 0 14px rgba(140, 150, 255, 0.5));
+  animation: logo-shine 5s ease-in-out infinite;
 }
 
-@keyframes aqua-shine {
-  0%, 55% { background-position: 150% 0, 0 0; }
-  100% { background-position: -60% 0, 0 0; }
+@keyframes logo-shine {
+  0%, 55% { background-position: 150% 0, 0 0, 0 0; }
+  100% { background-position: -60% 0, 0 0, 0 0; }
 }
 
 .logo .l2 {
   display: block;
   margin-top: 6px;
   font-size: 20px;
-  letter-spacing: 0.62em;
-  padding-left: 0.62em;
+  letter-spacing: 0.5em;
+  padding-left: 0.5em;
   color: #d9f8ff;
   text-shadow: 0 0 10px rgba(80, 210, 255, 0.8), 0 0 26px rgba(30, 150, 255, 0.5);
 }
@@ -1542,7 +1543,7 @@ body.skills.pvp #stage {
   }
 
   #menu .logo .l1 {
-    font-size: clamp(42px, 12vw, 54px);
+    font-size: clamp(36px, 10.5vw, 46px);
   }
 
   #menu .logo .l2 {

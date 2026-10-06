@@ -1,6 +1,6 @@
-# Aqua Hockey
+# Elemental Puck Arena
 
-Tarayıcıda ve telefonda çalışan, su stadyumunda geçen bir air hockey oyunu (eski adı: Neon Air Hockey). Kurulum veya derleme gerektirmez: saf HTML, CSS ve JavaScript (Canvas 2D, WebGL ve Web Audio). Oyuncular Su Stadyumu ile başlar; diğer temalar oyun içi altınla açılır.
+Tarayıcıda ve telefonda çalışan bir air hockey oyunu: sekiz stadyum (su, neon, buz, kum, lav, bataklık, uzay, kristal), her biri kendi fiziğiyle (eski adları: Aqua Hockey, Neon Air Hockey; kayıt anahtarlarının `neonah_` öneki bu yüzden değişmez). Kurulum veya derleme gerektirmez: saf HTML, CSS ve JavaScript (Canvas 2D, WebGL ve Web Audio). Oyuncular Su Stadyumu ile başlar; diğer temalar oyun içi altınla açılır.
 
 ## Kurallar
 
@@ -175,7 +175,7 @@ Telefondan oynamak için siteyi **GitHub Pages** üzerinde yayınlayabilirsiniz:
 
 ```bash
 ./tools/build-crazygames.sh
-# çıktı: dist/aqua-hockey-crazygames.zip (CrazyGames geliştirici portalına yüklenecek dosya)
+# çıktı: dist/elemental-puck-arena-crazygames.zip (CrazyGames geliştirici portalına yüklenecek dosya)
 ```
 
 Bu sürümde `index.html`'e CrazyGames HTML5 SDK'sı (v3) eklenir, PWA dosyaları (manifest, `sw.js`) çıkarılır ve maç sonundaki **sosyal paylaşım düğmeleri ve dış bağlantılar sayfadan tamamen çıkarılır**; telefonun paylaşım menüsü de açılmaz (CrazyGames, oyunun başka bir oynanabilir web sürümüne götüren bağlantılara izin vermez). Skor kartı görseli kalır; üzerinde bağlantı yoktur. Kendi sitendeki sürümde paylaşım düğmeleri durur. Oyun açılırken SDK başlatılır ve **ilerleme SDK'nın veri modülüne kaydedilir** (altın, açılan temalar, envanter, ayarlar). CrazyGames'in iframe'inde localStorage'a güvenilemediği için bu gereklidir; veri modülü, oyuncu CrazyGames hesabıyla girdiyse ilerlemeyi cihazlar arasında eşitler. Portaldaki gönderim formunda ilerleme kaydı için **"CrazyGames SDK veri modülü"** seçeneği işaretlenmelidir.
@@ -194,7 +194,7 @@ Tanıtım videosu çekmek için:
 
 ```bash
 ./tools/build-showcase.sh
-# çıktı: dist/aqua-hockey-showcase.zip
+# çıktı: dist/elemental-puck-arena-showcase.zip
 ```
 
 Bu sürümde tüm temalar açıktır, tüm yükseltmeler son seviyededir, oyun 9.999 altın ve 99'ar Dev Kale / Kale Kilidi hakkıyla başlar (her açılışta yenilenir), reklam düğmeleri gizlidir ve görüntü kalitesi performansa göre otomatik düşürülmez. Kayıtları gerçek oyundan ayrı tutulur (`aquash_` önekiyle), yani aynı tarayıcıdaki gerçek ilerlemeye dokunmaz. Yayına ya da CrazyGames'e yüklenmek için değildir.

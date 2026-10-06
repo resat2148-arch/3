@@ -1,13 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#5fd8f5"/>
-      <stop offset=".55" stop-color="#1c9fd8"/>
-      <stop offset="1" stop-color="#0b5e9e"/>
+    <!-- Saha: stadyumların renkleri (su, buz, kum, lav, kristal), logodaki sırayla -->
+    <linearGradient id="field" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1c9fd8"/>
+      <stop offset=".25" stop-color="#7fe0f5"/>
+      <stop offset=".45" stop-color="#f2c45a"/>
+      <stop offset=".65" stop-color="#ff6a1e"/>
+      <stop offset=".82" stop-color="#e2407f"/>
+      <stop offset="1" stop-color="#7b4dff"/>
     </linearGradient>
-    <radialGradient id="light" cx="50%" cy="0%" r="80%">
-      <stop offset="0" stop-color="#ffffff" stop-opacity=".45"/>
+    <radialGradient id="light" cx="30%" cy="0%" r="90%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".4"/>
       <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="shade" cx="50%" cy="50%" r="70%">
+      <stop offset=".6" stop-color="#05061a" stop-opacity="0"/>
+      <stop offset="1" stop-color="#05061a" stop-opacity=".45"/>
     </radialGradient>
     <radialGradient id="mallet" cx="35%" cy="30%" r="75%">
       <stop offset="0" stop-color="#c4faff"/>
@@ -19,28 +27,24 @@
       <stop offset="1" stop-color="#19e6ff"/>
     </radialGradient>
     <radialGradient id="puck" cx="35%" cy="30%" r="75%">
-      <stop offset="0" stop-color="#ffd9a8"/>
-      <stop offset=".55" stop-color="#ff8a2a"/>
-      <stop offset="1" stop-color="#c9500c"/>
+      <stop offset="0" stop-color="#4a5078"/>
+      <stop offset=".6" stop-color="#1d2140"/>
+      <stop offset="1" stop-color="#0c0e22"/>
     </radialGradient>
     <clipPath id="pool"><rect x="44" y="44" width="424" height="424" rx="78"/></clipPath>
   </defs>
-  <rect width="512" height="512" rx="112" fill="#eef4f8"/>
-  <rect x="30" y="30" width="452" height="452" rx="92" fill="#0d4f7c"/>
+  <rect width="512" height="512" rx="112" fill="#10142e"/>
+  <rect x="30" y="30" width="452" height="452" rx="92" fill="#1c2250"/>
   <g clip-path="url(#pool)">
-    <rect x="44" y="44" width="424" height="424" fill="url(#water)"/>
-    <g fill="none" stroke="#e8fbff" stroke-width="5" stroke-linecap="round" opacity=".35">
-      <path d="M40 120 q40 -26 80 0 t80 0 t80 0 t80 0 t80 0 t80 0"/>
-      <path d="M20 200 q40 -22 80 0 t80 0 t80 0 t80 0 t80 0 t80 0"/>
-      <path d="M40 390 q40 -22 80 0 t80 0 t80 0 t80 0 t80 0 t80 0"/>
-    </g>
-    <line x1="44" y1="256" x2="468" y2="256" stroke="#0c3460" stroke-opacity=".7" stroke-width="8"/>
-    <circle cx="256" cy="256" r="66" fill="none" stroke="#0c3460" stroke-opacity=".7" stroke-width="8"/>
+    <rect x="44" y="44" width="424" height="424" fill="url(#field)"/>
+    <rect x="44" y="44" width="424" height="424" fill="url(#shade)"/>
+    <line x1="44" y1="256" x2="468" y2="256" stroke="#ffffff" stroke-opacity=".55" stroke-width="8"/>
+    <circle cx="256" cy="256" r="66" fill="none" stroke="#ffffff" stroke-opacity=".55" stroke-width="8"/>
     <rect x="44" y="44" width="424" height="424" fill="url(#light)"/>
   </g>
-  <ellipse cx="322" cy="182" rx="46" ry="12" fill="#06304f" opacity=".35"/>
-  <circle cx="316" cy="170" r="40" fill="url(#puck)" stroke="#fff" stroke-width="6"/>
-  <ellipse cx="220" cy="350" rx="96" ry="22" fill="#06304f" opacity=".35"/>
+  <ellipse cx="322" cy="182" rx="46" ry="12" fill="#06102f" opacity=".4"/>
+  <circle cx="316" cy="170" r="40" fill="url(#puck)" stroke="#fff1b0" stroke-width="7"/>
+  <ellipse cx="220" cy="350" rx="96" ry="22" fill="#06102f" opacity=".4"/>
   <circle cx="210" cy="330" r="92" fill="url(#mallet)" stroke="#e8fbff" stroke-width="5"/>
   <circle cx="210" cy="330" r="60" fill="#0a6b98"/>
   <circle cx="210" cy="330" r="38" fill="url(#knob)"/>
