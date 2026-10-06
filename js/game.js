@@ -43,7 +43,19 @@
   const CENTER_GAP = MALLET_R * 0.5; // raketin merkez çizgisine en fazla yaklaşabileceği mesafe
   const MAX_PUCK = 2300;             // birim / saniye
   const MAX_MALLET_V = 4200;
-  const DAMPING = 0.3;               // hava yastığı sürtünmesi
+  // Stadyuma göre fizik: damp hava yastığı sürtünmesi (1/sn), wallE duvar esnekliği, stick çamurda
+  // yavaşlayan paka eklenen sürtünme, mallet raketin en yüksek vuruş hızı; vents/wells/pillars
+  // stadyumun özel mekaniği (Arena).
+  const PHYS = {
+    neon: { damp: 0.3, wallE: 0.88 },
+    water: { damp: 0.42, wallE: 0.86 },
+    ice: { damp: 0.07, wallE: 0.95 },
+    sand: { damp: 1.15, wallE: 0.72 },
+    mud: { damp: 0.75, wallE: 0.7, stick: 2.8, mallet: 2600 },
+    lava: { damp: 0.32, wallE: 0.88, vents: true },
+    space: { damp: 0.2, wallE: 0.9, wells: true },
+    crystal: { damp: 0.3, wallE: 0.9, pillars: true },
+  };
   const WALL_E = 0.88, MALLET_E = 0.9, PUCK_E = 0.92;
   const SUBSTEPS = 10;
   const TAU = Math.PI * 2;
@@ -111,6 +123,14 @@
     'mi.themeWin': ['{t}: bir maç kazan', 'Win a match in {t}'], 'mi.clean': ['Gol yemeden bir maç kazan', 'Win without conceding'],
     'mi.late': ['Son 15 saniyede gol at', 'Score in the last 15 seconds'],
     'a.style': ['Tarz Sahibi', 'Stylish'], 'a.style.d': ['Yeni bir raket ya da pak görünümü al', 'Get a new mallet or puck look'],
+    'ph.neon': ['Neon: klasik hava yastığı.', 'Neon: classic air cushion.'],
+    'ph.water': ['Su Stadyumu: su pakı hafifçe yavaşlatır.', 'Water Stadium: the water gently slows the puck.'],
+    'ph.ice': ['❄️ Buz: pak kayar, duvarlar daha sert sektirir!', '❄️ Ice: the puck glides and walls bounce harder!'],
+    'ph.sand': ['🏜️ Kum: sürtünme yüksek, pak çabuk yavaşlar. Sert vur!', '🏜️ Sand: high friction, the puck slows fast. Hit hard!'],
+    'ph.mud': ['🟤 Çamur: raketler ağır, yavaş pak çamura yapışır!', '🟤 Mud: mallets are heavy and slow pucks get stuck!'],
+    'ph.lava': ['🌋 Lav: kırmızı halkalar patlar ve pakı fırlatır!', '🌋 Lava: red rings erupt and launch the puck!'],
+    'ph.space': ['🪐 Uzay: çekim kuyuları pakın yolunu büker!', '🪐 Space: gravity wells bend the puck\'s path!'],
+    'ph.crystal': ['💎 Kristal: ortadaki kristallerden pak seker!', '💎 Crystal: the puck bounces off the crystals!'],
     'a.title': ['BAŞARIMLAR', 'ACHIEVEMENTS'], 'a.btn': ['Başarımlar', 'Achievements'], 'a.close': ['Kapat', 'Close'],
     'a.unlocked': ['BAŞARIM AÇILDI', 'ACHIEVEMENT UNLOCKED'], 'a.done': ['Tamamlandı', 'Completed'],
     'a.count': ['{n}/{t} tamamlandı', '{n}/{t} completed'],
@@ -1669,11 +1689,31 @@
   let tableLayer = null, puckSprite = null;
   let malletSprites = [], glowSprites = [];
 
+  // iOS Safari bir sayfadaki toplam tuval belleğini sınırlar; atılan tuvaller hemen serbest
+  // bırakılır (boyutu 0 yapılarak). Sınır yine de aşılırsa yazı önbelleği boşaltılıp yeniden
+  // denenir, olmazsa küçük bir tuvalle devam edilir (oyun hata verip donmasın).
+  function freeCanvas(c) {
+    if (c && c.width) c.width = c.height = 0;
+  }
+
+  function clearTextCache() {
+    for (const sp of textCache.values()) freeCanvas(sp.c);
+    textCache.clear();
+  }
+
   function makeLayer(w, h) {
     const c = document.createElement('canvas');
     c.width = Math.max(1, Math.ceil(w * S));
     c.height = Math.max(1, Math.ceil(h * S));
-    const g = c.getContext('2d');
+    let g = c.getContext('2d');
+    if (!g) {
+      clearTextCache();
+      g = c.getContext('2d');
+    }
+    if (!g) {
+      c.width = c.height = 1;
+      g = c.getContext('2d') || document.createElement('canvas').getContext('2d');
+    }
     g.setTransform(S, 0, 0, S, 0, 0);
     return [c, g];
   }
@@ -1692,7 +1732,7 @@
     canvas.height = Math.round(cssH * dpr);
     S = canvas.width / LW;
     cssScale = scale;
-    textCache.clear();
+    clearTextCache();
     const board = canvas.parentElement;
     board.style.width = cssW + 'px';
     board.style.height = cssH + 'px';
@@ -2759,6 +2799,7 @@
   // Statik masa katmanı: yalnızca boyut değiştiğinde yeniden çizilir.
   function buildTable() {
     const [c, g] = makeLayer(LW, LH);
+    freeCanvas(tableLayer);
     tableLayer = c;
     g.fillStyle = '#05060f'; // opak tuvalin köşeleri (CSS ile yuvarlatılır)
     g.fillRect(0, 0, LW, LH);
@@ -2941,6 +2982,7 @@
   const PS_PAD = 28, PS = (PUCK_R + PS_PAD) * 2;
 
   function buildSprites() {
+    if (malletSprites) [...malletSprites, ...glowSprites, puckSprite].forEach(freeCanvas);
     malletSprites = COLORS.map((col, i) => buildMallet(malletCol(i), settings.theme));
     glowSprites = COLORS.map((c0, i) => {
       const col = malletCol(i);
@@ -5323,6 +5365,7 @@
       fx.fill(0);
       fy.fill(0);
       for (const m of mallets) well(m.x, m.y, 44, 1.7);
+      for (const w of Arena.wells) well(w.x, w.y, 64, 2.6); // çekim kuyuları ızgarayı derince büker
       let sp = 0;
       for (const p of pucks) {
         if (!p.active) continue;
@@ -6124,7 +6167,7 @@
   function clampPos(m, x, y) {
     x = clamp(x, MALLET_R, W - MALLET_R);
     y = m.bottom ? clamp(y, H / 2 + CENTER_GAP, H - MALLET_R) : clamp(y, MALLET_R, H / 2 - CENTER_GAP);
-    return [x, y];
+    return Arena.pushOut(x, y, MALLET_R);
   }
 
   function resetMallet(m) {
@@ -6265,6 +6308,7 @@
   }
 
   function collideWalls(p) {
+    const WALL_E = phys().wallE; // stadyuma göre (buz sert sektirir, kum ve çamur emer)
     let imp = 0;
     if (p.x < PUCK_R) {
       p.x = PUCK_R;
@@ -6289,6 +6333,7 @@
 
   // Kale direği: nokta çarpışması
   function collidePost(p, qx, qy) {
+    const WALL_E = phys().wallE;
     const dx = p.x - qx, dy = p.y - qy, d2 = dx * dx + dy * dy;
     if (d2 >= PUCK_R * PUCK_R || d2 < 1e-6) return 0;
     const d = Math.sqrt(d2), nx = dx / d, ny = dy / d;
@@ -6333,6 +6378,199 @@
   }
 
   // `remaining`: bu karede bundan sonra kalan fizik adımı sayısı (insan raketi hedefe eşit adımlarla gider).
+  const phys = () => PHYS[settings.theme] || PHYS.neon;
+
+  // ---------------------------------------------------------------------------
+  // Stadyum mekanikleri: lavda patlayan bacalar, uzayda çekim kuyuları, kristalde sütunlar.
+  // Her iki oyuncuyu eşit etkiler; tanıtım maçında da görünür.
+  // ---------------------------------------------------------------------------
+  const Arena = (() => {
+    const wells = [];   // { x, y, bx, ph } — yavaşça yatay gezinir
+    const vents = [];   // { x, y, t, warn, blown }
+    const pillars = []; // { x, y, r }
+    let ventT = 3, time = 0;
+    const WELL_K = 5.2e6, WELL_R = 230, VENT_R = 78, VENT_WARN = 1.1, VENT_LIFE = 1.7, PILLAR_R = 22;
+
+    function reset() {
+      wells.length = 0;
+      vents.length = 0;
+      pillars.length = 0;
+      ventT = 3;
+      const P = phys();
+      if (P.wells) wells.push({ bx: W / 2, y: H * 0.3, ph: 0, x: W / 2 }, { bx: W / 2, y: H * 0.7, ph: Math.PI, x: W / 2 });
+      if (P.pillars) pillars.push({ x: W * 0.22, y: H / 2, r: PILLAR_R }, { x: W * 0.78, y: H / 2, r: PILLAR_R });
+    }
+
+    function update(dt) {
+      time += dt;
+      for (const w of wells) w.x = w.bx + Math.sin(time * 0.35 + w.ph) * 140;
+      if (!phys().vents) return;
+      // Lav bacaları: önce kızaran halka (uyarı), sonra patlama
+      if (game.state === 'play') {
+        ventT -= dt;
+        if (ventT <= 0) {
+          ventT = rand(3.2, 5.5);
+          let x, y, tries = 0;
+          do {
+            x = rand(80, W - 80);
+            y = rand(170, H - 170);
+          } while (++tries < 8 && Math.abs(y - H / 2) < 50);
+          vents.push({ x, y, t: 0, blown: false });
+        }
+      }
+      for (let i = vents.length - 1; i >= 0; i--) {
+        const v = vents[i];
+        v.t += dt;
+        if (!v.blown && v.t >= VENT_WARN) {
+          v.blown = true;
+          for (const p of pucks) {
+            if (!p.active) continue;
+            const dx = p.x - v.x, dy = p.y - v.y, d = Math.hypot(dx, dy);
+            if (d < VENT_R) {
+              const k = 1500 * (1 - d / VENT_R) + 500, a = d > 1 ? Math.atan2(dy, dx) : rand(0, TAU);
+              p.vx += Math.cos(a) * k;
+              p.vy += Math.sin(a) * k;
+            }
+          }
+          if (isLava()) {
+            Lava.breakCrust(v.x, v.y, 0.75);
+            Lava.pool(v.x, v.y, 46, 1);
+          }
+          spawn(v.x, v.y, '255,140,40', 26, 600, 0.8, 3.2, { spark: true });
+          ripple(v.x, v.y, '255,120,30', 14, VENT_R + 30, 0.5, 5);
+          Sound.eruption(0.7, v.x);
+          game.shake = Math.max(game.shake, 5);
+        }
+        if (v.t >= VENT_LIFE) vents.splice(i, 1);
+      }
+    }
+
+    // Çekim kuyularının paka etkisi (fizik alt adımında)
+    function forces(p, h) {
+      for (const w of wells) {
+        const dx = w.x - p.x, dy = w.y - p.y, d2 = dx * dx + dy * dy;
+        if (d2 > WELL_R * WELL_R) continue;
+        const d = Math.sqrt(d2) || 1;
+        const fall = 1 - d / WELL_R; // kenarda yumuşakça sıfıra iner
+        const a = Math.min(2000, WELL_K / (d2 + 2500)) * fall;
+        p.vx += (dx / d) * a * h;
+        p.vy += (dy / d) * a * h;
+      }
+    }
+
+    // Pakın kristal sütunlardan sekmesi; çarpma şiddetini döndürür
+    function collide(p) {
+      let imp = 0;
+      const e = phys().wallE;
+      for (const c of pillars) {
+        const dx = p.x - c.x, dy = p.y - c.y, md = c.r + PUCK_R, d2 = dx * dx + dy * dy;
+        if (d2 >= md * md || d2 < 1e-6) continue;
+        const d = Math.sqrt(d2), nx = dx / d, ny = dy / d;
+        p.x = c.x + nx * md;
+        p.y = c.y + ny * md;
+        const vn = p.vx * nx + p.vy * ny;
+        if (vn >= 0) continue;
+        p.vx -= (1 + e) * vn * nx;
+        p.vy -= (1 + e) * vn * ny;
+        imp = Math.max(imp, -vn);
+        if (-vn > 120 && isCrystal()) {
+          Crystal.wave(c.x, c.y, clamp(-vn / 900, 0.3, 1.6));
+          Sound.bell(Crystal.noteAt(c.x, c.y, 1), clamp(-vn / 1600, 0.2, 1), c.x, false, 'pillar');
+        }
+      }
+      return imp;
+    }
+
+    // Raketler sütunların içinden geçemez
+    function pushOut(x, y, r) {
+      for (const c of pillars) {
+        const dx = x - c.x, dy = y - c.y, md = c.r + r, d = Math.hypot(dx, dy);
+        if (d < md) {
+          const nx = d > 1e-6 ? dx / d : 0, ny = d > 1e-6 ? dy / d : 1;
+          x = c.x + nx * md;
+          y = c.y + ny * md;
+        }
+      }
+      return [x, y];
+    }
+
+    function draw(g) {
+      // Lav bacası uyarısı: daralan, hızlanan kızıl halka
+      for (const v of vents) {
+        if (v.blown) {
+          const k = (v.t - VENT_WARN) / (VENT_LIFE - VENT_WARN);
+          g.globalAlpha = Math.max(0, 0.5 * (1 - k));
+          g.fillStyle = 'rgba(255,170,60,1)';
+          g.beginPath();
+          g.arc(v.x, v.y, VENT_R * (0.6 + k * 0.5), 0, TAU);
+          g.fill();
+          continue;
+        }
+        const k = v.t / VENT_WARN, pulse = 0.5 + 0.5 * Math.sin(v.t * (10 + k * 22));
+        g.globalAlpha = 0.25 + 0.55 * k * pulse;
+        g.strokeStyle = 'rgb(255,80,20)';
+        g.lineWidth = 3 + k * 3;
+        g.beginPath();
+        g.arc(v.x, v.y, VENT_R * (1 - k * 0.35), 0, TAU);
+        g.stroke();
+        g.fillStyle = 'rgba(255,120,30,0.35)';
+        g.beginPath();
+        g.arc(v.x, v.y, 10 + k * 18, 0, TAU);
+        g.fill();
+      }
+      g.globalAlpha = 1;
+      // Çekim kuyusunun parlayan çekirdeği (ızgara bükülmesini Space çizer)
+      for (const w of wells) {
+        const gr = g.createRadialGradient(w.x, w.y, 0, w.x, w.y, 34);
+        gr.addColorStop(0, 'rgba(255,255,255,0.85)');
+        gr.addColorStop(0.25, 'rgba(160,120,255,0.55)');
+        gr.addColorStop(1, 'rgba(90,60,255,0)');
+        g.fillStyle = gr;
+        g.beginPath();
+        g.arc(w.x, w.y, 34, 0, TAU);
+        g.fill();
+        g.strokeStyle = 'rgba(190,170,255,0.35)';
+        g.lineWidth = 1.5;
+        g.beginPath();
+        g.arc(w.x, w.y, 46 + 6 * Math.sin(time * 2.4 + w.ph), 0, TAU);
+        g.stroke();
+      }
+      // Kristal sütunlar: altıgen, ışıldayan prizmalar
+      for (const c of pillars) {
+        g.save();
+        g.translate(c.x, c.y);
+        g.shadowColor = 'rgba(160,120,255,0.9)';
+        g.shadowBlur = 16 * S;
+        const gr = g.createLinearGradient(-c.r, -c.r, c.r, c.r);
+        gr.addColorStop(0, '#f2e8ff');
+        gr.addColorStop(0.45, '#9b6bff');
+        gr.addColorStop(1, '#3a1d8a');
+        g.fillStyle = gr;
+        g.beginPath();
+        for (let k = 0; k < 6; k++) {
+          const a = (k / 6) * TAU + time * 0.25;
+          g[k ? 'lineTo' : 'moveTo'](Math.cos(a) * (c.r + 2), Math.sin(a) * (c.r + 2));
+        }
+        g.closePath();
+        g.fill();
+        g.shadowBlur = 0;
+        g.strokeStyle = 'rgba(255,255,255,0.75)';
+        g.lineWidth = 1.5;
+        g.stroke();
+        g.fillStyle = 'rgba(255,255,255,0.55)';
+        g.beginPath();
+        g.moveTo(-c.r * 0.5, -c.r * 0.55);
+        g.lineTo(c.r * 0.1, -c.r * 0.75);
+        g.lineTo(-c.r * 0.1, -c.r * 0.1);
+        g.closePath();
+        g.fill();
+        g.restore();
+      }
+    }
+
+    return { reset, update, forces, collide, pushOut, draw, wells, vents, pillars };
+  })();
+
   function stepPhysics(dt, remaining = 0) {
     const plan = mallets.map((m) => {
       let ex, ey;
@@ -6350,8 +6588,8 @@
       }
       [ex, ey] = clampPos(m, ex, ey);
       let vx = (ex - m.x) / dt, vy = (ey - m.y) / dt;
-      const v = Math.hypot(vx, vy);
-      if (v > MAX_MALLET_V) { vx *= MAX_MALLET_V / v; vy *= MAX_MALLET_V / v; }
+      const v = Math.hypot(vx, vy), vmax = phys().mallet || MAX_MALLET_V; // çamurda raketler ağır
+      if (v > vmax) { vx *= vmax / v; vy *= vmax / v; }
       m.vx = vx;
       m.vy = vy;
       if (m.ai) { m.avx = vx; m.avy = vy; }
@@ -6374,6 +6612,7 @@
 
       for (const p of pucks) {
         if (!p.active) continue;
+        Arena.forces(p, h);
         p.x += p.vx * h;
         p.y += p.vy * h;
         for (let k = 0; k < 2; k++) {
@@ -6396,7 +6635,7 @@
 
       for (const p of pucks) {
         if (!p.active) continue;
-        const w = collideWalls(p);
+        const w = Math.max(collideWalls(p), Arena.collide(p));
         if (w > wallImp) { wallImp = w; wx = p.x; wy = p.y; }
         resolvePin(p, mallets[0]);
         resolvePin(p, mallets[1]);
@@ -6411,9 +6650,12 @@
       }
     }
 
-    const k = Math.exp(-DAMPING * dt);
+    const P = phys();
     for (const p of pucks) {
       if (!p.active) continue;
+      // Stadyuma göre sürtünme; çamurda yavaşlayan pak çamura yapışır
+      const sp = Math.hypot(p.vx, p.vy);
+      const k = Math.exp(-(P.damp + (P.stick && sp < 170 ? P.stick : 0)) * dt);
       p.vx *= k;
       p.vy *= k;
       if (!Number.isFinite(p.x + p.y + p.vx + p.vy)) placePuck(p, -1);
@@ -7298,8 +7540,18 @@
     showOverlay(null);
     store.set('played', true);
     startCoach();
+    Arena.reset();
+    // Stadyumun kuralı: her stadyumda ilk iki maçta kısa bir ipucu
+    const tips = store.get('tips', null) || {};
+    let tipShown = false;
+    if (!isShowcase && (tips[settings.theme] || 0) < 2) {
+      tips[settings.theme] = (tips[settings.theme] || 0) + 1;
+      store.set('tips', tips);
+      setTimeout(() => toast(tl('ph.' + settings.theme), 4200), 400);
+      tipShown = true;
+    }
     // Yetenek ipucu ilk maçta değil (önce temel kontrol), sonraki maçta bir kez gösterilir
-    if (!store.get('skillsSeen', false) && !coach.on[0]) {
+    if (!store.get('skillsSeen', false) && !coach.on[0] && !tipShown) {
       store.set('skillsSeen', true);
       const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
       setTimeout(() => toast(touch ? tl('sk.introTouch') : tl('sk.introKeys')), 1800);
@@ -7438,6 +7690,7 @@
     const st = game.state;
     if (st === 'paused' || st === 'over') return;
     updateCoach(dt);
+    Arena.update(dt);
 
     if (st === 'countdown') {
       game.timer -= dt;
@@ -9276,6 +9529,7 @@
     if (t === 'sand') Sand.reset();
     if (t === 'space') Space.reset();
     if (t === 'crystal') Crystal.reset();
+    Arena.reset();
     resize();
     Sound.ambient(t);
     Music.setTheme(t);
@@ -9314,7 +9568,7 @@
     document.querySelectorAll('[data-i18n-alt]').forEach((el) => { el.alt = tl(el.dataset.i18nAlt); });
     const meta = document.querySelector('meta[name="description"]');
     if (meta) meta.content = tl('meta.desc');
-    textCache.clear();
+    clearTextCache();
     goalSprites[0] = goalSprites[1] = null;
     syncMenu();
     syncIntro();
@@ -9405,7 +9659,7 @@
     const key = `${text}|${font}|${rgb}|${glow ? 1 : 0}`;
     let sp = textCache.get(key);
     if (sp) return sp;
-    if (textCache.size > 60) textCache.clear();
+    if (textCache.size > 60) clearTextCache();
     const m = document.createElement('canvas').getContext('2d');
     m.font = font;
     const pad = glow ? size * 0.55 : size * 0.12;
@@ -9610,6 +9864,7 @@
     else if (isMud()) Swamp.drawOver(ctx);
     drawGoals();
     drawRipples();
+    Arena.draw(ctx);
     drawPucks();
     drawMallets();
     drawParticles();
@@ -9761,22 +10016,36 @@
   // Döngü
   // ---------------------------------------------------------------------------
   let last = performance.now();
+  // Bir karede beklenmeyen bir hata olursa oyun donmasın: döngü her durumda sürer, hata
+  // konsola bir kez yazılır.
+  const frameErrors = new Set();
   function frame(now) {
-    const raw = now - last;
-    const dt = Math.min(Math.max(raw / 1000, 0), 0.1);
-    last = now;
-    trackFrame(raw);
-    if (dt > 0 && !Ads.playing) update(dt); // reklam oynarken oyun (tanıtım maçı dahil) donar
-    // Duraklatılmışken ekranda değişen bir şey yok: çizme (pil ve ısınma için)
-    if (game.state !== 'paused') {
-      if (isLiquid()) Water.render();
-      render();
-    }
-    if (game.state !== 'demo') updateSkillUI();
-    syncGameplay();
-    Music.update();
-    flushAchPops();
     requestAnimationFrame(frame);
+    try {
+      const raw = now - last;
+      const dt = Math.min(Math.max(raw / 1000, 0), 0.1);
+      last = now;
+      trackFrame(raw);
+      if (dt > 0 && !Ads.playing) update(dt); // reklam oynarken oyun (tanıtım maçı dahil) donar
+      // Duraklatılmışken ekranda değişen bir şey yok: çizme (pil ve ısınma için)
+      if (game.state !== 'paused') {
+        if (isLiquid()) Water.render();
+        render();
+      }
+      if (game.state !== 'demo') updateSkillUI();
+      syncGameplay();
+      Music.update();
+      flushAchPops();
+    } catch (err) {
+      const key = String(err && err.message);
+      if (!frameErrors.has(key)) {
+        frameErrors.add(key);
+        console.warn('Aqua Hockey frame error:', err);
+      }
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // yarım kalan çizim durumunu sıfırla
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
+    }
   }
 
   let resizeRaf = 0;
@@ -9790,8 +10059,8 @@
 
   // Yazı tipi geç yüklenirse önbellekteki yazıları yeni yazı tipiyle yeniden üret
   if (document.fonts) {
-    if (document.fonts.ready) document.fonts.ready.then(() => textCache.clear());
-    if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => textCache.clear());
+    if (document.fonts.ready) document.fonts.ready.then(() => clearTextCache());
+    if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => clearTextCache());
   }
 
   // CrazyGames: platformun ses kapatma ayarı (SDK game.settings.muteAudio) uygulanır ve değişiklikleri
