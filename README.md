@@ -49,7 +49,7 @@ Oyunda gerçek parayla satış yoktur. Altınla alınabilen her şey **Mağaza**
 Altın kazanma yolları:
 
 - **Her maçtan sonra** (maç süre bitene kadar oynanmalı; yarıda bırakılan maç ödül vermez):
-  - Tek oyuncu: sonuç (galibiyet 35, beraberlik 20, yenilgi 10) × seviye çarpanı (seviye başına %15: Seviye 1 ×1, Seviye 4 ×1,45, Seviye 8 ×2,05, en çok ×2,65) + attığın her gol için 2 (en fazla 10 gol). Örnek: Seviye 4'te 3-1 galibiyet = 35 × 1,45 + 6 = 57.
+  - Tek oyuncu: sonuç (galibiyet 35, beraberlik 20, yenilgi 10) × rakibin zorluk çarpanı (Su Ligi'nde ×1–1,23, son liglerde en çok ×2,65) + attığın her gol için 2 (en fazla 10 gol). Lig şampiyonluğunda bir kez 80 + 30 × lig sırası altın.
   - İki oyuncu: 15 + atılan her gol için 1 (en fazla 10).
   - Maç sonunda reklam izleyerek o maçın ödülü **2 katına** çıkarılabilir.
 - **Hoş geldin hediyesi**: ilk maçın sonunda bir kez +100 altın. İlk galibiyetten sonra Neon'a çok az kalır; maç sonu ekranı en ucuz kilitli temaya ne kadar altın kaldığını gösterir, yetiyorsa mağazaya kısayol olur.
@@ -58,7 +58,7 @@ Altın kazanma yolları:
 - **Raket görünümleri**: mağazanın **Görünümler** sekmesinde (Raket bölümü) oyuncunun raketi için 7 görünüm: Kırağı ve Zehir Yeşili (150), Ametist (200), Alev (300, alev dilleri), Altın (350, ışınsal yivler), Galaksi (400, yıldızlar), Gökkuşağı (500, renk çemberi). Alınan görünüm hemen takılır, sonra istenen seçilir. Rakibin raketi hep pembe kalır; vuruş kıvılcımları raketin rengini alır. Görünümler `SKINS` içinde.
 - **Pak görünümleri**: aynı sekmenin Pak bölümünde. Varsayılan **Tema Pakı** her stadyumun kendi pakıdır (suda turuncu kauçuk, buzda siyah pak…); satın alınan görünüm onun yerine her stadyumda kullanılır (suda ve çamurda suya oturma halkasıyla): Kor ve Nane (150), Karbon (200), Futbol ve Karpuz (250), Plazma (350), Elmas (400). Desenli paklar (Futbol, Karpuz, Plazma) hızlarına göre döner; duvar ve gol kıvılcımları pakın rengini alır. Görünümler `PUCKS` içinde.
 - **Başarımlar**: 22 başarım, her biri bir kez altın verir (20–250). Menüdeki **Başarımlar** düğmesi listeyi ilerleme çubuklarıyla açar (tamamlanmamışlar, bitmeye en yakın olan önce). Açılan başarım ekranın üstünde kısa bir bildirimle duyurulur; oyun akarken açılanlar rakip kalenin önünü kapatmasın diye ilk duraklamada (gol, geri sayım, maç sonu) gösterilir. Başarımlar ve istatistikler (`stats`, `ach`) ilerlemeyle birlikte kaydedilir (CrazyGames'te bulutta). Liste `js/game.js` içindeki `ACH` dizisinde:
-  - İlk Gol, İlk Zafer; Seviye 5 / 10 / 12'yi yen; toplam 25 / 100 gol; 10 / 50 maç
+  - İlk Gol, İlk Zafer; ilk ligini / 4 ligi / tüm ligleri kazan; toplam 25 / 100 gol; 10 / 50 maç
   - Maç içi: gol yemeden kazan, bir maçta 5 gol, 2 gol gerideyken kazan, son 3 saniyede gol, iki pak varken 2 gol, en yüksek hıza yakın şut
   - Yetenekleri 10 kez kullan, yeni bir raket ya da pak görünümü al, iki kişilik maç oyna, 3 farklı stadyumda oyna, tüm stadyumları aç, 3 / 7 gün üst üste gel
 - **Reklam izleyerek**: menüde ve mağazada "Reklam izle" ile her reklam için +50 altın (altın yetmediğinde satın alma adımında da çıkar). Günde en fazla 10 ödüllü reklam izlenebilir; reklam sonuna kadar izlenmezse ödül verilmez. Reklam oynarken oyun sesi kısılır.
@@ -69,7 +69,7 @@ Fiyatlar ve ödüller `js/game.js` içindeki `THEME_INFO`, `PRODUCTS`, `COIN`, `
 
 ## Temalar
 
-Menüdeki **Tema** seçiminden ya da Mağaza'nın Temalar sekmesinden değiştirilir; seçim cihazda saklanır. Kilitli temalar Mağaza'da altınla açılır.
+Tek oyunculu modda stadyum kariyerdeki ligden gelir; iki oyunculu modda menüdeki **Tema** seçiminden, her iki modda Mağaza'nın Temalar sekmesinden değiştirilir. Kilitli stadyumlar kariyerde bir önceki ligin patronunu yenince bedava açılır ya da Mağaza'da altınla hemen alınabilir.
 
 - **Neon**: parlayan çizgiler, neon raketler ve ışık izleri.
 - **Su Stadyumu** (ücretsiz): masanın yerinde gerçek zamanlı simüle edilen bir havuz.
@@ -108,8 +108,17 @@ Menüdeki **Tema** seçiminden ya da Mağaza'nın Temalar sekmesinden değiştir
 
 ## Özellikler
 
-- **Tek oyuncu**: seviye merdiveni. Seviye 1 çok kolay bir rakiple başlar, her galibiyet bir sonraki seviyeyi açar ve seçer (maç sonundaki ana düğme "Seviye N ▶"; yenilgide "Tekrar dene"). Rakip zorlaştıkça hızlanır, daha isabetli vurur ve daha iyi tahmin eder: Seviye 2 eski Kolay, 4 Orta, 8 Zor düzeyindedir, 12'den sonrası en zorudur (`aiForLevel()`). Menüdeki **Rakip** seçicisiyle açılmış seviyeler arasında geri dönülebilir. Eski sürümde Orta/Zor seçmiş oyuncular Seviye 4/8'den başlar. Yapay zekâ pakın yolunu tahmin eder, bant vuruşu yapar ve karşı atağa geçer.
-- **İlk açılış**: menü yerine tam ekran "Oynamak için dokun" gösterilir; ekranın herhangi bir yerine dokunmak (ya da tıklamak, Enter/Boşluk) Seviye 1'de ilk maçı başlatır. Sonraki açılışlarda menü açılır; **Oyna** düğmesi her ekran boyutunda ilk bakışta görünür (logo kısa ekranlarda küçülür, ayarlar düğmenin altındadır).
+- **Tek oyuncu: Kariyer.** Her stadyum bir lig: Su → Neon → Buz → Kum → Lav → Bataklık → Uzay → Kristal. Her ligde 4 rakip ve bir patron vardır (ör. Su Ligi: Bubbles, Crab, Marlin, Tide, patron Kraken); rakiplerin simgesi, adı ve karakteri vardır: dengeli, savunmacı (sağlam savunma, zayıf şut), hızlı (çok hızlı ama dağınık), hileci (bant vuruşları), saldırgan (sert vuruş, karşı atak), patron (isabetli, yeteneklerini akıllıca kullanır). Zorluk ligden lige artar (`rivalDiff`, `rivalAI`). Rakipler sırayla açılır; galibiyet yıldız verir (kazan 1, 2+ farkla 2, gol yemeden 3). **Patronu yenen sonraki stadyumu bedava açar** ve şampiyonluk altını alır; stadyumu mağazadan erken alan oyuncu o ligi hemen oynayabilir. Menüdeki kariyer kartında lig okları ve 5 rakip düğmesi (yenilenler ve sıradaki seçilebilir, yıldızlar altında) bulunur; tek oyunculu modda stadyum ligden gelir, tema seçimi iki oyunculu modda görünür. Maç sonundaki ana düğme "Sıradaki: Rakip ▶", şampiyonlukta "Yeni lig ▶", yenilgide "Tekrar dene". Yapay zekâ pakın yolunu tahmin eder, bant vuruşu yapar ve karşı atağa geçer.
+- **Stadyum fizikleri**: her stadyum farklı oynanır (her iki oyuncuyu eşit etkiler; `PHYS`, `Arena`):
+  - Neon klasik hava yastığı; Su pakı hafifçe yavaşlatır.
+  - Buz: sürtünme çok az, duvarlar daha sert sektirir.
+  - Kum: sürtünme yüksek, duvarlar emer; pak çabuk yavaşlar.
+  - Bataklık: raketler ağır (vuruş hızı sınırlı), yavaşlayan pak çamura yapışır.
+  - Lav: birkaç saniyede bir masada kızaran bir halka belirir, 1 saniye sonra patlar ve içindeki pakı fırlatır.
+  - Uzay: yatayda gezinen iki çekim kuyusu pakın yolunu büker (ızgara kuyularda derince çöker).
+  - Kristal: orta çizgide iki kristal sütun; pak sekip nota çalar, raketler içinden geçemez.
+  - Her stadyumda ilk iki maçta kuralı anlatan kısa bir ipucu çıkar.
+- **İlk açılış**: menü yerine tam ekran "Oynamak için dokun" gösterilir; ekranın herhangi bir yerine dokunmak (ya da tıklamak, Enter/Boşluk) kariyerin ilk maçını (Su Ligi, Bubbles) başlatır. Sonraki açılışlarda menü açılır; **Oyna** düğmesi her ekran boyutunda ilk bakışta görünür (logo kısa ekranlarda küçülür, ayarlar düğmenin altındadır).
 - **İki oyuncu**: aynı cihazda. Telefon/tablette iki kişi aynı anda dokunmatikle oynar (çoklu dokunma), bilgisayarda biri fare/ok tuşları, diğeri W A S D ile.
 - **Görseller**: neon masa, hava delikleri, parıldayan raketler, hıza göre renk değiştiren pak izi, vuruş kıvılcımları, duvar dalgaları, gol patlaması, ekran sarsıntısı, konfeti ve menünün arkasında kendi kendine oynayan bir tanıtım maçı.
 - **Skor paylaşımı**: maç sonunda sonuç X, WhatsApp, Telegram ve Facebook'ta paylaşılabilir ya da metin olarak kopyalanabilir. Oyun ayrıca 1080×1350 boyutunda neon bir skor kartı görseli üretir. Telefonda "Paylaş" düğmesi bu görseli sistemin paylaşım menüsüyle (Instagram, WhatsApp vb.) gönderir, bilgisayarda görsel indirilebilir.

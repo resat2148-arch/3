@@ -123,6 +123,18 @@
         </button>
       </div>
 
+      <div class="field career-field" id="levelField">
+        <div class="label" data-i18n="c.career">Kariyer</div>
+        <div class="career">
+          <div class="level-pick">
+            <button id="lgPrev" class="lv-arrow" type="button" aria-label="Önceki lig" data-i18n-aria="c.prevL"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+            <div class="lv-mid"><b id="lgName">Su Ligi</b><small id="lgStars"></small></div>
+            <button id="lgNext" class="lv-arrow" type="button" aria-label="Sonraki lig" data-i18n-aria="c.nextL"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+          </div>
+          <div id="lgRivals" class="lg-rivals"></div>
+        </div>
+      </div>
+
       <div id="missions" class="missions">
         <div class="mi-head"><span data-i18n="mi.title">GÜNLÜK GÖREVLER</span><small id="miTimer"></small></div>
         <div id="miList"></div>
@@ -138,16 +150,7 @@
         </div>
       </div>
 
-      <div class="field" id="levelField">
-        <div class="label" data-i18n="m.level">Rakip</div>
-        <div class="level-pick">
-          <button id="lvPrev" class="lv-arrow" type="button" aria-label="Önceki seviye" data-i18n-aria="lv.prev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
-          <div class="lv-mid"><b id="lvName">Seviye 1</b><small id="lvSub"></small></div>
-          <button id="lvNext" class="lv-arrow" type="button" aria-label="Sonraki seviye" data-i18n-aria="lv.next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
-        </div>
-      </div>
-
-      <div class="field">
+      <div class="field" id="themeField">
         <div class="label" data-i18n="m.theme">Tema</div>
         <div class="seg" data-group="theme">
           <button data-value="neon">Neon</button>

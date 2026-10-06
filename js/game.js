@@ -131,14 +131,26 @@
     'ph.lava': ['🌋 Lav: kırmızı halkalar patlar ve pakı fırlatır!', '🌋 Lava: red rings erupt and launch the puck!'],
     'ph.space': ['🪐 Uzay: çekim kuyuları pakın yolunu büker!', '🪐 Space: gravity wells bend the puck\'s path!'],
     'ph.crystal': ['💎 Kristal: ortadaki kristallerden pak seker!', '💎 Crystal: the puck bounces off the crystals!'],
+    'c.career': ['Kariyer', 'Career'], 'c.prevL': ['Önceki lig', 'Previous league'], 'c.nextL': ['Sonraki lig', 'Next league'],
+    'c.lockedL': ['Açmak için bu ligin patronunu yen', "Beat this league's boss to unlock"],
+    'c.stars': ['★ {n}/15', '★ {n}/15'], 'c.boss': ['PATRON', 'BOSS'],
+    'c.play': ['{l} · {n} ({i}/5)', '{l} · {n} ({i}/5)'],
+    'c.next': ['SIRADAKİ: {n} ▶', 'NEXT: {n} ▶'], 'c.nextLeague': ['YENİ LİG ▶', 'NEW LEAGUE ▶'],
+    'c.win': ['Rakip: {n} · {s}', 'Opponent: {n} · {s}'], 'c.lost': ['{n} kazandı. Bir daha dene!', '{n} won. Try again!'],
+    'c.champ': ['🏆 {l} şampiyonu! {t} açıldı.', '🏆 {l} champion! {t} unlocked.'],
+    'c.champAll': ['🏆 Tüm liglerin şampiyonu!', '🏆 Champion of every league!'],
+    'c.title': ['Şampiyonluk', 'Championship'],
+    'lg.water': ['Su Ligi', 'Water League'], 'lg.neon': ['Neon Ligi', 'Neon League'], 'lg.ice': ['Buz Ligi', 'Ice League'],
+    'lg.sand': ['Kum Ligi', 'Sand League'], 'lg.lava': ['Lav Ligi', 'Lava League'], 'lg.mud': ['Bataklık Ligi', 'Swamp League'],
+    'lg.space': ['Uzay Ligi', 'Space League'], 'lg.crystal': ['Kristal Ligi', 'Crystal League'],
     'a.title': ['BAŞARIMLAR', 'ACHIEVEMENTS'], 'a.btn': ['Başarımlar', 'Achievements'], 'a.close': ['Kapat', 'Close'],
     'a.unlocked': ['BAŞARIM AÇILDI', 'ACHIEVEMENT UNLOCKED'], 'a.done': ['Tamamlandı', 'Completed'],
     'a.count': ['{n}/{t} tamamlandı', '{n}/{t} completed'],
     'a.goal1': ['İlk Gol', 'First Goal'], 'a.goal1.d': ['Yapay zekâya ilk golünü at', 'Score your first goal against the AI'],
     'a.win1': ['İlk Zafer', 'First Victory'], 'a.win1.d': ['İlk maçını kazan', 'Win your first match'],
-    'a.lvl5': ['Merdiven', 'Climber'], 'a.lvl5.d': ["Seviye 5'e ulaş", 'Reach level 5'],
-    'a.lvl10': ['Zirveye Doğru', 'Almost There'], 'a.lvl10.d': ["Seviye 10'a ulaş", 'Reach level 10'],
-    'a.lvl13': ['Efsane', 'Legend'], 'a.lvl13.d': ["Seviye 12'yi yen", 'Beat level 12'],
+    'a.lvl5': ['Şampiyon', 'Champion'], 'a.lvl5.d': ['İlk ligini kazan', 'Win your first league'],
+    'a.lvl10': ['Lig Avcısı', 'League Hunter'], 'a.lvl10.d': ['4 lig kazan', 'Win 4 leagues'],
+    'a.lvl13': ['Efsane', 'Legend'], 'a.lvl13.d': ['Tüm ligleri kazan', 'Win every league'],
     'a.goals25': ['Golcü', 'Striker'], 'a.goals25.d': ['Toplam 25 gol at', 'Score 25 goals in total'],
     'a.goals100': ['Gol Makinesi', 'Goal Machine'], 'a.goals100.d': ['Toplam 100 gol at', 'Score 100 goals in total'],
     'a.m10': ['Isınma Turu', 'Warmed Up'], 'a.m10.d': ['10 maç oyna', 'Play 10 matches'],
@@ -201,9 +213,9 @@
     'sh.shareImg': ['GÖRSELİ PAYLAŞ', 'SHARE IMAGE'], 'sh.saveImg': ['Görseli kaydet', 'Save image'], 'sh.back': ['Geri', 'Back'],
     'sh.pvpDraw': ["Aqua Hockey'de {s} berabere kaldık!", 'We drew {s} in Aqua Hockey!'],
     'sh.pvpWin': ["Aqua Hockey'de {w}, {l} rakibini {hi}-{lo} yendi!", '{w} beat {l} {hi}-{lo} in Aqua Hockey!'],
-    'sh.aiDraw': ["Aqua Hockey'de {d} seviyedeki yapay zekâyla {s} berabere kaldım!", 'I drew {s} against the {d} AI in Aqua Hockey!'],
-    'sh.aiWin': ["Aqua Hockey'de {d} seviyedeki yapay zekâyı {s} yendim! 🏆", 'I beat the {d} AI {s} in Aqua Hockey! 🏆'],
-    'sh.aiLose': ["Aqua Hockey'de {d} seviyedeki yapay zekâya {s} yenildim, rövanş lazım!", 'I lost {s} to the {d} AI in Aqua Hockey. I need a rematch!'],
+    'sh.aiDraw': ["Aqua Hockey'de {d} ile {s} berabere kaldım!", 'I drew {s} against {d} in Aqua Hockey!'],
+    'sh.aiWin': ["Aqua Hockey'de rakibim {d} karşısında {s} kazandım! 🏆", 'I beat {d} {s} in Aqua Hockey! 🏆'],
+    'sh.aiLose': ["Aqua Hockey'de rakibim {d} karşısında {s} kaybettim, rövanş lazım!", 'I lost {s} to {d} in Aqua Hockey. I need a rematch!'],
     'sh.tail': ['Sen de dene!', 'Give it a try!'],
     'sh.copied': ['Paylaşım metni panoya kopyalandı.', 'Share text copied to the clipboard.'],
     'sh.menuFail': ['Paylaşım menüsü açılamadı; metin panoya kopyalandı.', "Couldn't open the share menu; the text was copied to the clipboard."],
@@ -326,6 +338,45 @@
   // Ödül çarpanı: seviye başına %15, en çok ×2,65
   const levelMult = (n) => Math.round(Math.min(2.65, 1 + (n - 1) * 0.15) * 100) / 100;
 
+  // ---------------------------------------------------------------------------
+  // Kariyer: her stadyum bir lig; 4 rakip + patron. Patronu yenen sonraki stadyumu açar.
+  // Rakip: [simge, ad, karakter]. Karakterler yapay zekânın oyun tarzını değiştirir.
+  // ---------------------------------------------------------------------------
+  const LEAGUES = ['water', 'neon', 'ice', 'sand', 'lava', 'mud', 'space', 'crystal'];
+  const RIVALS = {
+    water: [['🐠', 'Bubbles', 'balanced'], ['🦀', 'Crab', 'defensive'], ['🐬', 'Marlin', 'speedy'], ['🌊', 'Tide', 'trickster'], ['🐙', 'Kraken', 'boss']],
+    neon: [['👾', 'Pixel', 'balanced'], ['🔋', 'Volt', 'speedy'], ['🕹️', 'Joy', 'defensive'], ['⚡', 'Laser', 'trickster'], ['🤖', 'Mega Bot', 'boss']],
+    ice: [['❄️', 'Flake', 'defensive'], ['🐧', 'Pebble', 'balanced'], ['🦭', 'Seal', 'trickster'], ['🌨️', 'Blizzard', 'speedy'], ['🧊', 'Frost Giant', 'boss']],
+    sand: [['🦎', 'Gecko', 'speedy'], ['🐪', 'Camel', 'defensive'], ['🦂', 'Scorpio', 'aggressive'], ['🌪️', 'Dune', 'trickster'], ['☀️', 'Sun King', 'boss']],
+    lava: [['🔥', 'Ember', 'aggressive'], ['🪨', 'Basalt', 'defensive'], ['🌋', 'Magma', 'balanced'], ['🐉', 'Drake', 'speedy'], ['👹', 'Inferno', 'boss']],
+    mud: [['🐸', 'Croak', 'balanced'], ['🪲', 'Beetle', 'defensive'], ['🐊', 'Gator', 'aggressive'], ['🦟', 'Buzz', 'speedy'], ['🐗', 'Bog King', 'boss']],
+    space: [['👽', 'Zorp', 'trickster'], ['🛸', 'Saucer', 'speedy'], ['☄️', 'Comet', 'aggressive'], ['🚀', 'Rocket', 'balanced'], ['🌑', 'Eclipse', 'boss']],
+    crystal: [['💎', 'Gem', 'balanced'], ['🔮', 'Oracle', 'trickster'], ['🦄', 'Unicorn', 'speedy'], ['✨', 'Prism', 'aggressive'], ['👑', 'Crystal Queen', 'boss']],
+  };
+  // Zorluk: lig başına ~1,4, maç başına 0,3 seviye; patron biraz daha zor (1 → ~12)
+  const rivalDiff = (li, mi) => 1 + li * 1.4 + mi * 0.3 + (mi === 4 ? 0.3 : 0);
+  function rivalAI(li, mi) {
+    const o = aiForLevel(rivalDiff(li, mi));
+    switch (RIVALS[LEAGUES[li]][mi][2]) {
+      case 'defensive': // sağlam savunma, zayıf şut
+        o.predict += 0.05; o.noise *= 0.7; o.aimErr *= 1.25; o.speed *= 0.95; o.bank *= 0.5;
+        break;
+      case 'speedy': // çok hızlı ama dağınık
+        o.speed *= 1.15; o.accel *= 1.15; o.aimErr *= 1.25; o.noise *= 1.3;
+        break;
+      case 'trickster': // bant vuruşları
+        o.bank = Math.max(o.bank, 0.55); o.aimErr *= 0.9;
+        break;
+      case 'aggressive': // sert vuruş, karşı atak
+        o.strike *= 1.1; o.counter = true; o.think *= 0.9;
+        break;
+      case 'boss': // isabetli, yeteneklerini akıllıca kullanır
+        o.noise *= 0.7; o.aimErr *= 0.85; o.skillSmart = 1; o.counter = true;
+        break;
+    }
+    return o;
+  }
+
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
   const lerp = (a, b, t) => a + (b - a) * t;
   const rand = (a, b) => a + Math.random() * (b - a);
@@ -446,13 +497,14 @@
 
   const savedTheme = store.get('theme', 'water');
 
-  // Tek oyunculu mod bir seviye merdivenidir: her galibiyet bir sonraki rakibi açar. Eski "zorluk"
-  // seçimi yapmış oyuncular o zorluğa denk seviyeden başlar.
-  const maxLevel0 = (() => {
-    const v = Math.floor(Number(store.get('maxLevel', 0)));
-    if (v >= 1) return v;
-    const d = store.get('difficulty', null);
-    return d === 'hard' ? 8 : d === 'medium' ? 4 : 1;
+  // Kariyer ilerlemesi: won[lig] = o ligde sırayla yenilen rakip sayısı (5 = şampiyon),
+  // stars[lig-maç] = en iyi yıldız, li/mi = seçili lig ve maç
+  const career = (() => {
+    const v = store.get('career', null) || {};
+    const int = (x, a, b) => clamp(Math.floor(Number(x)) || 0, a, b);
+    const won = {};
+    for (const l of LEAGUES) won[l] = int(v.won && v.won[l], 0, 5);
+    return { won, stars: v.stars && typeof v.stars === 'object' ? v.stars : {}, li: int(v.li, 0, 7), mi: int(v.mi, 0, 4) };
   })();
 
   const settings = {
@@ -462,8 +514,6 @@
     music: store.get('music', true),
     skin: hasSkin(store.get('skin', 'classic')) ? store.get('skin', 'classic') : 'classic',
     puck: hasPuck(store.get('puck', 'theme')) ? store.get('puck', 'theme') : 'theme',
-    maxLevel: maxLevel0,
-    level: clamp(Math.floor(Number(store.get('level', maxLevel0))) || maxLevel0, 1, maxLevel0),
     musicVol: clamp(Number(store.get('musicVol', 0.6)), 0, 1) || 0,
     theme: isUnlocked(savedTheme) ? savedTheme : 'water',
     lang: LANG,
@@ -7507,6 +7557,34 @@
     if (introEl.classList.contains('show')) startMatch();
   });
 
+  // --- Kariyer yardımcıları ---
+  function leagueOpen(li) {
+    if (isShowcase || li === 0) return true;
+    return career.won[LEAGUES[li - 1]] >= 5 || isUnlocked(LEAGUES[li]);
+  }
+  const matchOpen = (li, mi) => leagueOpen(li) && (isShowcase || mi <= career.won[LEAGUES[li]]);
+  const leaguesWon = () => LEAGUES.filter((l) => career.won[l] >= 5).length;
+  const rival = (li, mi) => RIVALS[LEAGUES[li]][mi];
+  const leagueStars = (li) => [0, 1, 2, 3, 4].reduce((a, mi) => a + (career.stars[LEAGUES[li] + '-' + mi] || 0), 0);
+
+  function saveCareer() {
+    store.set('career', career);
+  }
+
+  // Lig seçmek stadyumu da seçer (tek oyunculu modda stadyum ligden gelir)
+  function selectLeague(li, mi) {
+    career.li = clamp(li, 0, 7);
+    career.mi = mi === undefined ? Math.min(career.won[LEAGUES[career.li]], 4) : clamp(mi, 0, 4);
+    saveCareer();
+    const th = LEAGUES[career.li];
+    if (settings.mode === 'ai' && settings.theme !== th && isUnlocked(th)) {
+      settings.theme = th;
+      store.set('theme', th);
+      applyTheme();
+    }
+    syncMenu();
+  }
+
   function startMatch() {
     Sound.init();
     game.score = [0, 0];
@@ -7527,9 +7605,21 @@
     mallets.forEach(resetMallet);
     mallets[0].ai = false;
     mallets[1].ai = settings.mode === 'ai';
-    game.level = settings.level; // bu maçın seviyesi (galibiyette settings.level ilerler)
+    // Tek oyunculu: kariyerdeki seçili rakip, ligin stadyumunda
+    game.rival = null;
+    if (settings.mode === 'ai') {
+      const li = career.li, mi = career.mi, th = LEAGUES[li];
+      if (settings.theme !== th && isUnlocked(th)) {
+        settings.theme = th;
+        store.set('theme', th);
+        applyTheme();
+      }
+      const [icon, name] = rival(li, mi);
+      game.rival = { li, mi, icon, name };
+    }
+    game.level = game.rival ? rivalDiff(game.rival.li, game.rival.mi) : 1;
     achMatchStart();
-    mallets[1].level = aiForLevel(game.level);
+    mallets[1].level = game.rival ? rivalAI(game.rival.li, game.rival.mi) : aiForLevel(1);
     pointerOwner.clear();
     particles.length = 0;
     ripples.length = 0;
@@ -7544,7 +7634,7 @@
     // Stadyumun kuralı: her stadyumda ilk iki maçta kısa bir ipucu
     const tips = store.get('tips', null) || {};
     let tipShown = false;
-    if (!isShowcase && (tips[settings.theme] || 0) < 2) {
+    if (!isShowcase && PHYS[settings.theme] !== PHYS.neon && settings.theme !== 'water' && (tips[settings.theme] || 0) < 2) {
       tips[settings.theme] = (tips[settings.theme] || 0) + 1;
       store.set('tips', tips);
       setTimeout(() => toast(tl('ph.' + settings.theme), 4200), 400);
@@ -7632,7 +7722,7 @@
   // Skor sayacın iki yanında gösterilir (zeminde değil). `bump`: gol atan taraf kısa süre büyür.
   function updateScoreHud(bump = -1) {
     const pvp = settings.mode === 'pvp';
-    const labels = pvp ? [COLORS[0].name, COLORS[1].name] : [tl('you'), 'CPU'];
+    const labels = pvp ? [COLORS[0].name, COLORS[1].name] : [tl('you'), game.rival ? game.rival.name : 'CPU'];
     for (let i = 0; i < 2; i++) {
       $('hs' + i).textContent = game.score[i];
       $('hsLab' + i).textContent = labels[i];
@@ -7806,23 +7896,45 @@
     }
     $('finalP1').textContent = a;
     $('finalP2').textContent = b;
-    const level = game.level || settings.level;
-    if (!pvp && win) { // galibiyet bir sonraki seviyeyi açar ve onu seçer
-      settings.maxLevel = Math.max(settings.maxLevel, level + 1);
-      settings.level = level + 1;
-      store.set('maxLevel', settings.maxLevel);
-      store.set('level', settings.level);
+    const level = game.level || 1, R = game.rival;
+    let champ = null, sub;
+    if (pvp || !R) {
+      sub = draw ? tl('r.subDraw') : tl('r.subPvp');
+      game.again = ['r.again'];
+    } else if (win) {
+      // Yıldız: galibiyet 1, 2+ fark 2, gol yemeden 3
+      const st = b === 0 ? 3 : a - b >= 2 ? 2 : 1, key = LEAGUES[R.li] + '-' + R.mi;
+      career.stars[key] = Math.max(career.stars[key] || 0, st);
+      const lg = LEAGUES[R.li];
+      if (R.mi === career.won[lg]) {
+        career.won[lg]++;
+        if (career.won[lg] === 5) champ = R.li; // ligi ilk kez kazandı
+      }
+      if (champ !== null && R.li < 7 && !isUnlocked(LEAGUES[R.li + 1])) {
+        wallet.unlocked.push(LEAGUES[R.li + 1]); // sonraki stadyum bedava açılır
+        saveWallet();
+        renderThemeLocks();
+      }
+      // Sıradaki: aynı ligde sonraki rakip; patrondan sonra sonraki lig
+      if (R.mi < 4) { career.li = R.li; career.mi = R.mi + 1; }
+      else if (R.li < 7) { career.li = R.li + 1; career.mi = Math.min(career.won[LEAGUES[R.li + 1]], 4); }
+      saveCareer();
+      const stars = '★'.repeat(st) + '☆'.repeat(3 - st);
+      sub = champ !== null
+        ? (R.li < 7 ? tl('c.champ', { l: tl('lg.' + lg), t: THEME_INFO[LEAGUES[R.li + 1]].name }) : tl('c.champAll'))
+        : tl('c.win', { n: R.name, s: stars });
+      game.again = R.mi < 4 ? ['c.next', { n: rival(career.li, career.mi)[1] }] : R.li < 7 ? ['c.nextLeague'] : ['r.again'];
       syncMenu();
+    } else {
+      sub = tl('c.lost', { n: R.name });
+      game.again = ['r.retry'];
     }
-    $('resultSub').textContent = pvp
-      ? (draw ? tl('r.subDraw') : tl('r.subPvp'))
-      : win ? tl('r.subLevel', { n: level + 1 }) : tl('r.subRetry', { n: level });
-    // Ana düğme: galibiyette sonraki seviye, yenilgide aynı seviyeyi yeniden dene
-    game.again = pvp ? ['r.again'] : win ? ['r.next', { n: level + 1 }] : ['r.retry'];
+    $('resultSub').textContent = sub;
     $('againBtn').textContent = tl(...game.again);
 
-    prepareShare({ a, b, draw, w, win, pvp, level });
-    grantMatchReward({ a, b, draw, win, pvp, level });
+    const rname = R ? R.name : 'CPU';
+    prepareShare({ a, b, draw, w, win, pvp, level, rname });
+    grantMatchReward({ a, b, draw, win, pvp, level, rname, champ });
     achMatchEnd(win);
     banner(tl('b.time'), '255,255,255', 1.3, 84);
     Sound.buzzer();
@@ -7885,7 +7997,7 @@
         ? tl('sh.pvpDraw', { s })
         : tl('sh.pvpWin', { w: COLORS[r.w].label, l: COLORS[1 - r.w].label, hi, lo });
     } else {
-      const d = tl('lvl.of', { n: r.level });
+      const d = r.rname || 'CPU';
       line = r.draw ? tl('sh.aiDraw', { d, s }) : r.win ? tl('sh.aiWin', { d, s }) : tl('sh.aiLose', { d, s });
     }
     return `🏒 ${line} ${tl('sh.tail')} #AquaHockey`;
@@ -8169,7 +8281,7 @@
     });
 
     // Oyuncu etiketleri
-    const labels = r.pvp ? [COLORS[0].name, COLORS[1].name] : [tl('me'), `CPU · ${up(tl('lvl.name', { n: r.level }))}`];
+    const labels = r.pvp ? [COLORS[0].name, COLORS[1].name] : [tl('me'), up(r.rname || 'CPU')];
     spacing('6px');
     g.font = `800 36px ${FONT}`;
     g.shadowBlur = 16;
@@ -8506,6 +8618,12 @@
     settings.theme = th;
     store.set('theme', th);
     applyTheme();
+    const li = LEAGUES.indexOf(th);
+    if (settings.mode === 'ai' && li >= 0 && leagueOpen(li)) {
+      career.li = li;
+      career.mi = Math.min(career.won[th], 4);
+      saveCareer();
+    }
     syncMenu();
     renderThemes();
     toast(tl('s.chosen', { name: THEME_INFO[th].name }));
@@ -8731,6 +8849,12 @@
         settings.theme = it.theme;
         store.set('theme', it.theme);
         if (!it.previewed) applyTheme(); // önizlemede zaten uygulandı
+        const li = LEAGUES.indexOf(it.theme);
+        if (settings.mode === 'ai' && li >= 0) { // satın alınan stadyumun ligi açılır ve seçilir
+          career.li = li;
+          career.mi = Math.min(career.won[it.theme], 4);
+          saveCareer();
+        }
         syncMenu();
         toast(tl('s.unlockedSel', { name: it.name }));
       } else {
@@ -8841,7 +8965,7 @@
     const goals = Math.min(10, r.a) * 2;
     const label = tl(r.win ? 'r.win2' : r.draw ? 'r.draw2' : 'r.match');
     const parts = [`${label} ${base}`];
-    if (mult !== 1) parts.push(`${tl('lvl.name', { n: r.level })} ×${mult.toLocaleString(LOCALE())}`);
+    if (mult !== 1) parts.push(`${r.rname || 'CPU'} ×${mult.toLocaleString(LOCALE())}`);
     if (goals) parts.push(tl('r.goals', { n: r.a, b: goals }));
     return { total: Math.round(base * mult) + goals, why: parts.join(' · ') };
   }
@@ -8851,6 +8975,11 @@
     lastReward.total = rw.total; // reklamla ikiye katlanan kısım (hediye hariç)
     lastReward.doubled = false;
     let shown = rw.total, why = rw.why;
+    if (r.champ !== null && r.champ !== undefined) { // lig şampiyonluğu ödülü (ikiye katlanmaz)
+      const bonus = 80 + r.champ * 30;
+      shown += bonus;
+      why += ` · ${tl('c.title')} ${bonus}`;
+    }
     if (!wallet.welcomed && !isShowcase) { // ilk maç: hoş geldin hediyesi
       wallet.welcomed = true;
       shown += WELCOME_GIFT;
@@ -8932,9 +9061,9 @@
   const ACH = [
     ['goal1', '🥅', 20, () => [stats.goals, 1]],
     ['win1', '🏆', 30, () => [stats.wins, 1]],
-    ['lvl5', '🪜', 50, () => [settings.maxLevel, 5]],
-    ['lvl10', '🧗', 100, () => [settings.maxLevel, 10]],
-    ['lvl13', '👑', 200, () => [settings.maxLevel, 13]],
+    ['lvl5', '🏆', 50, () => [leaguesWon(), 1]],
+    ['lvl10', '🧗', 120, () => [leaguesWon(), 4]],
+    ['lvl13', '👑', 300, () => [leaguesWon(), 8]],
     ['goals25', '🎯', 40, () => [stats.goals, 25]],
     ['goals100', '💯', 120, () => [stats.goals, 100]],
     ['m10', '⏱️', 40, () => [stats.matches, 10]],
@@ -9545,13 +9674,12 @@
     });
     // Rakip seviyesi (tek oyunculu): oynanacak seviye, en yüksek açılan seviyeye kadar seçilebilir
     const pvp = settings.mode === 'pvp';
-    $('levelField').classList.toggle('disabled', pvp);
-    $('lvName').textContent = tl('lvl.name', { n: settings.level });
-    $('lvSub').textContent = tl('tier.' + tierOf(settings.level));
-    $('lvPrev').disabled = settings.level <= 1;
-    $('lvNext').disabled = settings.level >= settings.maxLevel;
-    $('lvNext').title = settings.level >= settings.maxLevel ? tl('lvl.locked') : tl('lv.next');
-    $('playSub').textContent = pvp ? tl('m.pvp') : `${tl('lvl.name', { n: settings.level })} · ${tl('tier.' + tierOf(settings.level))}`;
+    // Tek oyunculu: kariyer (stadyum ligden gelir); iki oyunculu: stadyum seçilir
+    $('levelField').classList.toggle('hidden', pvp);
+    $('themeField').classList.toggle('hidden', !pvp);
+    renderCareer();
+    const [, rn] = rival(career.li, career.mi);
+    $('playSub').textContent = pvp ? tl('m.pvp') : tl('c.play', { l: tl('lg.' + LEAGUES[career.li]), n: rn, i: career.mi + 1 });
     const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
     $('hint').innerHTML = settings.mode === 'pvp'
       ? tl(touch ? 'hint.pvpTouch' : 'hint.pvpKeys', KEYCAP)
@@ -9599,6 +9727,7 @@
       const prev = settings[key];
       settings[key] = b.dataset.value;
       store.set(key, settings[key]);
+      if (key === 'mode' && settings.mode === 'ai') selectLeague(career.li, career.mi); // ligin stadyumuna dön
       syncMenu();
       if (key === 'theme' && prev !== settings.theme) applyTheme();
       if (key === 'lang' && prev !== settings.lang) {
@@ -9608,13 +9737,40 @@
     });
   });
 
-  function setLevel(n) {
-    settings.level = clamp(n, 1, settings.maxLevel);
-    store.set('level', settings.level);
-    syncMenu();
+  // Lig kartı: başlık (oklarla lig değişir) ve 5 rakip düğmesi (yenilenler ve sıradaki seçilebilir)
+  function renderCareer() {
+    const li = career.li, lg = LEAGUES[li];
+    $('lgName').textContent = tl('lg.' + lg);
+    $('lgStars').textContent = tl('c.stars', { n: leagueStars(li) });
+    $('lgPrev').disabled = li <= 0;
+    const nextOk = li < 7 && leagueOpen(li + 1);
+    $('lgNext').disabled = !nextOk;
+    $('lgNext').title = li < 7 && !nextOk ? tl('c.lockedL') : tl('c.nextL');
+    const box = $('lgRivals');
+    box.textContent = '';
+    for (let mi = 0; mi < 5; mi++) {
+      const [icon, name, kind] = rival(li, mi), open = matchOpen(li, mi);
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'rv' + (kind === 'boss' ? ' boss' : '') + (open ? '' : ' locked') + (mi === career.mi ? ' sel' : '') + (mi < career.won[lg] ? ' beat' : '');
+      b.disabled = !open;
+      const av = document.createElement('span');
+      av.className = 'rv-av';
+      av.textContent = open ? icon : '🔒';
+      const nm = document.createElement('small');
+      nm.textContent = kind === 'boss' ? tl('c.boss') : name;
+      const st = document.createElement('i');
+      const n = career.stars[lg + '-' + mi] || 0;
+      st.textContent = n ? '★'.repeat(n) + '☆'.repeat(3 - n) : '';
+      b.append(av, nm, st);
+      b.title = name;
+      b.setAttribute('aria-label', name);
+      b.addEventListener('click', () => selectLeague(li, mi));
+      box.append(b);
+    }
   }
-  $('lvPrev').addEventListener('click', () => setLevel(settings.level - 1));
-  $('lvNext').addEventListener('click', () => setLevel(settings.level + 1));
+  $('lgPrev').addEventListener('click', () => selectLeague(career.li - 1));
+  $('lgNext').addEventListener('click', () => selectLeague(career.li + 1));
   $('nextUnlock').addEventListener('click', (e) => openStore({ tab: 'themes', theme: e.currentTarget.dataset.theme }));
 
   updateCoins(false);
